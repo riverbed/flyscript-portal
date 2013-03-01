@@ -1,0 +1,9 @@
+#!/bin/bash
+
+killall -9 Python
+rm project.db
+#rm widget_data*
+rm log.txt
+python manage.py syncdb
+python sample_setup.py
+python manage.py runserver
