@@ -1,0 +1,13 @@
+*~
+
+*.pyc
+
+build
+dist
+RELEASE-VERSION
+
+docs/html
+
+*.swp
+.DS_Store
+.idea/
