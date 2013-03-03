@@ -57,7 +57,7 @@ Widget.prototype.processResponse = function(ts, response, textStatus)
         $('#' + this.divid).hideLoading();
         $('#' + this.divid).html("<p>Server error: " + response.message + "</p>");
     } else {
-            setTimeout(function() { self.getData(ts) }, 500);
+        setTimeout(function() { self.getData(ts) }, 500);
     }
 }
 
