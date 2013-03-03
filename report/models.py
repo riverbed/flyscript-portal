@@ -5,6 +5,7 @@ import shutil
 import os
 import pickle
 import sys
+import traceback
 import threading
 import json
 from model_utils.managers import InheritanceManager
@@ -149,10 +150,13 @@ class WidgetResponse:
 def widgetdata(request, report_id, widget_id):
     try:
         widget = Widget.objects.get_subclass(id=int(widget_id))
-    except:
+        return widget.poll(request)
+    except ObjectDoesNotExist:
         return WidgetResponse(status=Job.ERROR, message="Failed to find Widget %s" % widget_id).httpresponse()
-
-    return widget.poll(request)
+    except:
+        traceback.print_exc()
+        logger.error("widgetdata poll: %s" % (str(sys.exc_info())))
+        return WidgetResponse(status=Job.ERROR, message="Internal Error").httpresponse()
 
 #
 # Job
@@ -189,21 +193,22 @@ class AsyncWorker(threading.Thread):
         self.handle = handle
         
     def work(self):
-        job = Job.objects.get(handle=self.handle)
-        c = 0
-        while c < 100:
-            job.pctcomplete = c
-            job.save()
-            sleep(1)
-            c = c + 25
+        pass
     
     def run(self):
         logger.debug("Starting job %s" % self.handle)
-        self.work()
-        logger.debug("Saving job %s as COMPLETE" % self.handle)
         job = Job.objects.get(handle=self.handle)
-        job.progress = 100
-        job.status=job.COMPLETE
+        try:
+            self.work()
+            logger.debug("Saving job %s as COMPLETE" % self.handle)
+            job.progress = 100
+            job.status=job.COMPLETE
+        except :
+            logger.error("Job %s failed: %s" % (self.handle, str(sys.exc_info())))
+            job.status = job.ERROR
+            job.progress = 100
+            job.message = sys.exc_info()[0]
+
         job.save()
         sys.exit(0)
 

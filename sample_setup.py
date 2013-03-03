@@ -28,7 +28,7 @@ main.save()
 
 #
 w = TableWidget(report=main, device=profiler, duration=60, row=1, col=1, colwidth=6,
-                title=u'全帯域 Overall Bandwidth (last hour)', groupby="por", rows=20)
+                title=u'Overall Bandwidth (last hour)', groupby="por", rows=20)
 w.save()
 
 c = WidgetColumn(widget=w, querycol = 'port', label = 'Port' )
