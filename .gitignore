@@ -2,6 +2,10 @@
 
 *.pyc
 
+widget_data*
+*.db
+log.txt
+
 build
 dist
 RELEASE-VERSION
