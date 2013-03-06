@@ -2,8 +2,9 @@
 
 killall -9 Python
 rm project.db
-#rm widget_data*
+rm job*.data
+rm datatable*.cache
 rm log.txt
 python manage.py syncdb
-python sample_setup.py
+python sample2.py
 python manage.py runserver

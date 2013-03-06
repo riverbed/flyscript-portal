@@ -12,6 +12,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/yui3/yui/yui-min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/widgets.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
 
     <script type="text/javascript">
       $(document).ready( function() {
@@ -19,9 +20,9 @@
           {% for row in rows %}
             {% for w in row %}
             new {{ w.widgettype }} 
-              ( "/report/{{ report.id }}/data/{{ w.id }}", 
-                "chart_{{ w.row }}_{{ w.col }}", 
-                {{ w.options }} );
+              ( "/report/{{ report.id }}/widget/{{ w.id }}", 
+                "chart_{{ w.id }}", 
+                {{ w.get_uioptions|default:"{}" }} );
             {% endfor %}
           {% endfor %}
           {% endautoescape %} 
@@ -59,7 +60,7 @@
       {% for row in rows %}
         <div class="row">
           {% for w in row %}
-            <div class="span{{ w.colwidth }}" id="chart_{{ w.row }}_{{ w.col }}">chart_{{ w.row }}_{{ w.col }}</div>
+            <div class="span{{ w.colwidth }}" id="chart_{{ w.id }}">{{ w.title }}</div>
           {% endfor %}
         </div>
       {% endfor %}

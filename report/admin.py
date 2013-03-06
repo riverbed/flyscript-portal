@@ -1,6 +1,7 @@
 from report.models import *
 from django.contrib import admin
 
+'''
 class ReportAdmin(admin.ModelAdmin):
     fields = [ 'title' ]
     
@@ -11,3 +12,4 @@ class DeviceAdmin(admin.ModelAdmin):
     
 admin.site.register(Device, DeviceAdmin)
 
+'''
