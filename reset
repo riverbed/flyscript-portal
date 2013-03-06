@@ -6,5 +6,5 @@ rm job*.data
 rm datatable*.cache
 rm log.txt
 python manage.py syncdb
-python sample2.py
+python sample_setup.py
 python manage.py runserver
