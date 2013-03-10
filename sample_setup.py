@@ -1,3 +1,11 @@
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the 
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+# This software is distributed "AS IS" as set forth in the License.
+
+
 # -*- coding: utf-8 -*-
 from random import randint
 import sys, os
@@ -8,10 +16,10 @@ from report.models import *
 
 profiler = Device(name="tm08-1",
                   sourcetype="profiler",
-                  host = "tm08-1.lab.nbttech.com",
-                  port = 443,
-                  username = "admin",
-                  password = "admin")
+                  host="tm08-1.lab.nbttech.com",
+                  port=443,
+                  username="admin",
+                  password="admin")
 profiler.save()
    
 main = Report(title="Main")
@@ -31,15 +39,15 @@ c.save()
 c = DataColumn(datatable=dt, querycol = 'network_rtt', label = 'RTT', datatype='metric')
 c.save()
 
-wid = Widget(report=main, title="Overal Bandwidth", datatable = dt, 
+wid = Widget(report=main, title="Overall Bandwidth", datatable = dt,
              row=1, col=1, rows=10, colwidth=12,
-             options = {'axes' : { '0' : { 'title': 'bytes/s',
-                                           'position': 'left',
-                                           'columns': ['avg_bytes']},
-                                   '1' : { 'title': 'ms',
-                                           'position': 'right',
-                                           'columns': ['network_rtt']},
-                                   }},
+             options={'axes': {'0': {'title': 'bytes/s',
+                                     'position': 'left',
+                                     'columns': ['avg_bytes']},
+                               '1': {'title': 'ms',
+                                     'position': 'right',
+                                     'columns': ['network_rtt']},
+             }},
              uilib="yui3", uiwidget="TimeSeriesWidget",
              uioptions = {'minHeight': 300})
 

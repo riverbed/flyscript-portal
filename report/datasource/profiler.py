@@ -1,3 +1,11 @@
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the 
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+# This software is distributed "AS IS" as set forth in the License.
+
+
 from report.models import *
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter
@@ -43,14 +51,14 @@ class DataTable_Query:
                 realm = 'traffic_summary'
 
             with lock:
-                report.run( realm=realm,
-                            groupby = profiler.groupbys[datatable.options['groupby']],
-                            columns = columns,
-                            timefilter = TimeFilter.parse_range("last %d m" % datatable.duration),
-                            resolution="%dmin" % (int(datatable.resolution / 60)),
-                            sort_col=sortcol,
-                            sync=False
-                            )
+                report.run(realm=realm,
+                           groupby=profiler.groupbys[datatable.options['groupby']],
+                           columns=columns,
+                           timefilter=TimeFilter.parse_range("last %d m" % datatable.duration),
+                           resolution="%dmin" % (int(datatable.resolution / 60)),
+                           sort_col=sortcol,
+                           sync=False
+                           )
 
             done = False
             logger.info("Waiting for report to complete")
