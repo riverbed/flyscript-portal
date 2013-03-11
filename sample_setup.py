@@ -25,6 +25,8 @@ profiler.save()
 main = Report(title="Main")
 main.save()
 
+interfaces = Report(title="Interfaces")
+interfaces.save()
 
 
 # Define a TimeSeries 
@@ -40,14 +42,14 @@ c = DataColumn(datatable=dt, querycol = 'network_rtt', label = 'RTT', datatype='
 c.save()
 
 wid = Widget(report=main, title="Overall Bandwidth", datatable = dt,
-             row=1, col=1, rows=10, colwidth=12,
+             row=1, col=1, colwidth=12,
              options={'axes': {'0': {'title': 'bytes/s',
                                      'position': 'left',
                                      'columns': ['avg_bytes']},
                                '1': {'title': 'ms',
                                      'position': 'right',
                                      'columns': ['network_rtt']},
-             }},
+                                   }},
              uilib="yui3", uiwidget="TimeSeriesWidget",
              uioptions = {'minHeight': 300})
 

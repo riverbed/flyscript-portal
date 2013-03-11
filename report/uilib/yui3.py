@@ -84,7 +84,7 @@ def TimeSeriesWidget(widget, data):
     axes = { "time" : { "keys" : ["time"],
                         "position": "bottom",
                         "type": "time",
-                        "labelFormat": "%l:%M %p",
+                        "labelFormat": "%l:%M:%S %p",
                         "styles" : { "label": { "rotation": -60 }}}}
 
     for wc in widget.datatable.datacolumn_set.all():
@@ -122,10 +122,10 @@ def TimeSeriesWidget(widget, data):
         for i in range(1,len(qcols)):
             a = qcol_axis[i]
             val = reportrow[i]
-            row[qcols[i]] = val
+            row[qcols[i]] = val if val != '' else None
             if a not in rowmin:
-                rowmin[a] = val
-                rowmax[a] = val
+                rowmin[a] = val if val != '' else 0
+                rowmax[a] = val if val != '' else 0
             else:
                 rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a], val)
                 rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a], val)
