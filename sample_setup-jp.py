@@ -39,21 +39,21 @@ w = TableWidget(report=main, device=profiler, duration=60, row=1, col=1, colwidt
                 title=u'全帯域 (最後時間)', groupby="por", rows=20)
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'port', label = 'ポート' )
+c = WidgetColumn(widget=w, name = 'port', label = 'ポート' )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'protocol', label = 'プロトコル' )
+c = WidgetColumn(widget=w, name = 'protocol', label = 'プロトコル' )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'protoport_name', label = '名前' )
+c = WidgetColumn(widget=w, name = 'protoport_name', label = '名前' )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes" )
+c = WidgetColumn(widget=w, name = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes" )
 c.save()
 
 w.sortcol = c
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'network_rtt', label = '往復時間', formatter="formatMetric" )
+c = WidgetColumn(widget=w, name = 'network_rtt', label = '往復時間', formatter="formatMetric" )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'server_delay', label = 'サーバーの遅延', formatter="formatMetric" )
+c = WidgetColumn(widget=w, name = 'server_delay', label = 'サーバーの遅延', formatter="formatMetric" )
 c.save()
 
 make_data(w, [['8472', '17', 'vxlan-tunnel', 1362054.76782, '', ''],
@@ -81,10 +81,10 @@ make_data(w, [['8472', '17', 'vxlan-tunnel', 1362054.76782, '', ''],
 w = TimeSeriesWidget(report=main, device=profiler, duration=60, row=1, col=7, colwidth=6, title="往復時間 / サーバーの遅延", stacked=True)
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'network_rtt', label = '往復時間', axis = 0 )
+c = WidgetColumn(widget=w, name = 'network_rtt', label = '往復時間', axis = 0 )
 c.save()
 
-c = WidgetColumn(widget=w, querycol = 'server_delay', label = 'サーバーの遅延', axis = 0 )
+c = WidgetColumn(widget=w, name = 'server_delay', label = 'サーバーの遅延', axis = 0 )
 c.save()
 
 data = []
@@ -99,9 +99,9 @@ w = ColumnWidget(report=main, device=profiler, duration=3600, resolution=60*15, 
               title="全帯域 (最後日)", groupby="por", rows=10)
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'port', label = 'ポート' )
+c = WidgetColumn(widget=w, name = 'port', label = 'ポート' )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes"  )
+c = WidgetColumn(widget=w, name = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes"  )
 c.save()
     
 make_data(w, [['80', 12355],
@@ -114,9 +114,9 @@ w = PieWidget(report=main, device=profiler, duration=3600, resolution=60*15, row
               title="全帯域 (最後日)", groupby="por", rows=10)
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'port', label = 'ポート' )
+c = WidgetColumn(widget=w, name = 'port', label = 'ポート' )
 c.save()
-c = WidgetColumn(widget=w, querycol = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes"  )
+c = WidgetColumn(widget=w, name = 'avg_bytes', label = '秒当たりの平均バイト数', formatter="formatBytes"  )
 c.save()
     
 make_data(w, [['80', 12355],
@@ -128,13 +128,13 @@ make_data(w, [['80', 12355],
 w = TimeSeriesWidget(report=main, device=profiler, duration=60, row=3, col=1, colwidth=12, title="秒当たりの平均バイト数 / 往復時間")
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'avg_bytes', label = '秒当たりの平均バイト数', axis = 0, formatter="formatBytes"  )
+c = WidgetColumn(widget=w, name = 'avg_bytes', label = '秒当たりの平均バイト数', axis = 0, formatter="formatBytes"  )
 c.save()
 
-c = WidgetColumn(widget=w, querycol = 'response_time', label = '往復時間', axis = 1 )
+c = WidgetColumn(widget=w, name = 'response_time', label = '往復時間', axis = 1 )
 c.save()
 
-c = WidgetColumn(widget=w, querycol = 'network_rtt', label = '往復時間', axis = 2)
+c = WidgetColumn(widget=w, name = 'network_rtt', label = '往復時間', axis = 2)
 c.save()
 
 data = []
@@ -153,7 +153,7 @@ interfaces.save()
 w = TimeSeriesWidget(report=interfaces, device=profiler, duration=60, row=1, col=1, title="Overall Bandwidth")
 w.save()
 
-c = WidgetColumn(widget=w, querycol = 'avg_bytes', label = 'Avg Bytes/s', formatter="formatBytes"  )
+c = WidgetColumn(widget=w, name = 'avg_bytes', label = 'Avg Bytes/s', formatter="formatBytes"  )
 c.save()
 
 

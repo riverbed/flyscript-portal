@@ -26,12 +26,12 @@ from apps.datasource.models import *
 import logging
 logger = logging.getLogger('datasource')
 
-def poll(request, datatable_id):
+def poll(request, table_id):
     try:
         ts = request.GET['ts']
     except:
         ts = 1
-    d = DataTable.objects.get(id=int(datatable_id))
+    d = Table.objects.get(id=int(table_id))
     job = d.poll(ts)
 
     if not job.done():

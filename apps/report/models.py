@@ -43,7 +43,7 @@ class Report(models.Model):
 
 class Widget(models.Model):
     report = models.ForeignKey(Report)
-    datatable = models.ForeignKey(DataTable)
+    table = models.ForeignKey(Table)
     title = models.CharField(max_length=100)
     row = models.IntegerField()
     col = models.IntegerField()
@@ -73,7 +73,7 @@ class Widget(models.Model):
             return default
 
     def poll(self, ts):
-        job = self.datatable.poll(ts)
+        job = self.table.poll(ts)
 
         if not job.done():
             # job not yet done, return an empty data structure

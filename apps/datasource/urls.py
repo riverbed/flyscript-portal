@@ -17,5 +17,5 @@ for j in Job.objects.all():
 urlpatterns = patterns(
     '',
 
-    url(r'^(?P<datatable_id>[0-9]+)/poll$', 'apps.datasource.views.poll'),
+    url(r'^(?P<table_id>[0-9]+)/poll$', 'apps.datasource.views.poll'),
     )

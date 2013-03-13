@@ -12,9 +12,9 @@ def TableWidget(widget, data):
     qcols = []
     columns = []
 
-    for wc in widget.datatable.datacolumn_set.all():
-        qcols.append(wc.querycol)
-        column = {'key': wc.querycol, 'label': wc.label, "sortable": True}
+    for wc in widget.table.get_columns():
+        qcols.append(wc.name)
+        column = {'key': wc.name, 'label': wc.label, "sortable": True}
         if wc.datatype == 'bytes':
             column['formatter'] = 'formatBytes'
         elif wc.datatype == 'metric':
@@ -42,15 +42,17 @@ def TableWidget(widget, data):
     return data
 
 def PieWidget(widget, data):
-    catcol = DataColumn.objects.get(datatable=widget.datatable, querycol=widget.get_option('key'))
-    datacol = DataColumn.objects.get(datatable=widget.datatable, querycol=widget.get_option('value'))
+    columns = widget.table.get_columns()
 
-    qcols = [catcol.querycol]
-    qcols.append(datacol.querycol)
+    catcol = columns.get(name=widget.get_option('key'))
+    col = columns.get(name=widget.get_option('value'))
+
+    qcols = [catcol.name]
+    qcols.append(col.name)
 
     series = []
-    series.append({"categoryKey": catcol.querycol,
-                   "valueKey": datacol.querycol})
+    series.append({"categoryKey": catcol.name,
+                   "valueKey": col.name})
 
     rows = []
 
@@ -66,7 +68,7 @@ def PieWidget(widget, data):
     data = {
         "chartTitle": widget.title,
         "type" : "pie",
-        "categoryKey": catcol.querycol,
+        "categoryKey": catcol.name,
         "dataProvider": rows,
         "seriesCollection" : series,
         "legend" : { "position" : "right" }
@@ -87,17 +89,17 @@ def TimeSeriesWidget(widget, data):
                         "labelFormat": "%l:%M:%S %p",
                         "styles" : { "label": { "rotation": -60 }}}}
 
-    for wc in widget.datatable.datacolumn_set.all():
-        if wc.querycol == 'time':
+    for wc in widget.table.get_columns():
+        if wc.name == 'time':
             continue
         
         series.append({"xKey": "time",
-                       "yKey": wc.querycol,
+                       "yKey": wc.name,
                        "styles": { "line": { "weight" : 1 },
                                    "marker": { "height": 6,
                                                "width": 6 }}})
-        qcols.append(wc.querycol)
-        wc_axis = w_axes.getaxis(wc.querycol)
+        qcols.append(wc.name)
+        wc_axis = w_axes.getaxis(wc.name)
         qcol_axis.append(wc_axis)
         axis_name = 'axis'+str(wc_axis)
         if axis_name not in axes:
@@ -106,7 +108,7 @@ def TimeSeriesWidget(widget, data):
                                "keys": []
                                }
 
-        axes[axis_name]['keys'].append(wc.querycol)
+        axes[axis_name]['keys'].append(wc.name)
 
     rows = []
 
@@ -139,8 +141,8 @@ def TimeSeriesWidget(widget, data):
 
         rows.append(row)
 
-    for wc in widget.datatable.datacolumn_set.all():
-        wc_axis = w_axes.getaxis(wc.querycol)
+    for wc in widget.table.get_columns():
+        wc_axis = w_axes.getaxis(wc.name)
         axis_name = 'axis'+str(wc_axis)
         n = NiceScale(minval[wc_axis], maxval[wc_axis])
 
@@ -166,28 +168,30 @@ def TimeSeriesWidget(widget, data):
 
 
 def BarWidget(widget, data):
-    catcol = DataColumn.objects.get(datatable=widget.datatable, querycol=widget.get_option('key'))
-    datacols = []
+    columns = widget.table.get_columns()
+
+    catcol = columns.get(name=widget.get_option('key'))
+    cols = []
     for v in widget.get_option('values'):
-        datacols.append(DataColumn.objects.get(datatable=widget.datatable, querycol=v))
+        cols.append(columns.get(name=widget.get_option('key')))
 
     w_axes = Axes(widget.get_option('axes', None))
 
     series = []
-    qcols = [catcol.querycol]
+    qcols = [catcol.name]
     qcol_axis = [ -1]
-    axes = { catcol.querycol : { "keys" : [catcol.querycol],
+    axes = { catcol.name : { "keys" : [catcol.name],
                                  "position": "bottom",
                                  "styles" : { "label": { "rotation": -60 }}}}
 
-    for wc in datacols:
-        series.append({"xKey": catcol.querycol,
-                       "yKey": wc.querycol,
+    for wc in cols:
+        series.append({"xKey": catcol.name,
+                       "yKey": wc.name,
                        "styles": { "line": { "weight" : 1 },
                                    "marker": { "height": 6,
                                                "width": 20 }}})
-        qcols.append(wc.querycol)
-        wc_axis = w_axes.getaxis(wc.querycol)
+        qcols.append(wc.name)
+        wc_axis = w_axes.getaxis(wc.name)
         qcol_axis.append(wc_axis)
         axis_name = 'axis'+str(wc_axis)
         if axis_name not in axes:
@@ -195,7 +199,7 @@ def BarWidget(widget, data):
                                "position" : "left" if (wc_axis == 0) else "right",
                                "keys": [] }
 
-        axes[axis_name]['keys'].append(wc.querycol)
+        axes[axis_name]['keys'].append(wc.name)
 
     rows = []
 
@@ -227,8 +231,8 @@ def BarWidget(widget, data):
 
         rows.append(row)
 
-    for wc in datacols:
-        wc_axis = w_axes.getaxis(wc.querycol)
+    for wc in cols:
+        wc_axis = w_axes.getaxis(wc.name)
         axis_name = 'axis'+str(wc_axis)
         n = NiceScale(minval[wc_axis], maxval[wc_axis])
 
@@ -240,7 +244,7 @@ def BarWidget(widget, data):
     data = {
         "chartTitle": widget.title,
         "type" : "column",
-        "categoryKey": catcol.querycol,
+        "categoryKey": catcol.name,
         "dataProvider": rows,
         "seriesCollection" : series,
         "axes": axes

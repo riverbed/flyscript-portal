@@ -51,42 +51,42 @@ class Device(models.Model):
         return self.name
 
 #
-# DataTable
+# Table
 #
-class DataTable(models.Model):
+class Table(models.Model):
     source = models.CharField(max_length=200)    # source module name
     filterexpr = models.TextField(blank=True)
     duration = models.IntegerField()             # length of query in minutes
     resolution = models.IntegerField(default=60) # resolution of graph in seconds
-    sortcol = models.ForeignKey('DataColumn', null=True, related_name='DataColumn')
+    sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
 
     options = JSONField()
 
     def poll(self, ts=1):
-        # Ultimately, this function must return the data for the DataTable
-        # The actual data is pulled from the "DataTable.source" function.
+        # Ultimately, this function must return the data for the Table
+        # The actual data is pulled from the "Table.source" function.
         #
         # This class *may* do caching, in which case there either may be
         # no actual call to the source to get data, or the call my cover
         # a different timeframe
 
         # Always create a Job
-        jobhandle = "job-datatable%s-ts%s" % (self.id, ts)
+        jobhandle = "job-table%s-ts%s" % (self.id, ts)
         with lock:
             try:
                 job = Job.objects.get(handle=jobhandle)
-                logger.debug("DataTable Job in progress: %s" % jobhandle)
+                logger.debug("Table Job in progress: %s" % jobhandle)
 
             except ObjectDoesNotExist:
-                logger.debug("New DataTable Job: %s" % jobhandle)
+                logger.debug("New Table Job: %s" % jobhandle)
 
-                job = Job(datatable=self, handle=jobhandle)
+                job = Job(table=self, handle=jobhandle)
                 job.save()
 
                 # Lookup the query class for this source
                 import apps.datasource.datasource
-                queryclass = apps.datasource.datasource.__dict__[self.source].DataTable_Query
+                queryclass = apps.datasource.datasource.__dict__[self.source].Table_Query
                 
                 # Create an asynchronous worker to do the work
                 worker = AsyncWorker(job, queryclass)
@@ -94,21 +94,40 @@ class DataTable(models.Model):
 
         return job
 
+    def add_columns(self, colnames, sortcol=None):
+        for colname in colnames:
+            try:
+                col = Column.objects.get(source=self.source, name=colname)
+            except:
+                ValueError("Failed to find a column '%s' associated with source '%s'" % (colname, self.source))
+                
+            tc = TableColumn(table=self, column=col)
+            tc.save()
+            if sortcol == colname:
+                self.sortcol = col
+                self.save()
+                
     def __unicode__(self):
         return str(self.id)
 
-class DataColumn(models.Model):
-    datatable = models.ForeignKey(DataTable)
+    def get_columns(self):
+        return Column.objects.filter(id__in = [tc.column.id for tc in TableColumn.objects.filter(table=self).select_related()])
 
-    querycol = models.CharField(max_length=30)
+class Column(models.Model):
+
+    source = models.CharField(max_length=200)
+    name = models.CharField(max_length=30)
+    source_name = models.CharField(max_length=30)
     label = models.CharField(max_length=30)
     datatype = models.CharField(max_length=50, default='')
-
-    axis = models.IntegerField(default=0)
 
     def __unicode__(self):
         return self.label
 
+class TableColumn(models.Model):
+    table = models.ForeignKey(Table)
+    column = models.ForeignKey(Column)
+    
 #
 # Job
 #
@@ -129,7 +148,7 @@ class Job(models.Model):
     message = models.CharField(max_length=200, default="")
     progress = models.IntegerField(default=-1)
     remaining = models.IntegerField(default=-1)
-    datatable = models.ForeignKey(DataTable)
+    table = models.ForeignKey(Table)
 
     def __unicode__(self):
         return "%s, %s %s%%" % (self.handle, self.status, self.progress)
@@ -171,7 +190,7 @@ class AsyncWorker(threading.Thread):
         logger.debug("Starting job %s" % self.job.handle)
         job = self.job
         try:
-            query = self.queryclass(self.job.datatable, self.job)
+            query = self.queryclass(self.job.table, self.job)
             query.run()
             job.savedata(query.data)
             logger.debug("Saving job %s as COMPLETE" % self.job.handle)
