@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from report.models import *
+from apps.report.models import *
 
 def TableWidget(widget, data):
     qcols = []

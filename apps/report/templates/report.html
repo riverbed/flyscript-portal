@@ -11,16 +11,20 @@
 <html>
   <head>
     <title> {{ report.title }}</title>
-    <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="screen"/>
-    <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="print"/>
+    <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-latest.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.showLoading.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/yui3/yui/yui-min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.9.1.min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="http://yui.yahooapis.com/3.8.1/build/yui/yui-min.js"></script>
+    <!-- Static versions to avoid downloading from the net
+        <script type="text/javascript" src="{{ STATIC_URL }}js/yui3/yui/yui-min.js"></script> 
+    -->
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.showLoading.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-widgets.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
+
 
     <script type="text/javascript">
       $(document).ready( function() {

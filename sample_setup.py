@@ -12,7 +12,8 @@ import sys, os
 import pickle
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from report.models import *
+from apps.datasource.models import *
+from apps.report.models import *
 
 profiler = Device(name="tm08-1",
                   sourcetype="profiler",
@@ -21,31 +22,7 @@ profiler = Device(name="tm08-1",
                   username="admin",
                   password="admin")
 profiler.save()
-   
-main = Report(title="Main")
-main.save()
 
-interfaces = Report(title="Interfaces")
-interfaces.save()
-
-translations = { "Avg Bytes/s": "平均バイト数/秒",
-                 "Overall Traffic (last hour)": "全てのトラッフィック (過去１時間以内)",
-                 "Traffic for hosts in  10.99/16 (last hour)" : "10.99/16サブネット内のホストへのトラッフィック (過去１時間以内)",
-                 "Traffic for hosts in  10.99.15/24 (last hour)" : "10.99.15/24サブネット内のホストへのトラッフィック (過去１時間以内)",
-                 "Total Bytes" : "合計バイト数",
-                 "Locations by Bytes" : "場所別　合計バイト数/秒の割合",
-                 "Location" : "場所",
-                 "Top Locations by Response Time": "場所別の応答時間（秒）",
-                 "Interface" : "インターフェイス",
-                 "% Util" : "使用率（％）",
-                 "Avg Pkts/s": "平均パケット数/秒",
-                 "Active Conns/s": "アクティブな接続数/秒",
-                 "% Resets" : "（TCP）リセット率（％）",
-                 "% Retrans" : "再送信率（％）",
-                 "Resp Time (ms)": "応答時間（ミリ秒）",
-                 "Network RTT (ms)": "ネットワークの往復時間（ミリ秒）",
-                 "Srv Delay (ms)": "サーバーの遅延時間（ミリ秒）",
-                 "": "インターフェイス （過去１日間以内）" }
 
 # Define a TimeSeries 
 dt = DataTable(source='profiler', duration=60, options={'device': profiler.id,
@@ -54,6 +31,12 @@ dt = DataTable(source='profiler', duration=60, options={'device': profiler.id,
 dt.save()
 DataColumn(datatable=dt, querycol = 'time', label = 'Time', datatype='time').save()
 DataColumn(datatable=dt, querycol = 'avg_bytes', label = 'Avg Bytes/s', datatype='bytes').save()
+
+main = Report(title="Main")
+main.save()
+
+interfaces = Report(title="Interfaces")
+interfaces.save()
 
 wid = Widget(report=main, title="Overall Traffic (last hour)", datatable = dt,
              row=1, col=1, colwidth=12,
@@ -66,6 +49,7 @@ wid = Widget(report=main, title="Overall Traffic (last hour)", datatable = dt,
 
 wid.save()
 
+exit(0)
 # Define a TimeSeries 
 dt = DataTable(source='profiler', duration=60,
                filterexpr = 'host 10.99/16',
@@ -183,3 +167,22 @@ wid = Widget(report=main, title="Interfaces (last day)", datatable = dt,
              row=4, col=1, rows=1000, colwidth=12,
              uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
 wid.save()
+
+translations = { "Avg Bytes/s": "平均バイト数/秒",
+                 "Overall Traffic (last hour)": "全てのトラッフィック (過去１時間以内)",
+                 "Traffic for hosts in  10.99/16 (last hour)" : "10.99/16サブネット内のホストへのトラッフィック (過去１時間以内)",
+                 "Traffic for hosts in  10.99.15/24 (last hour)" : "10.99.15/24サブネット内のホストへのトラッフィック (過去１時間以内)",
+                 "Total Bytes" : "合計バイト数",
+                 "Locations by Bytes" : "場所別　合計バイト数/秒の割合",
+                 "Location" : "場所",
+                 "Top Locations by Response Time": "場所別の応答時間（秒）",
+                 "Interface" : "インターフェイス",
+                 "% Util" : "使用率（％）",
+                 "Avg Pkts/s": "平均パケット数/秒",
+                 "Active Conns/s": "アクティブな接続数/秒",
+                 "% Resets" : "（TCP）リセット率（％）",
+                 "% Retrans" : "再送信率（％）",
+                 "Resp Time (ms)": "応答時間（ミリ秒）",
+                 "Network RTT (ms)": "ネットワークの往復時間（ミリ秒）",
+                 "Srv Delay (ms)": "サーバーの遅延時間（ミリ秒）",
+                 "": "インターフェイス （過去１日間以内）" }

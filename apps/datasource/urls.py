@@ -8,15 +8,14 @@
 
 from django.conf.urls import patterns, include, url
 from django.views.generic import DetailView, ListView
-from report.models import Job
+from apps.datasource.models import Job
 
+# This happens on startup, flush all stale jobs
 for j in Job.objects.all():
     j.delete()
 
 urlpatterns = patterns(
     '',
 
-    url(r'^(?P<report_id>[0-9]+)$', 'report.views.main'),
-    url(r'^(?P<report_id>[0-9]+)/data/(?P<datatable_id>[0-9]+)$', 'report.models.DataTable_poll'),
-    url(r'^(?P<report_id>[0-9]+)/widget/(?P<widget_id>[0-9]+)$', 'report.models.Widget_poll'),
+    url(r'^(?P<datatable_id>[0-9]+)/poll$', 'apps.datasource.views.poll'),
     )

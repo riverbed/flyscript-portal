@@ -21,7 +21,7 @@ from django.conf import settings
 
 from rvbd.common import UserAuth
 
-from report.models import *
+from apps.report.models import *
 
 import logging
 logger = logging.getLogger('report')
@@ -42,7 +42,7 @@ def main(request, report_id):
 
     reports = Report.objects.all()
     
-    t = loader.get_template('report.tpl')
+    t = loader.get_template('report.html')
 
     lastrow = -1
     i = -1
@@ -61,3 +61,13 @@ def main(request, report_id):
     
     return HttpResponse(t.render(c))
 
+
+def poll(request, report_id, widget_id):
+    try:
+        ts = request.GET['ts']
+        ts = 1
+        widget = Widget.objects.get(id=widget_id)
+        return widget.poll(ts)
+    except:
+        traceback.print_exc()
+        return HttpResponse("Internal Error")

@@ -20,11 +20,11 @@ class DeviceManager:
         
     @classmethod
     def get_device(cls, device_id):
-        from report.models import Device
+        from apps.datasource.models import Device
         ds = Device.objects.get(id=device_id)
         if ds.id not in cls.devices:
-            import report.datasource
-            create_func = report.datasource.__dict__[ds.sourcetype].DeviceManager_new
+            import apps.datasource.datasource
+            create_func = apps.datasource.datasource.__dict__[ds.sourcetype].DeviceManager_new
             
             logger.debug("Creating new Device: %s(%s:%s)" % (ds.sourcetype, ds.host, ds.port))
             cls.devices[ds.id] = create_func(host=ds.host, port=ds.port,

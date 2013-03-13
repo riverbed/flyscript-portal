@@ -14,8 +14,9 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^$', 'report.views.root'),
-    url(r'^report/', include('report.urls')),
+    #url(r'^$', 'report.views.root'),
+    url(r'^report/', include('apps.report.urls')),
+    url(r'^data/', include('apps.datasource.urls')),
 
     # Examples:
     # url(r'^$', 'flybox.views.home', name='home'),

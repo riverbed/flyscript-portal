@@ -17,23 +17,24 @@ import traceback
 import threading
 import json
 import cgi
-from model_utils.managers import InheritanceManager
-from misc.fields import PickledObjectField
+
 from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.exceptions import ObjectDoesNotExist
-from misc.nicescale import NiceScale
+
+from model_utils.managers import InheritanceManager
+from libs.fields import PickledObjectField
 from jsonfield import JSONField
 
 import logging
-logger = logging.getLogger('report')
+logger = logging.getLogger('datasource')
 
-lock = threading.Lock()
-
-from report.devicemanager import DeviceManager
+from apps.datasource.devicemanager import DeviceManager
 
 # Support subclassing via get_subclass()
 # objects = InheritanceManager()
+
+lock = threading.Lock()
 
 #
 # Device
@@ -49,11 +50,14 @@ class Device(models.Model):
     def __unicode__(self):
         return self.name
 
+#
+# DataTable
+#
 class DataTable(models.Model):
     source = models.CharField(max_length=200)    # source module name
     filterexpr = models.TextField(blank=True)
     duration = models.IntegerField()             # length of query in minutes
-    resolution = models.CharField(max_length=30, default="1min") # resolution of graph in seconds
+    resolution = models.IntegerField(default=60) # resolution of graph in seconds
     sortcol = models.ForeignKey('DataColumn', null=True, related_name='DataColumn')
     rows = models.IntegerField(default=-1)
 
@@ -81,8 +85,8 @@ class DataTable(models.Model):
                 job.save()
 
                 # Lookup the query class for this source
-                import report.datasource
-                queryclass = report.datasource.__dict__[self.source].DataTable_Query
+                import apps.datasource.datasource
+                queryclass = apps.datasource.datasource.__dict__[self.source].DataTable_Query
                 
                 # Create an asynchronous worker to do the work
                 worker = AsyncWorker(job, queryclass)
@@ -92,22 +96,6 @@ class DataTable(models.Model):
 
     def __unicode__(self):
         return str(self.id)
-
-def DataTable_poll(request, report_id, datatable_id):
-    ts = request.GET['ts']
-    d = DataTable.objects.get(id=int(datatable_id))
-    job = d.poll(ts)
-
-    if not job.done():
-        # job not yet done, return an empty data structure
-        logger.debug("DataTable.poll: Not done yet, %d%% complete" % job.progress)
-        resp = job.json()
-    else:
-        resp = job.json(data = job.data())
-        logger.debug("DataTable.poll: Job complete")
-        job.delete()
-
-    return HttpResponse(json.dumps(resp))
 
 class DataColumn(models.Model):
     datatable = models.ForeignKey(DataTable)
@@ -198,104 +186,3 @@ class AsyncWorker(threading.Thread):
 
         job.save()
         sys.exit(0)
-
-#######################################################################
-#
-# Reports and Widgets
-#
-
-class Report(models.Model):
-    title = models.CharField(max_length=200)
-
-    def __unicode__(self):
-        return self.title
-
-class Widget(models.Model):
-    report = models.ForeignKey(Report)
-    datatable = models.ForeignKey(DataTable)
-    title = models.CharField(max_length=100)
-    row = models.IntegerField()
-    col = models.IntegerField()
-    colwidth = models.IntegerField(default=1)
-    rows = models.IntegerField(default=-1)
-    options = JSONField()
-
-    uilib = models.CharField(max_length=100)
-    uiwidget = models.CharField(max_length=100)
-    uioptions = JSONField()
-    
-    objects = InheritanceManager()
-    
-    def __unicode__(self):
-        return self.title
-
-    def widgettype(self):
-        return 'rvbd_%s.%s' % (self.uilib, self.uiwidget)
-
-    def get_uioptions(self):
-        return json.dumps(self.uioptions)
-
-    def get_option(self, option, default=None):
-        if option in self.options:
-            return self.options[option]
-        else:
-            return default
-
-    def poll(self, ts):
-        job = self.datatable.poll(ts)
-
-        if not job.done():
-            # job not yet done, return an empty data structure
-            logger.debug("widget.poll: Not done yet, %d%% complete" % job.progress)
-            resp = job.json()
-        elif job.status == Job.ERROR:
-            resp = job.json()
-        else:
-            import report.uilib
-            widget_func = report.uilib.__dict__[self.uilib].__dict__[self.uiwidget]
-            if self.rows > 0:
-                tabledata = job.data()[:self.rows]
-            else:
-                tabledata = job.data()
-            try:
-                data = widget_func(self, tabledata)
-                resp = job.json(data)
-                logger.debug("widget.poll: Job complete")
-            except:
-                resp = job.json()
-                resp['status'] = Job.ERROR
-                resp['message'] = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-                traceback.print_exc()
-            job.delete()
-            
-        resp['message'] = cgi.escape(resp['message'])
-        return HttpResponse(json.dumps(resp))
-    
-def Widget_poll(request, report_id, widget_id):
-    try:
-        ts = request.GET['ts']
-        ts = 1
-        widget = Widget.objects.get(id=widget_id)
-        return widget.poll(ts)
-    except:
-        traceback.print_exc()
-        return HttpResponse("Internal Error")
-
-class Axes:
-    def __init__(self, definition):
-        self.definition = definition
-
-    def getaxis(self, colname):
-        if self.definition is not None:
-            for n,v in self.definition.items():
-                if ('columns' in v) and (colname in v['columns']):
-                    return int(n)
-        return 0
-
-    def position(self, axis):
-        axis = str(axis)
-        if ((self.definition is not None) and 
-            (axis in self.definition) and ('position' in self.definition[axis])):
-            return self.definition[axis]['position']
-        return 'left'
-

@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from report.models import *
+from apps.datasource.models import *
 from django.contrib import admin
 
 '''

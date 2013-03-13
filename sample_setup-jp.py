@@ -12,7 +12,7 @@ import sys, os
 import pickle
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from report.models import *
+from apps.report.models import *
 
 def make_data(widget, data):
     fname = "widget_data_%d_%d.cache" % (widget.report.id, widget.id)

@@ -5,10 +5,12 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import threading
 
-from report.models import *
+from apps.datasource.models import *
+
 import rvbd.profiler
-from rvbd.profiler.filters import TimeFilter, TrafficFilter
+from rvbd.profiler.filters import TimeFilter
 
 # Used by DeviceManger to create a Profiler instance
 def DeviceManager_new(*args, **kwargs):
@@ -55,8 +57,7 @@ class DataTable_Query:
                            groupby=profiler.groupbys[datatable.options['groupby']],
                            columns=columns,
                            timefilter=TimeFilter.parse_range("last %d m" % datatable.duration),
-                           trafficexpr=TrafficFilter(datatable.filterexpr),
-                           resolution=datatable.resolution,
+                           resolution="%dmin" % (int(datatable.resolution / 60)),
                            sort_col=sortcol,
                            sync=False
                            )
