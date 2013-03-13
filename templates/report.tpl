@@ -14,13 +14,12 @@
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="screen"/>
     <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="print"/>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
-    <link href="{{ STATIC_URL }}css/showLoading.css" rel="stylesheet"/>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-latest.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.showLoading.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/yui3/yui/yui-min.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/widgets.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-widgets.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
 
     <script type="text/javascript">

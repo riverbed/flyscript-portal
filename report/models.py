@@ -53,7 +53,7 @@ class DataTable(models.Model):
     source = models.CharField(max_length=200)    # source module name
     filterexpr = models.TextField(blank=True)
     duration = models.IntegerField()             # length of query in minutes
-    resolution = models.IntegerField(default=60) # resolution of graph in seconds
+    resolution = models.CharField(max_length=30, default="1min") # resolution of graph in seconds
     sortcol = models.ForeignKey('DataColumn', null=True, related_name='DataColumn')
     rows = models.IntegerField(default=-1)
 

@@ -8,7 +8,7 @@
 
 from report.models import *
 import rvbd.profiler
-from rvbd.profiler.filters import TimeFilter
+from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
 # Used by DeviceManger to create a Profiler instance
 def DeviceManager_new(*args, **kwargs):
@@ -55,7 +55,8 @@ class DataTable_Query:
                            groupby=profiler.groupbys[datatable.options['groupby']],
                            columns=columns,
                            timefilter=TimeFilter.parse_range("last %d m" % datatable.duration),
-                           resolution="%dmin" % (int(datatable.resolution / 60)),
+                           trafficexpr=TrafficFilter(datatable.filterexpr),
+                           resolution=datatable.resolution,
                            sort_col=sortcol,
                            sync=False
                            )

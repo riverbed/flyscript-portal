@@ -9,19 +9,39 @@
 
 @media print
 {
-    div{
-        page-break-inside: avoid;
+  div 
+  {
+    page-break-inside: avoid;
     }
 }
 
-.span1, .span2, .span3, .span6, .span12 { 
-    border: solid 1px black;
-    margin-bottom: 10px;                                          
- }
+.span1, .span2, .span3, .span6, .span12 
+{
+  border: solid 1px black;
+  margin-bottom: 10px;                                          
+  }
 
-@media (min-width: 980px) {
-  body {
+@media (min-width: 980px) 
+{
+  body 
+  {
     padding-top: 60px;
     padding-bottom: 42px;
-  }
+    }
 }
+
+.loading-indicator
+ {
+   height: 80px;
+   width: 80px;
+   background: url( '../images/loading.gif' );
+   background-repeat: no-repeat;
+   background-position: center center;
+   }
+
+.loading-indicator-overlay 
+{
+  background-color: #FFFFFF;
+  opacity: 0.6;
+  filter: alpha(opacity = 60);
+  }
