@@ -41,11 +41,11 @@ class Table_Query:
             columns = []
 
             for tc in TableColumn.objects.filter(table=table).select_related():
-                columns.append(tc.column.sourcename)
+                columns.append(tc.column.source_name)
                 
             sortcol=None
             if table.sortcol is not None:
-                sortcol=table.sortcol.sourcename
+                sortcol=table.sortcol.source_name
 
             if 'realm' in table.options:
                 realm = table.options['realm']
