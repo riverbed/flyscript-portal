@@ -10,7 +10,7 @@ import threading
 from apps.datasource.models import *
 
 import rvbd.profiler
-from rvbd.profiler.filters import TimeFilter
+from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
 # Used by DeviceManger to create a Profiler instance
 def DeviceManager_new(*args, **kwargs):
@@ -57,6 +57,7 @@ class Table_Query:
                            groupby=profiler.groupbys[table.options['groupby']],
                            columns=columns,
                            timefilter=TimeFilter.parse_range("last %d m" % table.duration),
+                           trafficexpr = TrafficFilter(table.filterexpr),
                            resolution="%dmin" % (int(table.resolution / 60)),
                            sort_col=sortcol,
                            sync=False

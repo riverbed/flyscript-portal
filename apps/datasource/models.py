@@ -54,6 +54,7 @@ class Device(models.Model):
 # Table
 #
 class Table(models.Model):
+    name = models.CharField(max_length=200)
     source = models.CharField(max_length=200)    # source module name
     filterexpr = models.TextField(blank=True)
     duration = models.IntegerField()             # length of query in minutes
@@ -95,13 +96,15 @@ class Table(models.Model):
         return job
 
     def add_columns(self, colnames, sortcol=None):
+        i=1
         for colname in colnames:
             try:
                 col = Column.objects.get(source=self.source, name=colname)
             except:
                 ValueError("Failed to find a column '%s' associated with source '%s'" % (colname, self.source))
                 
-            tc = TableColumn(table=self, column=col)
+            tc = TableColumn(table=self, column=col, position=i)
+            i = i + 1
             tc.save()
             if sortcol == colname:
                 self.sortcol = col
@@ -111,7 +114,7 @@ class Table(models.Model):
         return str(self.id)
 
     def get_columns(self):
-        return Column.objects.filter(id__in = [tc.column.id for tc in TableColumn.objects.filter(table=self).select_related()])
+        return [tc.column for tc in TableColumn.objects.filter(table=self).order_by('position').select_related()]
 
 class Column(models.Model):
 
@@ -127,6 +130,7 @@ class Column(models.Model):
 class TableColumn(models.Model):
     table = models.ForeignKey(Table)
     column = models.ForeignKey(Column)
+    position = models.IntegerField()
     
 #
 # Job

@@ -12,7 +12,7 @@ def TableWidget(widget, data):
     qcols = []
     columns = []
 
-    for wc in widget.table.get_columns():
+    for wc in widget.table().get_columns():
         qcols.append(wc.name)
         column = {'key': wc.name, 'label': wc.label, "sortable": True}
         if wc.datatype == 'bytes':
@@ -42,10 +42,10 @@ def TableWidget(widget, data):
     return data
 
 def PieWidget(widget, data):
-    columns = widget.table.get_columns()
+    columns = widget.table().get_columns()
 
-    catcol = columns.get(name=widget.get_option('key'))
-    col = columns.get(name=widget.get_option('value'))
+    catcol = [c for c in columns if c.name == widget.get_option('key')][0]
+    col = [c for c in columns if c.name == widget.get_option('value')][0]
 
     qcols = [catcol.name]
     qcols.append(col.name)
@@ -89,7 +89,7 @@ def TimeSeriesWidget(widget, data):
                         "labelFormat": "%l:%M:%S %p",
                         "styles" : { "label": { "rotation": -60 }}}}
 
-    for wc in widget.table.get_columns():
+    for wc in widget.table().get_columns():
         if wc.name == 'time':
             continue
         
@@ -141,7 +141,7 @@ def TimeSeriesWidget(widget, data):
 
         rows.append(row)
 
-    for wc in widget.table.get_columns():
+    for wc in widget.table().get_columns():
         wc_axis = w_axes.getaxis(wc.name)
         axis_name = 'axis'+str(wc_axis)
         n = NiceScale(minval[wc_axis], maxval[wc_axis])
@@ -168,12 +168,10 @@ def TimeSeriesWidget(widget, data):
 
 
 def BarWidget(widget, data):
-    columns = widget.table.get_columns()
+    columns = widget.table().get_columns()
 
-    catcol = columns.get(name=widget.get_option('key'))
-    cols = []
-    for v in widget.get_option('values'):
-        cols.append(columns.get(name=widget.get_option('key')))
+    catcol = [c for c in columns if c.name == widget.get_option('key')][0]
+    cols = [c for c in columns if c.name in widget.get_option('values')]
 
     w_axes = Axes(widget.get_option('axes', None))
 

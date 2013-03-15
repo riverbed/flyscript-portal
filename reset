@@ -10,7 +10,7 @@
 killall -9 Python
 rm project.db
 rm job*.data
-rm datatable*.cache
+rm table*.cache
 rm log.txt
 python manage.py syncdb
 python sample_setup.py

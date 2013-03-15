@@ -17,6 +17,7 @@ urlpatterns = patterns('',
     #url(r'^$', 'report.views.root'),
     url(r'^report/', include('apps.report.urls')),
     url(r'^data/', include('apps.datasource.urls')),
+    url(r'^geolocation/', include('apps.geolocation.urls')),
 
     # Examples:
     # url(r'^$', 'flybox.views.home', name='home'),

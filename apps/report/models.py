@@ -42,8 +42,8 @@ class Report(models.Model):
         return self.title
 
 class Widget(models.Model):
+    tables = models.ManyToManyField(Table)
     report = models.ForeignKey(Report)
-    table = models.ForeignKey(Table)
     title = models.CharField(max_length=100)
     row = models.IntegerField()
     col = models.IntegerField()
@@ -72,8 +72,11 @@ class Widget(models.Model):
         else:
             return default
 
+    def table(self, i=0):
+        return self.tables.all()[i]
+    
     def poll(self, ts):
-        job = self.table.poll(ts)
+        job = self.table().poll(ts)
 
         if not job.done():
             # job not yet done, return an empty data structure
@@ -102,7 +105,6 @@ class Widget(models.Model):
         resp['message'] = cgi.escape(resp['message'])
         return HttpResponse(json.dumps(resp))
     
-
 class Axes:
     def __init__(self, definition):
         self.definition = definition

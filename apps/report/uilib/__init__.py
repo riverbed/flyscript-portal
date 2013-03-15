@@ -5,5 +5,5 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-
 import yui3
+import google_maps
