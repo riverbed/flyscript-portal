@@ -90,7 +90,7 @@ rvbd_nets = (
     subnet('10.100.0.0', '255.255.0.0', 42.394083, -71.14244, 'Cambridge'),
     subnet('10.37.0.0', '255.255.0.0', 40.089596, -88.240256, 'Illinois'),
     subnet('10.65.0.0', '255.255.0.0', 48.153203, 11.680355, 'Munich'),
-    subnet('10.36.0.0.', '255.255.0.0', 40.750151,-73.992823, 'New York City'),
+    subnet('10.36.0.0', '255.255.0.0', 40.750151,-73.992823, 'New York City'),
     subnet('10.72.0.0', '255.255.0.0', 1.303913,103.835392, 'Singapore'),
     subnet('10.63.0.0', '255.255.0.0', 51.418305,-0.765181, 'Bracknell'),
     subnet('10.17.44.0', '255.255.252.0', 38.998767,-76.894276, 'Greenbelt'),
@@ -98,9 +98,15 @@ rvbd_nets = (
     subnet('10.2.8.0', '255.255.252.0',  37.388777,-122.038182, 'Sunnyvale Lab'),
 )
 
-geolite_dat = os.path.expanduser('/tmp/GeoLiteCity.dat')
-gi = pygeoip.GeoIP(geolite_dat, pygeoip.MEMORY_CACHE)
-gi_lock = threading.Lock()
+try:
+    geolite_dat = os.path.expanduser('/tmp/GeoLiteCity.dat')
+    gi = pygeoip.GeoIP(geolite_dat, pygeoip.MEMORY_CACHE)
+    gi_lock = threading.Lock()
+except IOError:
+    # need to install GeoLiteCity
+    print 'Geo database not found at /tmp/GeoLiteCity.dat'
+    print 'Downloads may be found here: http://dev.maxmind.com/geoip/geolite#Downloads-5'
+    print 'GeoIP support will be disabled without this file.'
 
 def geoip(addr, custom_nets=rvbd_nets):
     

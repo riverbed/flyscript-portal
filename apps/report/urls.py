@@ -13,9 +13,9 @@ from apps.report.models import Job
 for j in Job.objects.all():
     j.delete()
 
-urlpatterns = patterns(
-    '',
-
-    url(r'^(?P<report_id>[0-9]+)$', 'apps.report.views.main'),
-    url(r'^(?P<report_id>[0-9]+)/widget/(?P<widget_id>[0-9]+)$', 'apps.report.views.poll'),
-    )
+urlpatterns = patterns('apps.report.views',
+    url(r'^(?P<report_id>[0-9]+)$', 'main'),
+    (r'^(?P<report_id>[0-9]+)/configure$', 'configure'),
+    (r'^(?P<report_id>[0-9]+)/configure/(?P<widget_id>[0-9]+)$', 'configure'),
+    url(r'^(?P<report_id>[0-9]+)/widget/(?P<widget_id>[0-9]+)$', 'poll'),
+)

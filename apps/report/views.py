@@ -17,11 +17,13 @@ from time import sleep
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
+from django.shortcuts import render_to_response
 from django.conf import settings
 
 from rvbd.common import UserAuth
 
-from apps.report.models import *
+from apps.report.models import Report, Widget
+from apps.report.forms import ReportDetailForm, WidgetDetailForm
 
 import logging
 logger = logging.getLogger('report')
@@ -71,3 +73,40 @@ def poll(request, report_id, widget_id):
     except:
         traceback.print_exc()
         return HttpResponse("Internal Error")
+
+
+def configure(request, report_id, widget_id=None):
+    try:
+        reports = Report.objects.all()
+        report = Report.objects.get(pk=int(report_id))
+        if widget_id:
+            widget = Widget.objects.get(pk=widget_id)
+    except:
+        raise Http404
+
+    if request.method == 'POST':
+        if widget_id is None:
+            # updating report name
+            form = ReportDetailForm(request.POST, instance=report)
+            if form.is_valid():
+                form.save()
+        else:
+            form = WidgetDetailForm(request.POST, instance=widget)
+            if form.is_valid():
+                form.save()
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    else:
+        report_form = ReportDetailForm(instance=report)
+
+        widget_forms = []
+        for w in Widget.objects.filter(report=report).order_by('row','col'):
+            widget_forms.append((w.id, WidgetDetailForm(instance=w)))
+
+        return render_to_response('configure.html',
+                                  {'reports': reports,
+                                   'report': report,
+                                   'reportForm': report_form,
+                                   'widgetForms': widget_forms},
+                                  context_instance=RequestContext(request))
+
+
