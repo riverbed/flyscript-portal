@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
 # This software is licensed under the terms and conditions of the 
@@ -5,6 +7,9 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-
-import profiler
-import shark
+rm project.db
+rm job*.data
+rm datatable*.cache
+rm log.txt
+python manage.py syncdb --noinput
+python sample_setup.py

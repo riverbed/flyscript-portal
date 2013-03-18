@@ -7,21 +7,11 @@
 
 
 # Create your views here.
-import os
 import json
-import random
-import threading
-import datetime
-import pickle
-from time import sleep
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.template import RequestContext, loader
-from django.conf import settings
+from django.http import HttpResponse
 
-from rvbd.common import UserAuth
-
-from apps.datasource.models import *
+from apps.datasource.models import Table
 
 import logging
 logger = logging.getLogger('datasource')

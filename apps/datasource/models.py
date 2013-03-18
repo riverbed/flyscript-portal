@@ -6,27 +6,17 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from time import sleep
-import math
-import datetime
-import shutil
-import os
-import pickle
 import sys
+import pickle
+import logging
 import traceback
 import threading
-import json
-import cgi
 
 from django.db import models
-from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.exceptions import ObjectDoesNotExist
 
-from model_utils.managers import InheritanceManager
-from libs.fields import PickledObjectField
 from jsonfield import JSONField
 
-import logging
 logger = logging.getLogger('datasource')
 
 from apps.datasource.devicemanager import DeviceManager
@@ -121,6 +111,8 @@ class Column(models.Model):
     source = models.CharField(max_length=200)
     name = models.CharField(max_length=30)
     source_name = models.CharField(max_length=30)
+    source_key = models.BooleanField(default=False)
+    source_operation = models.CharField(max_length=10, default='')
     label = models.CharField(max_length=30)
     datatype = models.CharField(max_length=50, default='')
 

@@ -5,12 +5,21 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
+import time
+import pickle
+import logging
 import threading
-
-from apps.datasource.models import *
 
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
+
+from apps.datasource.models import TableColumn
+from apps.datasource.devicemanager import DeviceManager
+
+
+logger = logging.getLogger('datasource')
+lock = threading.Lock()
 
 # Used by DeviceManger to create a Profiler instance
 def DeviceManager_new(*args, **kwargs):
@@ -66,7 +75,7 @@ class Table_Query:
             done = False
             logger.info("Waiting for report to complete")
             while not done:
-                sleep(0.5)
+                time.sleep(0.5)
                 with lock:
                     s = report.status()
 

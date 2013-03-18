@@ -24,6 +24,14 @@ profiler = Device(name="tm08-1",
                   password="admin")
 profiler.save()
 
+shark = Device(name="vdorothy10",
+                  sourcetype="shark",
+                  host="vdorothy10.lab.nbttech.com",
+                  port=443,
+                  username="admin",
+                  password="admin")
+shark.save()
+
 Column(source='profiler', name='time', source_name='time', label = 'Time', datatype='time').save()
 Column(source='profiler', name='host_ip', source_name='host_ip', label = 'Host IP').save()
 Column(source='profiler', name='avg_bytes', source_name='avg_bytes', label = 'Avg Bytes/s', datatype='bytes').save()
@@ -38,6 +46,12 @@ Column(source='profiler', name='network_rtt', source_name='network_rtt', label =
 Column(source='profiler', name='server_delay', source_name='server_delay', label = 'Srv Delay (ms)', datatype='metric').save()
 Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util')
 Column(source='profiler', name='interface_dns', source_name='interface_dns', label = 'Interface').save()
+
+Column(source='shark', name='ip_src', source_name='ip.src', source_key='True', label='Source IP').save()
+Column(source='shark', name='ip_dst', source_name='ip.dst', source_key='True', label='Destination IP').save()
+Column(source='shark', name='generic_packets', source_name='generic.packets', label='Packets').save()
+Column(source='shark', name='http_duration', source_name='http.duration', source_operation='max', label='Max Duration').save()
+Column(source='shark', name='http_duration', source_name='http.duration', source_operation='avg', label='Avg Duration').save()
 
 Location(name="Seattle", address="10.99.11.0", mask="255.255.255.0", latitude=47.6097, longitude=-122.3331).save()
 Location(name="LosAngeles", address="10.99.12.0", mask="255.255.255.0", latitude=34.0522, longitude=-118.2428).save()
@@ -202,6 +216,27 @@ wid = Widget(report=overall, title="Interfaces (last day)",
 wid.save()
 wid.tables.add(dt)
 
+#
+# Define a Shark Report and Table
+#
+shark_report = Report(title="Shark Report")
+shark_report.save()
+
+dt = Table(name='Packet Traffic', source='shark', duration=10,
+           options={'device': shark.id,
+                    'view': 'jobs/Flyscript-tests-job',
+                    })
+dt.save()
+dt.add_columns(['ip_src',
+               'ip_dst',
+               'generic_packets',
+               ])
+
+wid = Widget(report=shark_report, title="Shark Packets (last 10 minutes)",
+             row=5, col=1, rows=1000, colwidth=12,
+             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+wid.save()
+wid.tables.add(dt)
 
 #
 translations = { "Avg Bytes/s": "平均バイト数/秒",

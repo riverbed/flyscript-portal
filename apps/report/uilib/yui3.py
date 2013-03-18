@@ -5,8 +5,10 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import math
 
-from apps.report.models import *
+from libs.nicescale import NiceScale
+from apps.report.models import Axes
 
 def TableWidget(widget, data):
     qcols = []

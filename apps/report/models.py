@@ -6,29 +6,20 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from time import sleep
-import math
-import datetime
-import shutil
-import os
-import pickle
 import sys
-import traceback
-import threading
-import json
 import cgi
-from model_utils.managers import InheritanceManager
-from libs.fields import PickledObjectField
-from django.db import models
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.core.exceptions import ObjectDoesNotExist
-from libs.nicescale import NiceScale
-from jsonfield import JSONField
-
+import json
 import logging
-logger = logging.getLogger('report')
+import traceback
 
-from apps.datasource.models import *
+from django.db import models
+from django.http import HttpResponse
+
+from model_utils.managers import InheritanceManager
+from jsonfield import JSONField
+from apps.datasource.models import Table, Job
+
+logger = logging.getLogger('report')
 
 #######################################################################
 #

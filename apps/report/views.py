@@ -8,19 +8,11 @@
 
 # Create your views here.
 import os
-import json
-import random
-import threading
-import datetime
-import pickle
-from time import sleep
+import traceback
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
-from django.conf import settings
-
-from rvbd.common import UserAuth
 
 from apps.report.models import Report, Widget
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
