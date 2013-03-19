@@ -28,22 +28,8 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-google-maps.js"></script>
 
+    {% block header %}{% endblock %}
 
-    <script type="text/javascript">
-      $(document).ready( function() {
-          {% autoescape off %} 
-          {% for row in rows %}
-            {% for w in row %}
-            new {{ w.widgettype }} 
-              ( "/report/{{ report.id }}/widget/{{ w.id }}", 
-                "chart_{{ w.id }}", 
-                {{ w.get_uioptions|default:"{}" }} );
-            {% endfor %}
-          {% endfor %}
-          {% endautoescape %} 
-        });
-
-    </script>
 
   </head>
   <body>

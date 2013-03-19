@@ -26,7 +26,7 @@ function resize() {
 
 window.onresize = resize;
 
-function Widget (dataurl, divid, options) {
+function Widget (dataurl, divid, options, ts) {
     this.dataurl = dataurl
     this.divid = divid;
     this.options = options;
@@ -41,8 +41,9 @@ function Widget (dataurl, divid, options) {
     $('#' + divid).showLoading();
     $('#' + divid).setLoading(0);
     var self = this;
-    setTimeout(function() { self.getData($.now()) }, 0);
+    setTimeout(function() { self.getData(ts || $.now()) }, 0);
 }
+
 
 Widget.prototype.getData = function(ts) {
     var self = this;

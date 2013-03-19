@@ -44,7 +44,7 @@ Column(source='profiler', name='total_bytes_rtx_pct', source_name='total_bytes_r
 Column(source='profiler', name='response_time', source_name='response_time', label = 'Resp Time (ms)', datatype='metric').save()
 Column(source='profiler', name='network_rtt', source_name='network_rtt', label = 'Network RTT (ms)', datatype='metric').save()
 Column(source='profiler', name='server_delay', source_name='server_delay', label = 'Srv Delay (ms)', datatype='metric').save()
-Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util')
+Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util').save()
 Column(source='profiler', name='interface_dns', source_name='interface_dns', label = 'Interface').save()
 
 Column(source='shark', name='ip_src', source_name='ip.src', source_key='True', label='Source IP').save()
@@ -199,7 +199,7 @@ dt = Table(name='ifs_day', source='profiler', duration=(60*24), resolution=60,
                     'groupby': 'interface'})
 dt.save()
 dt.add_columns(['interface_dns',
-                'avg_utl',
+                'avg_util',
                 'avg_bytes',
                 'avg_pkts',
                 'avg_conns_active',

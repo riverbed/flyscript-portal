@@ -91,7 +91,7 @@ class Table(models.Model):
             try:
                 col = Column.objects.get(source=self.source, name=colname)
             except:
-                ValueError("Failed to find a column '%s' associated with source '%s'" % (colname, self.source))
+                raise ValueError("Failed to find a column '%s' associated with source '%s'" % (colname, self.source))
                 
             tc = TableColumn(table=self, column=col, position=i)
             i = i + 1

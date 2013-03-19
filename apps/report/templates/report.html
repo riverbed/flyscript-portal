@@ -8,14 +8,87 @@
 -->
 {% extends "base.html" %}
 
+{% block header %}
+    <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
+    <script type="text/javascript">
+      $(document).ready( function() {
+          run();
+        });
+
+    </script>
+
+    <script type="text/javascript">
+      var global = this;
+      function renderReport(widgets) {
+          var report=$("#report");
+          report.html(widgets);
+          var rownum=0;
+          var row;
+          widgets.forEach(function(w) {
+              if (rownum != w.row) {
+                  row = $('<div />',
+                          { class: 'row-fluid' }).appendTo(report); 
+                  rownum = w.row;
+              }
+              var wid = "chart_" + w.widgetid;
+              $('<div />',
+                { id: wid,
+                  class: 'blackbox span' + w.colwidth })
+                  .text ("Widget " + w.widgetid)
+                  .appendTo(row);
+              new global[w.widgettype[0]][w.widgettype[1]] ( w.callback, wid, w.options, w.ts );
+          });
+      }
+      
+      function run() {
+          $.ajax({
+              dataType:"json",
+              url: "/report/{{ report.id }}/def",
+              data: { ts: $("#ts").val() },
+              success: function(data, textStatus) { renderReport(data); },
+              error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
+          });
+      }
+    </script>
+{% endblock %}
+
 {% block content %}
+    <!--
     <div class="container-fluid">
-      {% for row in rows %}
-        <div class="row">
-          {% for w in row %}
-            <div class="span{{ w.colwidth }}" id="chart_{{ w.id }}">{{ w.title }}</div>
-          {% endfor %}
-        </div>
-      {% endfor %}
+      <div class="row-fluid">
+        <div class="span12 widget-box">
+          <div class="widget-title">
+            <a data-toggle="collapse" data-target="#criteria" href="#">
+              Criteria
+            </a>
+          </div>
+          <div class="collapse" id="criteria">
+            <div class="widget-content">
+              {% csrf_token %}
+              <table>
+                <tr><td>Time:</td><td><input type="text" name="ts"></td></tr>
+              </table>
+              <button onclick="run()">Run</button>
+            </div> 
+          </div> 
+        </div> 
+      </div> 
+    </div>
+    -->
+  
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span12 widget-box">
+          <div class="widget-title">
+            <a data-toggle="collapse" data-target="#report-container" href="#">
+              Report
+            </a>
+          </div>
+          <div class="collapse in" id="report-container">
+            <div class="widget-content collapse in" id="report">
+            </div> <!-- criteria -->
+          </div> <!-- criteria -->
+        </div> <!-- span12 -->
+      </div> <!-- row-fluid -->
     </div>
 {% endblock %}

@@ -15,7 +15,7 @@
     }
 }
 
-.span1, .span2, .span3, .span6, .span12 
+.blackbox
 {
   border: solid 1px black;
   margin-bottom: 10px;                                          
@@ -44,4 +44,24 @@
   background-color: #FFFFFF;
   opacity: 0.6;
   filter: alpha(opacity = 60);
+  }
+
+.widget-box
+{ 
+  border: solid 1px black;
+  margin-bottom: 10px;
+ }
+
+.widget-title
+{  
+  font-size: 105%;
+  font-weight: bold;
+  padding: 5px; 
+  background-color: #F0F0F0;
+}
+
+.widget-content
+{ 
+  border-top: solid 1px black;
+  padding: 5px; 
   }

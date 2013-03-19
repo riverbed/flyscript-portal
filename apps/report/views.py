@@ -9,6 +9,13 @@
 # Create your views here.
 import os
 import traceback
+import json
+import random
+import threading
+import datetime
+import pickle
+import pprint
+from time import sleep
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
@@ -28,6 +35,9 @@ def root(request):
 
     return HttpResponseRedirect('/report/%d' % reports[0].id)
 
+#
+# Main handler for /report/{id}
+#
 def main(request, report_id):
     try:
         report = Report.objects.get(pk=int(report_id))
@@ -48,13 +58,58 @@ def main(request, report_id):
             rows.append([])
         rows[i].append(Widget.objects.get_subclass(id=w.id))
 
+    try:
+        ts = request.POST['ts']
+    except:
+        ts = 1
+
+    print "TIME: %s" % ts
+        
     c = RequestContext( request,
                         { 'report' : report,
                           'reports' : reports,
-                          'rows': rows} )
+                          'rows': rows,
+                          'ts': ts
+                          } )
     
     return HttpResponse(t.render(c))
 
+def report_structure(request, report_id):
+    try:
+        report = Report.objects.get(pk=int(report_id))
+    except:
+        raise Http404
+
+    lastrow = -1
+    i = -1
+    rows = []
+    for w in Widget.objects.filter(report=report).order_by('row','col'):
+        if w.row != lastrow:
+            i = i+1
+            lastrow = w.row
+            rows.append([])
+        rows[i].append(Widget.objects.get_subclass(id=w.id))
+
+    if 'ts' in request.GET:
+        ts = request.GET['ts']
+    elif 'ts' in request.POST:
+        ts = request.POST['ts']
+    else:
+        ts = 1
+
+    definition = []
+    for row in rows:
+        for w in row:
+            widget_def = { "widgettype": w.widgettype().split("."),
+                           "callback": "/report/%d/widget/%d" % (report.id, w.id),
+                           "options": json.loads(w.get_uioptions()),
+                           "widgetid": w.id,
+                           "row": w.row,
+                           "colwidth": w.colwidth,
+                           "ts" : ts }
+            definition.append(widget_def)
+
+    return HttpResponse(json.dumps(definition))
 
 def poll(request, report_id, widget_id):
     try:
@@ -65,7 +120,6 @@ def poll(request, report_id, widget_id):
     except:
         traceback.print_exc()
         return HttpResponse("Internal Error")
-
 
 def configure(request, report_id, widget_id=None):
     try:

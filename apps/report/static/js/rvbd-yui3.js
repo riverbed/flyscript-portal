@@ -9,8 +9,8 @@
 
 var rvbd_yui3 = {};
 
-rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options) {
-    Widget.apply(this, [dataurl, divid, options]);
+rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options, ts) {
+    Widget.apply(this, [dataurl, divid, options, ts]);
 }
 
 rvbd_yui3.TimeSeriesWidget.prototype = inherit(Widget.prototype)
