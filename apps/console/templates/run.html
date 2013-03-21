@@ -13,8 +13,10 @@
     <script type="text/javascript">
         $(document).ready( function() {
             $('#loading').hide();
+            $('#results-container').hide();
             $('#execute').submit( function(event) {
                 $('#loading').show()
+                $('#results-container').show();
                 event.preventDefault();
 
                 $("#results").html('Processing ...');
@@ -28,7 +30,7 @@
                 client.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
                 client.send(serializedData);
                 client.onprogress = function(){
-                    console.log(this.responseText);
+                    //console.log(this.responseText);
                     $("#results").html(this.responseText);
                 }
                 client.onloadend = function(){
@@ -52,9 +54,11 @@
             </div>
         </div>
     </div>
-    <div class="container-fluid">
+    <div id="results-container" class="container-fluid">
         <div class="row-fluid">
-            <div id="results" class="span8 offset1 table-bordered"></div>
+            <pre>
+                <div id="results" class="pre-scrollable" style="max-height:500px"></div>
+            </pre>
         </div>
     </div>
     <P></P>

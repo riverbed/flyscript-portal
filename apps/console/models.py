@@ -18,6 +18,7 @@ class Parameter(models.Model):
     """
     index = models.IntegerField()
     name = models.CharField(max_length=50)
+
     default = models.CharField(max_length=200)
 
 

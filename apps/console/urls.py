@@ -12,7 +12,7 @@ from django.views.generic import DetailView, ListView
 urlpatterns = patterns(
     'apps.console.views',
     url(r'^$', 'main'),
-    url(r'^reload$', 'reload'),
+    url(r'^reload$', 'refresh'),
     url(r'(?P<script_id>[0-9]+)$', 'detail'),
     url(r'(?P<script_id>[0-9]+)/run$', 'run'),
     url(r'(?P<script_id>[0-9]+)/status$', 'status'),

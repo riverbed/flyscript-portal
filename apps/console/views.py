@@ -28,7 +28,7 @@ def main(request):
                               context_instance=RequestContext(request))
 
 
-def reload(request):
+def refresh(request):
     """ Re-populate Utility store based on contents of scripts folder
     """
     utilities = [u.name for u in Utility.objects.all()]
@@ -87,15 +87,33 @@ def execute(utility, form):
         print line
         # force browser buffer to flush with spaces
         #yield '{} <br> {}'.format(line, ' '*1024)
-        yield '{} <br> {}'.format(line, ' ')
+        yield '{}'.format(line)
         line = p.stdout.readline()
     p.stdout.close()
 
-    for line in iter(p.stderr.readline, ''):
-        res.append(line)
-        yield line + "<br>"
+    errflag = False
+    err = p.stderr.readline()
+    while err:
+        res.append(err)
+        yield '{} <br> {}'.format(err, ' ')
+        errflag = True
+        err = p.stderr.readline()
     p.stderr.close()
+
     Results(utility=utility, results=res).save()
+
+    if errflag:
+        # rerun with help command to show additional info
+        p = subprocess.Popen([path, '--help'], stdout=subprocess.PIPE)
+        line = p.stdout.readline()
+        while line:
+            res.append(line)
+            print line
+            # force browser buffer to flush with spaces
+            #yield '{} <br> {}'.format(line, ' '*1024)
+            yield '{}'.format(line)
+            line = p.stdout.readline()
+        p.stdout.close()
 
 def status(request, script_id):
     """ Return status of installed script
