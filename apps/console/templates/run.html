@@ -1,0 +1,64 @@
+<!--
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").
+# This software is distributed "AS IS" as set forth in the License.
+-->
+{% extends "console-base.html" %}
+
+{% block header %}
+    <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
+    <script type="text/javascript">
+        $(document).ready( function() {
+            $('#loading').hide();
+            $('#execute').submit( function(event) {
+                $('#loading').show()
+                event.preventDefault();
+
+                $("#results").html('Processing ...');
+                console.log('Processing ...');
+
+                var $form = $(this);
+                var serializedData = $form.serialize();
+
+                var client = new XMLHttpRequest();
+                client.open('post', "/console/{{ utility.id }}/run", true);
+                client.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                client.send(serializedData);
+                client.onprogress = function(){
+                    console.log(this.responseText);
+                    $("#results").html(this.responseText);
+                }
+                client.onloadend = function(){
+                    $('#loading').hide()
+                }
+            })
+        })
+    </script>
+
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span">
+                <form id="execute" class="form-inline">
+                    {% csrf_token %}
+                    {{ executeForm }}
+                    <input id="runit" type="submit" value="Run" class="btn btn-primary">
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div id="results" class="span8 offset1 table-bordered"></div>
+        </div>
+    </div>
+    <P></P>
+    <div id="loading" align="center">
+            <img src="/static/images/loading.gif" align="center" />
+    </div>
+{% endblock %}

@@ -194,27 +194,27 @@ wid.tables.add(dt)
 #
 # Define a Table
 #
-dt = Table(name='ifs_day', source='profiler', duration=(60*24), resolution=60,
-           options={'device': profiler.id,
-                    'groupby': 'interface'})
-dt.save()
-dt.add_columns(['interface_dns',
-                'avg_util',
-                'avg_bytes',
-                'avg_pkts',
-                'avg_conns_active',
-                'total_conns_rsts_pct',
-                'total_bytes_rtx_pct',
-                'response_time',
-                'network_rtt',
-                'server_delay'],
-               'avg_util')
-
-wid = Widget(report=overall, title="Interfaces (last day)", 
-             row=4, col=1, rows=1000, colwidth=12,
-             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
-wid.save()
-wid.tables.add(dt)
+#dt = Table(name='ifs_day', source='profiler', duration=(60*24), resolution=60,
+#           options={'device': profiler.id,
+#                    'groupby': 'interface'})
+#dt.save()
+#dt.add_columns(['interface_dns',
+#                'avg_util',
+#                'avg_bytes',
+#                'avg_pkts',
+#                'avg_conns_active',
+#                'total_conns_rsts_pct',
+#                'total_bytes_rtx_pct',
+#                'response_time',
+#                'network_rtt',
+#                'server_delay'],
+#               'avg_util')
+#
+#wid = Widget(report=overall, title="Interfaces (last day)", 
+#             row=4, col=1, rows=1000, colwidth=12,
+#             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+#wid.save()
+#wid.tables.add(dt)
 
 #
 # Define a Shark Report and Table

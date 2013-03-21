@@ -192,7 +192,7 @@ class AsyncWorker(threading.Thread):
             logger.debug("Saving job %s as COMPLETE" % self.job.handle)
             job.progress = 100
             job.status = job.COMPLETE
-        except :
+        except:
             traceback.print_exc()
             logger.error("Job %s failed: %s" % (self.job.handle, str(sys.exc_info())))
             job.status = job.ERROR

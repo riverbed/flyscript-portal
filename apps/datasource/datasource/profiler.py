@@ -20,20 +20,23 @@ from apps.datasource.devicemanager import DeviceManager
 
 logger = logging.getLogger('datasource')
 lock = threading.Lock()
+#import mock
+#lock = mock.MagicMock()
 
-# Used by DeviceManger to create a Profiler instance
 def DeviceManager_new(*args, **kwargs):
+    # Used by DeviceManger to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
 
-# Used by Table to actually run a query
+
 class Table_Query:
+    # Used by Table to actually run a query
     def __init__(self, table, job):
         self.table = table
         self.job = job
         
     def run(self):
         cachefile = "table-%s.cache" % self.table.id
-        if os.path.exists(cachefile):
+        if False and os.path.exists(cachefile):
             # XXXCJ This cachefile hack is temporary and is only good for testing to avoid actually
             # having to run the report every single time.
             logger.debug("Using cache file")

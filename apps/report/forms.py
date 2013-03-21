@@ -24,5 +24,6 @@ class WidgetDetailForm(forms.ModelForm):
 
     class Meta:
         model = Widget
+        exclude = ['tables', 'uilib', 'uiwidget', 'uioptions']
 
 

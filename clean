@@ -9,7 +9,7 @@
 
 rm project.db
 rm job*.data
-rm datatable*.cache
+rm table*.cache
 rm log.txt
 python manage.py syncdb --noinput
 python sample_setup.py
