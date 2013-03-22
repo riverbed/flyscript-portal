@@ -13,7 +13,6 @@ from apps.datasource.models import Device
 from apps.datasource.devicemanager import DeviceManager
 
 
-
 class Utility(models.Model):
     """ Base class for tools and scripts installed locally
     """
@@ -32,7 +31,7 @@ class Parameter(models.Model):
         -u USERNAME             -u          No      USERNAME
         --username=USERNAME     --username  No      USERNAME
         --password=PASSWORD     NOT SUPPORTED
-        <argument>              <argument>  No      None
+        <argument>              <argument>  Yes      None
 
     So arguments are handled the same as Flag options, though
     ordering is important.
@@ -45,7 +44,22 @@ class Parameter(models.Model):
     name = models.CharField(max_length=100)
     flag = models.BooleanField(default=False)
     value = models.CharField(max_length=100, blank=True)
-    default = models.CharField(max_length=200, blank=True)
+
+    def construct(self):
+        """ Return string representation
+        """
+        # XXX add some better processing to this
+        if self.flag:
+            return self.name
+        elif self.name.startswith('-'):
+            token = ' '
+            if self.name.startswith('--'):
+                token = '='
+
+            if self.value:
+                return '%s%s%s' % (self.name, token, self.value)
+        else:
+            return self.name
 
 
 class Results(models.Model):

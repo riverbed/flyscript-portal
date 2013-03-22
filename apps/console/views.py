@@ -11,10 +11,10 @@ import subprocess
 from django.http import Http404, HttpResponse, StreamingHttpResponse, HttpResponseRedirect
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
-from django.forms.models import modelformset_factory, inlineformset_factory
 
 from apps.console.models import Utility, Results, Parameter, Job
-from apps.console.forms import ExecuteForm, UtilityDetailForm, ParameterDetailForm
+from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringForm,
+                                ParameterDetailForm, get_utility_formset)
 
 from project.settings import PROJECT_ROOT
 
@@ -51,10 +51,7 @@ def refresh(request):
 def detail(request, script_id):
     """ Return details about specific script
     """
-    ParameterFormSet = inlineformset_factory(Utility,
-                                             Parameter,
-                                             form=ParameterDetailForm,
-                                             extra=1)
+    ParameterFormSet = get_utility_formset()
 
     try:
         utility = Utility.objects.get(pk=script_id)
@@ -68,14 +65,6 @@ def detail(request, script_id):
             form.save()
             formset.save()
             return HttpResponseRedirect(request.META['HTTP_REFERER'])
-        else:
-            from IPython import embed; embed()
-
-
-            #if form.is_valid():
-            #    raise
-            #if formset.is_valid():
-            #    raise
     else:
         form = UtilityDetailForm(instance=utility)
         formset = ParameterFormSet(instance=utility)
@@ -87,6 +76,12 @@ def detail(request, script_id):
                               context_instance=RequestContext(request))
 
 
+def get_param_string(utility):
+    # probably best placed in a manager class
+    params = Parameter.objects.filter(utility=utility)
+    return ' '.join(p.construct() for p in params)
+
+
 def run(request, script_id):
     """ Execute utility script
     """
@@ -95,22 +90,27 @@ def run(request, script_id):
     except:
         raise Http404
 
+    parameter_string = get_param_string(utility)
+
     if request.method == 'POST':
-        form = ExecuteForm(request.POST, instance=utility)
+        form = UtilityDetailForm(request.POST, instance=utility)
+        parameters = ParameterStringForm(request.POST)
         if form.is_valid():
-            return StreamingHttpResponse(execute(utility, form))
+            return StreamingHttpResponse(execute(utility, form, parameters))
         else:
             return HttpResponse('Error Processing Form.')
     else:
-        form = ExecuteForm(instance=utility)
+        form = UtilityDetailForm(instance=utility)
+        parameters = ParameterStringForm(initial={'parameter_string': parameter_string})
 
     return render_to_response('run.html',
                               {'utility': utility,
-                               'executeForm': form},
+                               'form': form,
+                               'parameters': parameters},
                               context_instance=RequestContext(request))
 
 
-def execute(utility, form):
+def execute(utility, form, params_form):
     """ Executes the given utility, streaming stdout in the response
 
         Any report on stderr will prompt an attempt to generate
@@ -118,9 +118,18 @@ def execute(utility, form):
     """
     res = []
     path = os.path.join(SCRIPT_DIR, utility.name)
-    print path
+    print 'path: %s' % path
 
-    p = subprocess.Popen(path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if params_form.is_valid():
+        parameters = params_form.cleaned_data['parameter_string']
+        cmd = '%s %s' % (path, parameters)
+        cmd = cmd.split()
+    else:
+        cmd = path
+
+    print 'cmd: %s' % cmd
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     line = p.stdout.readline()
     while line:
         res.append(line)

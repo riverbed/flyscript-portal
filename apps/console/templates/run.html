@@ -13,6 +13,8 @@
         $(document).ready( function() {
             $('#loading').hide();
             $('#results-container').hide();
+
+            // send execute request and load data as it streams in
             $('#execute').submit( function(event) {
                 $('#loading').show()
                 $('#results-container').show();
@@ -39,19 +41,36 @@
         })
     </script>
 
+    <style type="text/css">
+        .parameter-form {
+            margin-left:5px;
+            padding-right:15px;
+            margin-bottom:5px;
+            width: 100%;
+        }
+    </style>
+
 {% endblock %}
 
 {% block content %}
     <div class="container-fluid">
-        <div class="row-fluid">
-            <div class="span">
-                <form id="execute" class="form-inline">
+        <form id="execute" class="form-inline">
+            <div class="span10 offset1">
+                <div class="span">
                     {% csrf_token %}
-                    {{ executeForm }}
+                    {{ form }}
                     <input id="runit" type="submit" value="Run" class="btn btn-primary">
-                </form>
+                </div>
             </div>
-        </div>
+            <div class="span10 offset1 widget-box">
+                <div class="widget-title">
+                    <a data-toggle="collapse" data-target="#parameter-list" href="#">Parameters</a>
+                </div>
+                <div id="parameter-list" class="collapse">
+                    {{ parameters }}
+                </div>
+            </div>
+        </form>
     </div>
     <div id="results-container" class="container-fluid">
         <div class="row-fluid">

@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django import forms
+from django.forms.models import inlineformset_factory
 
 from apps.console.models import Utility, Results, Parameter, Job
 
@@ -33,3 +34,17 @@ class ParameterDetailForm(forms.ModelForm):
 
     class Meta:
         model = Parameter
+
+
+class ParameterStringForm(forms.Form):
+    parameter_string = forms.CharField(max_length=200,
+                                       widget=forms.TextInput(attrs={'class':'parameter-form'}),
+                                       )
+
+
+
+def get_utility_formset(extra=1):
+    return inlineformset_factory(Utility,
+                                 Parameter,
+                                 form=ParameterDetailForm,
+                                 extra=extra)
