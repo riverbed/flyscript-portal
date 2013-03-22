@@ -1,0 +1,75 @@
+<!--
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").
+# This software is distributed "AS IS" as set forth in the License.
+-->
+{% extends "console-base.html" %}
+
+{% block header %}
+    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.formset.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#id_parameters_table tbody tr').formset({
+                // For inline formsets, be sure to set the prefix, as the default prefix
+                // ('form') isn't correct.
+                // Django appears to generate the prefix from the lowercase plural
+                // name of the related model, with camel-case converted to underscores.
+                prefix: 'parameter_set'
+            })
+        })
+    </script>
+    <style type="text/css">
+        .delete-row {
+            margin-left:5px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row-fluid"><h2>{{ utility.name }}</h2></div>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span">
+                <form method="post" action="/console/{{ utility.id }}/detail">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    {{ form.errors }}
+                    <h6>Parameters</h6>
+                    <table id="id_parameters_table">
+                        <thead>
+                            <tr>
+                                <th scope="col">index</th>
+                                <th scope="col">name</th>
+                                <th scope="col">value</th>
+                                <th scope="col">flag</th>
+                                <th scope="col">default</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {%  for form in formset.forms %}
+                            <tr id="{{ form.prefix }}-row">
+                                {{ form.id }}
+                                <td>{{ form.index }}</td>
+                                <td>
+                                    {%  if form.instance.pk %}{{ form.DELETE }}{% endif %}
+                                    {{ form.name }}
+                                </td>
+                                <td>{{ form.value }}</td>
+                                <td>{{ form.flag }}</td>
+                                <td>{{ form.default }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p>
+                        {{ formset.management_form }}
+                        <input type="submit" value="Update">
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

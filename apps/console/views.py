@@ -11,9 +11,10 @@ import subprocess
 from django.http import Http404, HttpResponse, StreamingHttpResponse, HttpResponseRedirect
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
+from django.forms.models import modelformset_factory, inlineformset_factory
 
 from apps.console.models import Utility, Results, Parameter, Job
-from apps.console.forms import ExecuteForm
+from apps.console.forms import ExecuteForm, UtilityDetailForm, ParameterDetailForm
 
 from project.settings import PROJECT_ROOT
 
@@ -31,8 +32,15 @@ def main(request):
 def refresh(request):
     """ Re-populate Utility store based on contents of scripts folder
     """
+    ignores = [lambda x:x.endswith('.swp'),
+               lambda x:x.endswith('~'),
+               lambda x:x.endswith('.bak'),
+               lambda x:x.startswith('.'),
+               ]
+
     utilities = [u.name for u in Utility.objects.all()]
     files = os.listdir(SCRIPT_DIR)
+    files = [x for x in files if not any(c(x) for c in ignores)]
 
     for f in files:
         if f not in utilities:
@@ -43,12 +51,39 @@ def refresh(request):
 def detail(request, script_id):
     """ Return details about specific script
     """
+    ParameterFormSet = inlineformset_factory(Utility,
+                                             Parameter,
+                                             form=ParameterDetailForm,
+                                             extra=1)
+
     try:
         utility = Utility.objects.get(pk=script_id)
     except:
         raise Http404
+
+    if request.method == 'POST':
+        form = UtilityDetailForm(request.POST, instance=utility)
+        formset = ParameterFormSet(request.POST, instance=utility)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            return HttpResponseRedirect(request.META['HTTP_REFERER'])
+        else:
+            from IPython import embed; embed()
+
+
+            #if form.is_valid():
+            #    raise
+            #if formset.is_valid():
+            #    raise
+    else:
+        form = UtilityDetailForm(instance=utility)
+        formset = ParameterFormSet(instance=utility)
+
     return render_to_response('detail.html',
-                              {'utility': utility},
+                              {'utility': utility,
+                               'form': form,
+                               'formset': formset},
                               context_instance=RequestContext(request))
 
 
@@ -76,6 +111,11 @@ def run(request, script_id):
 
 
 def execute(utility, form):
+    """ Executes the given utility, streaming stdout in the response
+
+        Any report on stderr will prompt an attempt to generate
+        help data for further information.
+    """
     res = []
     path = os.path.join(SCRIPT_DIR, utility.name)
     print path
@@ -115,13 +155,9 @@ def execute(utility, form):
             line = p.stdout.readline()
         p.stdout.close()
 
+
 def status(request, script_id):
     """ Return status of installed script
     """
     pass
 
-
-def upload(request):
-    """ Upload new scripts
-    """
-    pass

@@ -13,8 +13,7 @@ urlpatterns = patterns(
     'apps.console.views',
     url(r'^$', 'main'),
     url(r'^reload$', 'refresh'),
-    url(r'(?P<script_id>[0-9]+)$', 'detail'),
+    url(r'(?P<script_id>[0-9]+)/detail$', 'detail'),
     url(r'(?P<script_id>[0-9]+)/run$', 'run'),
     url(r'(?P<script_id>[0-9]+)/status$', 'status'),
-    url(r'^upload$', 'upload'),
 )

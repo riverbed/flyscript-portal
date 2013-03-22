@@ -16,4 +16,20 @@ class ExecuteForm(forms.ModelForm):
 
     class Meta:
         model = Utility
+        exclude = ['parameters']
 
+
+class UtilityDetailForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(UtilityDetailForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = Utility
+
+
+class ParameterDetailForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(ParameterDetailForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = Parameter
