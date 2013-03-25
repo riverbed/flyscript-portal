@@ -44,9 +44,17 @@
     <style type="text/css">
         .parameter-form {
             margin-left:5px;
-            padding-right:15px;
+            margin-right:15px;
             margin-bottom:5px;
-            width: 100%;
+            width: 95%;
+        }
+
+        .form-inline input {
+            margin-bottom: 5px;
+        }
+
+        .top-buffer {
+            margin-top: 20px;
         }
     </style>
 
@@ -55,19 +63,23 @@
 {% block content %}
     <div class="container-fluid">
         <form id="execute" class="form-inline">
-            <div class="span10 offset1">
-                <div class="span">
-                    {% csrf_token %}
-                    {{ form }}
-                    <input id="runit" type="submit" value="Run" class="btn btn-primary">
+            <div class="row-fluid">
+                <div class="span10 offset1">
+                    <div class="span">
+                        {% csrf_token %}
+                        {{ form }}
+                        <input id="runit" type="submit" value="Run" class="btn btn-primary">
+                    </div>
                 </div>
             </div>
-            <div class="span10 offset1 widget-box">
-                <div class="widget-title">
-                    <a data-toggle="collapse" data-target="#parameter-list" href="#">Parameters</a>
-                </div>
-                <div id="parameter-list" class="collapse">
-                    {{ parameters }}
+            <div class="row-fluid top-buffer">
+                <div class="span10 offset1 widget-box">
+                    <div class="widget-title">
+                        <a data-toggle="collapse" data-target="#parameter-list" href="#">Parameters</a>
+                    </div>
+                    <div id="parameter-list" class="collapse">
+                        {{ parameters.parameter_string }}
+                    </div>
                 </div>
             </div>
         </form>

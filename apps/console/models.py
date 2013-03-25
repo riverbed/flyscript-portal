@@ -20,6 +20,12 @@ class Utility(models.Model):
     path = models.CharField(max_length=200)
 
 
+class ParameterManager(models.Manager):
+    def get_param_string(self, utility):
+        params = Parameter.objects.filter(utility=utility)
+        return ' '.join(p.construct() for p in params)
+
+
 class Parameter(models.Model):
     """ Key/Value pairs for inputs to Utilities
 
@@ -44,6 +50,8 @@ class Parameter(models.Model):
     name = models.CharField(max_length=100)
     flag = models.BooleanField(default=False)
     value = models.CharField(max_length=100, blank=True)
+
+    objects = ParameterManager()
 
     def construct(self):
         """ Return string representation

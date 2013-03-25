@@ -12,7 +12,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.formset.js"></script>
     <script type="text/javascript">
         $(function() {
-            $('#id_parameters_table tbody tr').formset({
+            $('#id_parameters_table').find('tbody tr').formset({
                 // For inline formsets, be sure to set the prefix, as the default prefix
                 // ('form') isn't correct.
                 // Django appears to generate the prefix from the lowercase plural
@@ -22,20 +22,31 @@
         })
     </script>
     <style type="text/css">
+        .add-row {
+            padding-left:18px;
+            background:"{{ STATIC_URL }}images/add.png" no-repeat left center;
+        }
         .delete-row {
-            margin-left:5px;
+            float:right;
+            display:block;
+            margin:10px 0 0 5px;
+            text-indent:-6000px;
+            background:"{{ STATIC_URL }}images/delete.png" no-repeat left center;
+            width:16px;
+            height:16px;
         }
     </style>
+
 {% endblock %}
 
 {% block content %}
-    <div class="row-fluid"><h2>{{ utility.name }}</h2></div>
     <div class="container-fluid">
+    <div class="row-fluid"><h2>{{ utility.name }}</h2></div>
         <div class="row-fluid">
             <div class="span">
                 <form method="post" action="/console/{{ utility.id }}/detail">
                     {% csrf_token %}
-                    {{ form.as_p }}
+                    {{ form }}
                     {{ form.errors }}
                     <h6>Parameters</h6>
                     <table id="id_parameters_table">

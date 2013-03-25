@@ -20,6 +20,7 @@ from project.settings import PROJECT_ROOT
 
 SCRIPT_DIR = os.path.join(PROJECT_ROOT,'apps', 'console', 'scripts')
 
+
 def main(request):
     """ Provide list of installed scripts
     """
@@ -76,12 +77,6 @@ def detail(request, script_id):
                               context_instance=RequestContext(request))
 
 
-def get_param_string(utility):
-    # probably best placed in a manager class
-    params = Parameter.objects.filter(utility=utility)
-    return ' '.join(p.construct() for p in params)
-
-
 def run(request, script_id):
     """ Execute utility script
     """
@@ -90,7 +85,7 @@ def run(request, script_id):
     except:
         raise Http404
 
-    parameter_string = get_param_string(utility)
+    parameter_string = Parameter.objects.get_param_string(utility)
 
     if request.method == 'POST':
         form = UtilityDetailForm(request.POST, instance=utility)
