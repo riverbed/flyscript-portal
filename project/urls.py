@@ -8,13 +8,14 @@
 
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    #url(r'^$', 'report.views.root'),
+    url(r'^$', lambda x: HttpResponseRedirect('/report')),
     url(r'^report/', include('apps.report.urls')),
     url(r'^data/', include('apps.datasource.urls')),
     url(r'^geolocation/', include('apps.geolocation.urls')),

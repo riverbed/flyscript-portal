@@ -6,7 +6,7 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 -->
-{% extends "console-base.html" %}
+{% extends "base.html" %}
 
 {% block header %}
     <script type="text/javascript">
@@ -93,6 +93,6 @@
     </div>
     <P></P>
     <div id="loading" align="center">
-            <img src="/static/images/loading.gif" align="center" />
+            <img src="{{ STATIC_URL }}showLoading/images/loading.gif" align="center" />
     </div>
 {% endblock %}

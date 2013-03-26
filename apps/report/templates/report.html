@@ -38,7 +38,7 @@
               url: "/report/{{ report.id }}/def",
               data: { ts: $("#ts").val() },
               success: function(data, textStatus) { renderReport(data); },
-              error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
+              error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
           });
       }
     </script>
@@ -46,6 +46,7 @@
 
 {% block content %}
     <div class="container-fluid">
+      <div class="row-fluid"><h2>{{ report.title }}</h2></div>
       <div class="row-fluid">
         <div class="span12 widget-box">
           <div class="widget-title">

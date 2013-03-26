@@ -10,7 +10,7 @@
     <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
 
     <script type="text/javascript" src="http://yui.yahooapis.com/3.8.1/build/yui/yui-min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}showloading/js/jquery.showLoading.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}showLoading/js/jquery.showLoading.js"></script>
 
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
 
@@ -34,16 +34,34 @@
           <a class="brand" href="http://www.riverbed.com"> Riverbed </a>
           <div class="nav-collapse collapse">
             <ul class="nav">
+              {% if reports %}
               <li class="dropdown active">
-                <a href="#" class="dropdown-toggle" data-toggle="dropdown"> {{ report.title }} <b class="caret"></b></a>
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Reports <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   {% for d in reports %}
                   <li><a href="/report/{{ d.id }}">{{ d.title }}</a></li>
                   {% endfor %}
                 </ul>
               </li>
+              {% else %}
+                <li class="active">
+                    <a href="/report"> Reports </a>
+                </li>
+              {% endif %}
+
+              <!--
               <li class="active">
                 <a href="/report/{{ report.id }}/configure">Configure</a>
+              </li>
+              -->
+              {% block extra_nav_left %}
+              {% endblock %}
+            </ul>
+            <ul class="nav pull-right">
+              {% block extra_nav_right %}
+              {% endblock %}
+              <li class="active pull-right">
+                  <a href="/console">Console</a>
               </li>
             </ul>
           </div><!--/.nav-collapse -->

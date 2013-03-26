@@ -6,7 +6,7 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 -->
-{% extends "console-base.html" %}
+{% extends "base.html" %}
 
 {% block header %}
     <script type="text/javascript" src="{{ STATIC_URL }}jquery.formset/src/jquery.formset.min.js"></script>
@@ -24,14 +24,14 @@
     <style type="text/css">
         .add-row {
             padding-left:18px;
-            background:"{{ STATIC_URL }}images/add.png" no-repeat left center;
+            background:url("{{ STATIC_URL }}images/add.png") no-repeat left center;
         }
         .delete-row {
             float:right;
             display:block;
             margin:10px 0 0 5px;
             text-indent:-6000px;
-            background:"{{ STATIC_URL }}images/delete.png" no-repeat left center;
+            background:url("{{ STATIC_URL }}images/delete.png") no-repeat left center;
             width:16px;
             height:16px;
         }

@@ -38,9 +38,12 @@ def root(request):
 #
 # Main handler for /report/{id}
 #
-def main(request, report_id):
+def main(request, report_id=None):
     try:
-        report = Report.objects.get(pk=int(report_id))
+        if report_id is None:
+            report = Report.objects.all()[0]
+        else:
+            report = Report.objects.get(pk=int(report_id))
     except:
         raise Http404
 

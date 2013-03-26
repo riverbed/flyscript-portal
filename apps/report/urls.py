@@ -15,6 +15,7 @@ for j in Job.objects.all():
 
 urlpatterns = patterns(
     'apps.report.views',
+    url(r'^$', 'main'),
     url(r'^(?P<report_id>[0-9]+)$', 'main'),
     url(r'^(?P<report_id>[0-9]+)/configure$', 'configure'),
     url(r'^(?P<report_id>[0-9]+)/def$', 'report_structure'),

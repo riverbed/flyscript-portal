@@ -18,6 +18,12 @@ from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringF
 
 from project.settings import PROJECT_ROOT
 
+# monkeypatch to address Python Bug #14308: http://bugs.python.org/issue14308
+# affects subprocess function in execute method
+#
+import threading
+threading._DummyThread._Thread__stop = lambda x: 42
+
 SCRIPT_DIR = os.path.join(PROJECT_ROOT,'apps', 'console', 'scripts')
 
 
@@ -113,7 +119,7 @@ def execute(utility, form, params_form):
     """
     res = []
     path = os.path.join(SCRIPT_DIR, utility.name)
-    print 'path: %s' % path
+    #print 'path: %s' % path
 
     if params_form.is_valid():
         parameters = params_form.cleaned_data['parameter_string']
@@ -122,7 +128,7 @@ def execute(utility, form, params_form):
     else:
         cmd = path
 
-    print 'cmd: %s' % cmd
+    #print 'cmd: %s' % cmd
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     line = p.stdout.readline()
