@@ -60,15 +60,18 @@
             <ul class="nav pull-right">
               {% block extra_nav_right %}
               {% endblock %}
-              <li class="active pull-right">
-                  <a href="/console">Console</a>
-              </li>
+              {% if  django_version|slice:"1" >= 5 %}
+                  <li class="active pull-right">
+                      <a href="/console">Console</a>
+                  </li>
+              {% endif %}
             </ul>
           </div><!--/.nav-collapse -->
         </div>
       </div>
     </div>
     {% block content %}{% endblock %}
+  {{ django_version }}
   </body>
 </html>
 

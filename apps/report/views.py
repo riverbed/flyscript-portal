@@ -5,17 +5,8 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-
-# Create your views here.
-import os
-import traceback
 import json
-import random
-import threading
-import datetime
-import pickle
-import pprint
-from time import sleep
+import traceback
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
@@ -40,15 +31,14 @@ def root(request):
 #
 def main(request, report_id=None):
     try:
+        reports = Report.objects.all()
         if report_id is None:
-            report = Report.objects.all()[0]
+            report = reports[0]
         else:
             report = Report.objects.get(pk=int(report_id))
     except:
         raise Http404
 
-    reports = Report.objects.all()
-    
     t = loader.get_template('report.html')
 
     lastrow = -1
