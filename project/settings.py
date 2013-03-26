@@ -75,12 +75,19 @@ STATIC_ROOT = ''
 # Example: "http://media.lawrence.com/static/"
 STATIC_URL = '/static/'
 
+JQUERY_URL = 'http://code.jquery.com/jquery-1.9.1.min.js'
+#JQUERY_URL = '/static/js/jquery-1.9.1.min.js'
+
+YUI3_URL = 'http://yui.yahooapis.com/3.8.1/build/yui/yui-min.js'
+#YUI3_URL = '/static/js/yui3/yui/yui-min.js'
+
 # Additional locations of static files
 STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(PROJECT_ROOT, 'static'),
+    os.path.join(PROJECT_ROOT, 'thirdparty'),
 )
 
 # List of finder classes that know how to find static files in
