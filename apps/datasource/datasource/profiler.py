@@ -36,7 +36,7 @@ class Table_Query:
         
     def run(self):
         cachefile = "table-%s.cache" % self.table.id
-        if False and os.path.exists(cachefile):
+        if os.path.exists(cachefile):
             # XXXCJ This cachefile hack is temporary and is only good for testing to avoid actually
             # having to run the report every single time.
             logger.debug("Using cache file")

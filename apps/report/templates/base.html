@@ -1,28 +1,18 @@
-<!--
-# Copyright (c) 2013 Riverbed Technology, Inc.
-#
-# This software is licensed under the terms and conditions of the
-# MIT License set forth at:
-#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").
-# This software is distributed "AS IS" as set forth in the License.
--->
 
 <!DOCTYPE html>
 <html>
   <head>
     <title> {{ report.title }}</title>
-    <link href="{{ STATIC_URL }}css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
+    <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery-1.9.1.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
 
     <script type="text/javascript" src="http://yui.yahooapis.com/3.8.1/build/yui/yui-min.js"></script>
-    <!-- Static versions to avoid downloading from the net
-        <script type="text/javascript" src="{{ STATIC_URL }}js/yui3/yui/yui-min.js"></script> 
-    -->
-    <script type="text/javascript" src="{{ STATIC_URL }}js/jquery.showLoading.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}showloading/js/jquery.showLoading.js"></script>
+
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-widgets.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>

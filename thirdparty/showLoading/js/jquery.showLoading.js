@@ -6,6 +6,8 @@
  * 
  * Dual licensed under the MIT and GPL licenses.
  *
+ * Modified by <cwhite@riverbed.com> to support displaying
+ * percentage complete.
  */
 
 jQuery.fn.setLoading = function(pct) {

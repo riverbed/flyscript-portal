@@ -56,7 +56,7 @@ def MapWidget(widget, data):
                 'fillColor': '#FF0000',
                 'fillOpacity': 0.35,
                 'center': [geo.latitude, geo.longitude],
-                'size': 10*(val / valmax),
+                'size': 15*(val / valmax),
                 'label': geo.name
                 };
             
