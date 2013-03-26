@@ -65,3 +65,6 @@
   border-top: solid 1px black;
   padding: 5px; 
   }
+
+#map_canvas img { max-width: none; }
+

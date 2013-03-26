@@ -113,8 +113,12 @@ def report_structure(request, report_id):
 
 def poll(request, report_id, widget_id):
     try:
-        ts = request.GET['ts']
-        ts = 1
+        if 'ts' in request.GET:
+            ts = request.GET['ts']
+        elif 'ts' in request.POST:
+            ts = request.POST['ts']
+        else:
+            ts = 1
         widget = Widget.objects.get(id=widget_id)
         return widget.poll(ts)
     except:

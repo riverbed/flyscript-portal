@@ -21,7 +21,7 @@ rvbd_google_maps.MapWidget.prototype.render = function(data)
     $('#' + this.divid).
         html('').
         append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
-        append('<div id="' + contentid + '"></div>')
+        append('<div id="' + contentid + '" class="mapcanvas"></div>')
 
     var div= $('#' + this.divid)
     
@@ -50,10 +50,17 @@ rvbd_google_maps.MapWidget.prototype.render = function(data)
         c.center = new google.maps.LatLng(c.center[0], c.center[1]);
         bounds.extend(c.center)
 
+        var valstr = (c.formatter ?
+                      Widget.prototype[c.formatter].call(undefined, c.value, 2) :
+                      c.value) + c.units;
+
+        var title = c.title + '\n' + valstr;
+
+
         var marker = new google.maps.Marker({
             position: c.center,
             map: map,
-            title: c.label,
+            title: title,
             icon: { path: google.maps.SymbolPath.CIRCLE,
                     scale: c.size,
                     strokeColor: "red",

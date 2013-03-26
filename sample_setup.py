@@ -34,7 +34,7 @@ shark.save()
 
 Column(source='profiler', name='time', source_name='time', label = 'Time', datatype='time').save()
 Column(source='profiler', name='host_ip', source_name='host_ip', label = 'Host IP').save()
-Column(source='profiler', name='avg_bytes', source_name='avg_bytes', label = 'Avg Bytes/s', datatype='bytes').save()
+Column(source='profiler', name='avg_bytes', source_name='avg_bytes', label = 'Avg Bytes/s', units = 'B/s', datatype='bytes').save()
 Column(source='profiler', name='group_name', source_name='group_name', label = 'Group Name').save()
 Column(source='profiler', name='total_bytes', source_name='total_bytes', label = 'Total Bytes', datatype='bytes').save()
 Column(source='profiler', name='avg_pkts', source_name='avg_pkts', label = 'Avg Pkts/s', datatype='metric').save()

@@ -115,7 +115,8 @@ class Column(models.Model):
     source_operation = models.CharField(max_length=10, default='')
     label = models.CharField(max_length=30)
     datatype = models.CharField(max_length=50, default='')
-
+    units = models.CharField(max_length=50, default='')
+    
     def __unicode__(self):
         return self.label
 

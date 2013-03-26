@@ -36,6 +36,14 @@ def MapWidget(widget, data):
     geolookup = None
     print "geolookup: %s" % geolookup
 
+
+    if col.datatype == 'bytes':
+        formatter = 'formatBytes'
+    elif wc.datatype == 'metric':
+        formatter = 'formatMetric'
+    else:
+        formatter = None;
+
     for reportrow in data:
         key = reportrow[0]
         val = reportrow[1]
@@ -57,7 +65,10 @@ def MapWidget(widget, data):
                 'fillOpacity': 0.35,
                 'center': [geo.latitude, geo.longitude],
                 'size': 15*(val / valmax),
-                'label': geo.name
+                'title': geo.name,
+                'value': val,
+                'units': col.units,
+                'formatter': formatter
                 };
             
             circles.append(circle)
