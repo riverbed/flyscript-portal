@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
+import os
 import sys
 import pickle
 import logging
@@ -14,6 +15,8 @@ import threading
 
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+
+from project import settings
 
 from jsonfield import JSONField
 
@@ -154,7 +157,7 @@ class Job(models.Model):
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
-        return self.handle + ".data"
+        return os.path.join(settings.DATA_CACHE, self.handle + ".data")
     
     def data(self):
         f = open(self.datafile(), "r")

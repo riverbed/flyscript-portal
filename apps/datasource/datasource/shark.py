@@ -20,7 +20,7 @@ from rvbd.common.exceptions import RvbdHTTPException
 
 from apps.datasource.models import TableColumn
 from apps.datasource.devicemanager import DeviceManager
-
+from project import settings
 
 logger = logging.getLogger('datasource')
 lock = threading.Lock()
@@ -38,7 +38,7 @@ class Table_Query:
         self.job = job
         
     def run(self):
-        cachefile = "table-%s.cache" % self.table.id
+        cachefile = os.path.join(settings.DATA_CACHE, "table-%s.cache" % self.table.id)
         if os.path.exists(cachefile):
             # XXXCJ This cachefile hack is temporary and is only good for testing to avoid actually
             # having to run the report every single time.

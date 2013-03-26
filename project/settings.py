@@ -14,6 +14,7 @@ TEMPLATE_DEBUG = DEBUG
 
 PORTAL_ROOT = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(PORTAL_ROOT)
+DATA_CACHE = os.path.join(PROJECT_ROOT, 'datacache')
 
 
 ADMINS = (
