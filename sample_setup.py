@@ -47,11 +47,15 @@ Column(source='profiler', name='server_delay', source_name='server_delay', label
 Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util').save()
 Column(source='profiler', name='interface_dns', source_name='interface_dns', label = 'Interface').save()
 
+Column(source='shark', name='time', source_name='generic.absolute_time', source_key='True', label='Time (ns)').save()
 Column(source='shark', name='ip_src', source_name='ip.src', source_key='True', label='Source IP').save()
 Column(source='shark', name='ip_dst', source_name='ip.dst', source_key='True', label='Destination IP').save()
 Column(source='shark', name='generic_packets', source_name='generic.packets', label='Packets').save()
-Column(source='shark', name='http_duration', source_name='http.duration', source_operation='max', label='Max Duration').save()
-Column(source='shark', name='http_duration', source_name='http.duration', source_operation='avg', label='Avg Duration').save()
+Column(source='shark', name='http_duration_max', source_name='http.duration', source_operation='max', label='Max Duration').save()
+Column(source='shark', name='http_duration_avg', source_name='http.duration', source_operation='avg', label='Avg Duration').save()
+Column(source='shark', name='max_microburst_1ms_packets', source_name='generic.max_microburst_1ms.packets', source_operation='max', label='Microburst 1ms Pkts').save()
+Column(source='shark', name='max_microburst_10ms_packets', source_name='generic.max_microburst_10ms.packets',source_operation='max',  label='Microburst 10ms Pkts').save()
+Column(source='shark', name='max_microburst_100ms_packets', source_name='generic.max_microburst_100ms.packets',source_operation='max',  label='Microburst 100ms Pkts').save()
 
 Location(name="Seattle", address="10.99.11.0", mask="255.255.255.0", latitude=47.6097, longitude=-122.3331).save()
 Location(name="LosAngeles", address="10.99.12.0", mask="255.255.255.0", latitude=34.0522, longitude=-118.2428).save()
@@ -233,11 +237,51 @@ dt.add_columns(['ip_src',
                ])
 
 wid = Widget(report=shark_report, title="Shark Packets (last 10 minutes)",
-             row=5, col=1, rows=1000, colwidth=12,
+             row=1, col=1, rows=1000, colwidth=12,
              uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
 
+
+dt = Table(name='MicroburstsTotal', source='shark', duration=10,
+           options={'device': shark.id,
+                    'aggregated': True,
+                    'view': 'jobs/Flyscript-tests-job',
+                    })
+dt.save()
+dt.add_columns([
+     'max_microburst_1ms_packets',
+     'max_microburst_10ms_packets',
+     'max_microburst_100ms_packets',
+])
+wid = Widget(report=shark_report, title="Microburst Packets (last 10 minutes)",
+             row=2, col=1, rows=1000, colwidth=12,
+             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+wid.save()
+wid.tables.add(dt)
+
+dt = Table(name='MicroburstsTime', source='shark', duration=10,
+           options={'device': shark.id,
+                    'aggregated': False,
+                    'view': 'jobs/Flyscript-tests-job',
+           })
+
+dt.save()
+dt.add_columns([
+    'time',
+    'max_microburst_1ms_packets',
+#    'max_microburst_10ms_packets',
+#    'max_microburst_100ms_packets',
+    ])
+wid = Widget(report=shark_report, title="Microburst Packets Timeseries (last 10 minutes)",
+             row=3, col=1, rows=1000, colwidth=12,
+             options={'axes': {'0': {'title': 'pkts/ms',
+                                     'position': 'left',
+                                     'columns': ['max_microburst_1ms_packets']}
+             }},
+             uilib="yui3", uiwidget="TimeSeriesWidget", uioptions = {'minHeight': 300})
+wid.save()
+wid.tables.add(dt)
 #
 translations = { "Avg Bytes/s": "平均バイト数/秒",
                  "Overall Traffic (last hour)": "全てのトラッフィック (過去１時間以内)",

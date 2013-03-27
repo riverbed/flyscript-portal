@@ -7,6 +7,8 @@
 
 import math
 
+from rvbd.common import timeutils
+
 from libs.nicescale import NiceScale
 from apps.report.models import Axes
 
@@ -58,14 +60,18 @@ def PieWidget(widget, data):
 
     rows = []
 
-    for reportrow in data:
-        row = {}
-        for i in range(0,len(qcols)):
-            val = reportrow[i]
-            row[qcols[i]] = val
-            i = i + 1
-
-        rows.append(row)
+    if data:
+        for reportrow in data:
+            row = {}
+            for i in range(0,len(qcols)):
+                val = reportrow[i]
+                row[qcols[i]] = val
+                i = i + 1
+            rows.append(row)
+    else:
+        # create a "full" pie to show something
+        rows = [{qcols[0]: 1,
+                 qcols[1]: 1}]
 
     data = {
         "chartTitle": widget.title,
@@ -120,7 +126,13 @@ def TimeSeriesWidget(widget, data):
 
     stacked = False # XXXCJ
     for reportrow in data:
-        row = {'time': reportrow[0] * 1000}
+        t0 = reportrow[0]
+        try:
+            t = timeutils.datetime_to_microseconds(t0) / 1000
+        except AttributeError:
+            t = t0 * 1000
+
+        row = {'time': t}
         rowmin = {}
         rowmax = {}
         for i in range(1,len(qcols)):
@@ -146,12 +158,21 @@ def TimeSeriesWidget(widget, data):
     for wc in widget.table().get_columns():
         wc_axis = w_axes.getaxis(wc.name)
         axis_name = 'axis'+str(wc_axis)
-        n = NiceScale(minval[wc_axis], maxval[wc_axis])
 
-        axes[axis_name]['minimum'] = "%.10f" % n.niceMin
-        axes[axis_name]['maximum'] = "%.10f" % n.niceMax
-        axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
-        axes[axis_name]['styles'] = { 'majorUnit' : {'count' : n.numTicks } }
+        if minval and maxval:
+            n = NiceScale(minval[wc_axis], maxval[wc_axis])
+
+            axes[axis_name]['minimum'] = "%.10f" % n.niceMin
+            axes[axis_name]['maximum'] = "%.10f" % n.niceMax
+            axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
+            axes[axis_name]['styles'] = { 'majorUnit' : {'count' : n.numTicks } }
+        else:
+            # empty data which would result in keyError above
+            axes[axis_name]['minimum'] = "0"
+            axes[axis_name]['maximum'] = "1"
+            axes[axis_name]['tickExponent'] = 1
+            axes[axis_name]['styles'] = { 'majorUnit' : {'count' : 1 } }
+
         if wc.datatype == 'bytes':
             axes[axis_name]['formatter'] = 'formatBytes'
         elif wc.datatype == 'metric':
@@ -234,12 +255,21 @@ def BarWidget(widget, data):
     for wc in cols:
         wc_axis = w_axes.getaxis(wc.name)
         axis_name = 'axis'+str(wc_axis)
-        n = NiceScale(minval[wc_axis], maxval[wc_axis])
 
-        axes[axis_name]['minimum'] = "%.10f" % n.niceMin
-        axes[axis_name]['maximum'] = "%.10f" % n.niceMax
-        axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
-        axes[axis_name]['styles'] = { 'majorUnit' : {'count' : n.numTicks } }
+        if minval and maxval:
+            n = NiceScale(minval[wc_axis], maxval[wc_axis])
+
+            axes[axis_name]['minimum'] = "%.10f" % n.niceMin
+            axes[axis_name]['maximum'] = "%.10f" % n.niceMax
+            axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
+            axes[axis_name]['styles'] = { 'majorUnit' : {'count' : n.numTicks } }
+        else:
+            # empty data which would result in keyError above
+            axes[axis_name]['minimum'] = "0"
+            axes[axis_name]['maximum'] = "1"
+            axes[axis_name]['tickExponent'] = 1
+            axes[axis_name]['styles'] = { 'majorUnit' : {'count' : 1 } }
+            
 
     data = {
         "chartTitle": widget.title,

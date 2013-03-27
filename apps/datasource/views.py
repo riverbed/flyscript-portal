@@ -8,6 +8,7 @@
 
 # Create your views here.
 import json
+import datetime
 
 from django.http import HttpResponse
 
@@ -15,6 +16,7 @@ from apps.datasource.models import Table
 
 import logging
 logger = logging.getLogger('datasource')
+
 
 def poll(request, table_id):
     try:
@@ -29,9 +31,10 @@ def poll(request, table_id):
         logger.debug("poll: Not done yet, %d%% complete" % job.progress)
         resp = job.json()
     else:
-        resp = job.json(data = job.data())
+        resp = job.json(data=job.data())
         logger.debug("poll: Job complete")
         job.delete()
 
-    return HttpResponse(json.dumps(resp))
+    dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
+    return HttpResponse(json.dumps(resp, default=dthandler))
 

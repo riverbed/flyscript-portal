@@ -16,6 +16,7 @@ from rvbd.shark.types import Operation, Value, Key
 from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
+from rvbd.common import timeutils
 
 
 from apps.datasource.models import TableColumn
@@ -36,7 +37,7 @@ class Table_Query:
     def __init__(self, table, job):
         self.table = table
         self.job = job
-        
+
     def run(self):
         cachefile = os.path.join(settings.DATA_CACHE, "table-%s.cache" % self.table.id)
         if os.path.exists(cachefile):
@@ -77,7 +78,8 @@ class Table_Query:
 
             # get source type from options
             try:
-                source = path_to_class(shark, table.options['view'])
+                with lock:
+                    source = path_to_class(shark, table.options['view'])
             except RvbdHTTPException, e:
                 source = None
                 raise e
@@ -86,11 +88,7 @@ class Table_Query:
             if 'filter' in table.options:
                 filters.append(SharkFilter(table.options['filter']))
 
-            if source.is_live():
-                # time filters do not exist for live views
-                # need to create a start time
-                pass
-            else:
+            if table.duration:
                 filters.append(TimeFilter.parse_range("last %d m" % table.duration))
 
             if source is not None:
@@ -107,14 +105,17 @@ class Table_Query:
                 time.sleep(0.5)
                 with lock:
                     s = view.get_progress()
-
-                self.job.progress = s
-                self.job.save()
+                    self.job.progress = s
+                    self.job.save()
                 done = (s == 100)
 
             # Retrieve the data
+            if 'aggregated' in table.options:
+                aggregated = table.options['aggregated']
+            else:
+                aggregated = False
             with lock:
-                self.data = view.get_data()
+                self.data = view.get_data(aggregated=aggregated)
                 view.close()
 
             if table.rows > 0:

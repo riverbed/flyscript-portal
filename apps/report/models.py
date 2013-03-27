@@ -82,6 +82,7 @@ class Widget(models.Model):
                 tabledata = job.data()[:self.rows]
             else:
                 tabledata = job.data()
+
             try:
                 data = widget_func(self, tabledata)
                 resp = job.json(data)
@@ -91,6 +92,7 @@ class Widget(models.Model):
                 resp['status'] = Job.ERROR
                 resp['message'] = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
                 traceback.print_exc()
+
             job.delete()
             
         resp['message'] = cgi.escape(resp['message'])

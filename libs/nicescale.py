@@ -25,12 +25,19 @@ class NiceScale:
     def calculate(self):
         if self.forcezero or (self.minval > 0) and ((float(self.maxval - self.minval) / self.maxval) > self.zerothresh):
             self.minval = 0
-            
-        valrange = self.niceNum(self.maxval - self.minval, False)
-        self.tickSpacing = self.niceNum(float(valrange) / (self.maxticks - 1), True)
-        self.niceMin = math.floor(self.minval / self.tickSpacing) * self.tickSpacing
-        self.niceMax = math.ceil(self.maxval / self.tickSpacing) * self.tickSpacing
-        self.numTicks = 1 + round((self.niceMax - self.niceMin) / self.tickSpacing)
+
+        vrange = self.maxval - self.minval
+        if vrange == 0:
+            self.tickSpacing = 1
+            self.niceMin = 0
+            self.niceMax = 1
+            self.numTicks = 1
+        else:
+            valrange = self.niceNum(vrange, False)
+            self.tickSpacing = self.niceNum(float(valrange) / (self.maxticks - 1), True)
+            self.niceMin = math.floor(self.minval / self.tickSpacing) * self.tickSpacing
+            self.niceMax = math.ceil(self.maxval / self.tickSpacing) * self.tickSpacing
+            self.numTicks = 1 + round((self.niceMax - self.niceMin) / self.tickSpacing)
         
     #
     # Returns a "nice" number approximately equal to range Rounds
@@ -41,6 +48,9 @@ class NiceScale:
     # @return a "nice" number to be used for the data range
     
     def niceNum(self, valrange, round):
+        if valrange == 0:
+            return 0
+
         exponent = math.floor(math.log10(valrange))
         fraction = valrange / math.pow(10, exponent)
         

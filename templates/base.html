@@ -60,6 +60,7 @@
             <ul class="nav pull-right">
               {% block extra_nav_right %}
               {% endblock %}
+
               {% if  django_version|slice:"1" >= 5 %}
                   <li class="active pull-right">
                       <a href="/console">Console</a>

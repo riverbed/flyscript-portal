@@ -25,53 +25,57 @@ def MapWidget(widget, data):
     col = [c for c in columns if c.name == widget.get_option('value')][0]
 
     circles = []
-    valmin = data[0][1]
-    valmax = valmin
-    
-    for reportrow in data:
-        val = reportrow[1]
-        valmin = min(val, valmin) 
-        valmax = max(val, valmax) 
+    if data:
+        valmin = data[0][1]
+        valmax = valmin
 
-    geolookup = None
-    print "geolookup: %s" % geolookup
+        for reportrow in data:
+            val = reportrow[1]
+            valmin = min(val, valmin)
+            valmax = max(val, valmax)
+
+        geolookup = None
+        print "geolookup: %s" % geolookup
 
 
-    if col.datatype == 'bytes':
-        formatter = 'formatBytes'
-    elif wc.datatype == 'metric':
-        formatter = 'formatMetric'
-    else:
-        formatter = None;
-
-    for reportrow in data:
-        key = reportrow[0]
-        val = reportrow[1]
-
-        if widget.table().options['groupby'] == 'host_group':
-            geo = Location.objects.get(name=key)
+        if col.datatype == 'bytes':
+            formatter = 'formatBytes'
+        elif wc.datatype == 'metric':
+            formatter = 'formatMetric'
         else:
-            if geolookup == None:
-                geolookup = Lookup.instance()                
-            geo = geolookup.lookup(key)
-        
-        if geo:
-            print "geo: %s" % geo
-            circle = {
-                'strokeColor': '#FF0000',
-                'strokeOpacity': 0.8,
-                'strokeWeight': 2,
-                'fillColor': '#FF0000',
-                'fillOpacity': 0.35,
-                'center': [geo.latitude, geo.longitude],
-                'size': 15*(val / valmax),
-                'title': geo.name,
-                'value': val,
-                'units': col.units,
-                'formatter': formatter
-                };
-            
-            circles.append(circle)
+            formatter = None;
+
+        for reportrow in data:
+            key = reportrow[0]
+            val = reportrow[1]
+
+            if widget.table().options['groupby'] == 'host_group':
+                geo = Location.objects.get(name=key)
+            else:
+                if geolookup == None:
+                    geolookup = Lookup.instance()
+                geo = geolookup.lookup(key)
+
+            if geo:
+                print "geo: %s" % geo
+                circle = {
+                    'strokeColor': '#FF0000',
+                    'strokeOpacity': 0.8,
+                    'strokeWeight': 2,
+                    'fillColor': '#FF0000',
+                    'fillOpacity': 0.35,
+                    'center': [geo.latitude, geo.longitude],
+                    'size': 15*(val / valmax),
+                    'title': geo.name,
+                    'value': val,
+                    'units': col.units,
+                    'formatter': formatter
+                    };
+
+                circles.append(circle)
+    else:
+        # no data just return empty circles list
+        pass
 
     data = {
         "chartTitle": widget.title,
