@@ -6,6 +6,7 @@ widget_data*
 *.db
 *.data
 log.txt
+log-db.txt
 
 build
 dist

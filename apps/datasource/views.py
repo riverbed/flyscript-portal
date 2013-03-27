@@ -15,7 +15,7 @@ from django.http import HttpResponse
 from apps.datasource.models import Table
 
 import logging
-logger = logging.getLogger('datasource')
+logger = logging.getLogger(__name__)
 
 
 def poll(request, table_id):

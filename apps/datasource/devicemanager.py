@@ -10,7 +10,7 @@ import logging
 import threading
 
 from rvbd.common import UserAuth
-logger = logging.getLogger('report')
+logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
 

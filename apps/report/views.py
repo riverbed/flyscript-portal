@@ -16,7 +16,7 @@ from apps.report.models import Report, Widget
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
 
 import logging
-logger = logging.getLogger('report')
+logger = logging.getLogger(__name__)
 
 def root(request):
     try:

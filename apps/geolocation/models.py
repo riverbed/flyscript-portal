@@ -10,7 +10,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.exceptions import ObjectDoesNotExist
 
 import logging
-logger = logging.getLogger('geolocation')
+logger = logging.getLogger(__name__)
 
 from apps.datasource.models import *
 

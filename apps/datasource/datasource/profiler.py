@@ -18,7 +18,7 @@ from apps.datasource.models import TableColumn
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 
-logger = logging.getLogger('datasource')
+logger = logging.getLogger(__name__)
 lock = threading.Lock()
 #import mock
 #lock = mock.MagicMock()

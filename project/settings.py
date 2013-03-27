@@ -174,7 +174,10 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(process)d %(thread)d %(module)s %(message)s'
+        },
+        'standard': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -189,8 +192,14 @@ LOGGING = {
         'logfile': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'formatter': 'verbose',
+            'formatter': 'standard',
             'filename': os.path.join(PROJECT_ROOT, 'log.txt')
+        },
+        'backend-log': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'formatter': 'standard',
+            'filename': os.path.join(PROJECT_ROOT, 'log-db.txt')
         }
     },
     'loggers': {
@@ -199,6 +208,11 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'django.db.backends': {
+            'handlers': ['backend-log'],
+            'level': 'DEBUG',
+            'propagate': False,
+            },
         '': {
             'handlers': ['logfile'],
             'level': 'DEBUG',

@@ -20,7 +20,7 @@ from project import settings
 
 from jsonfield import JSONField
 
-logger = logging.getLogger('datasource')
+logger = logging.getLogger(__name__)
 
 from apps.datasource.devicemanager import DeviceManager
 

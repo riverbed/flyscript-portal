@@ -19,7 +19,7 @@ from model_utils.managers import InheritanceManager
 from jsonfield import JSONField
 from apps.datasource.models import Table, Job
 
-logger = logging.getLogger('report')
+logger = logging.getLogger(__name__)
 
 #######################################################################
 #
