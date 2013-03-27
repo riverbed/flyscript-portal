@@ -200,7 +200,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'formatter': 'standard',
             'filename': os.path.join(PROJECT_ROOT, 'log-db.txt')
-        }
+        },
     },
     'loggers': {
         'django.request': {

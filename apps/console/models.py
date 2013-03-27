@@ -18,6 +18,7 @@ class Utility(models.Model):
     """
     name = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
+    islogfile = models.BooleanField(default=False)
 
 
 class ParameterManager(models.Manager):

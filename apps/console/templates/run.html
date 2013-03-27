@@ -33,12 +33,17 @@
                 client.onprogress = function(){
                     //console.log(this.responseText);
                     $("#results").html(this.responseText);
+                    scrollBottom("#results")
                 }
                 client.onloadend = function(){
                     $('#loading').hide()
                 }
             })
         })
+        function scrollBottom(element) {
+            var height = $(element)[0].scrollHeight;
+            $(element).scrollTop(height);
+        }
     </script>
 
     <style type="text/css">
@@ -72,16 +77,18 @@
                     </div>
                 </div>
             </div>
-            <div class="row-fluid top-buffer">
-                <div class="span10 offset1 widget-box">
-                    <div class="widget-title">
-                        <a data-toggle="collapse" data-target="#parameter-list" href="#">Parameters</a>
-                    </div>
-                    <div id="parameter-list" class="collapse">
-                        {{ parameters.parameter_string }}
+            {% if not utility.islogfile %}
+                <div class="row-fluid top-buffer">
+                    <div class="span10 offset1 widget-box">
+                        <div class="widget-title">
+                            <a data-toggle="collapse" data-target="#parameter-list" href="#">Parameters</a>
+                        </div>
+                        <div id="parameter-list" class="collapse">
+                            {{ parameters.parameter_string }}
+                        </div>
                     </div>
                 </div>
-            </div>
+            {% endif %}
         </form>
     </div>
     <div id="results-container" class="container-fluid">

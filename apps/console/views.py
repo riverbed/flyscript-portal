@@ -11,12 +11,13 @@ import subprocess
 from django.http import Http404, HttpResponse, StreamingHttpResponse, HttpResponseRedirect
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
+import time
 
 from apps.console.models import Utility, Results, Parameter, Job
 from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringForm,
                                 ParameterDetailForm, get_utility_formset)
 
-from project.settings import PROJECT_ROOT
+from project.settings import PROJECT_ROOT, LOGGING, DEBUG
 
 # monkeypatch to address Python Bug #14308: http://bugs.python.org/issue14308
 # affects subprocess function in execute method
@@ -30,9 +31,11 @@ SCRIPT_DIR = os.path.join(PROJECT_ROOT,'apps', 'console', 'scripts')
 def main(request):
     """ Provide list of installed scripts
     """
-    utilities = Utility.objects.all().select_related()
+    utilities = Utility.objects.filter(islogfile=False).select_related()
+    logfiles = Utility.objects.filter(islogfile=True).select_related()
     return render_to_response('main.html',
-                              {'utilities': utilities},
+                              {'utilities': utilities,
+                               'logfiles': logfiles},
                               context_instance=RequestContext(request))
 
 
@@ -49,9 +52,21 @@ def refresh(request):
     files = os.listdir(SCRIPT_DIR)
     files = [x for x in files if not any(c(x) for c in ignores)]
 
+    # get scripts
     for f in files:
         if f not in utilities:
             Utility(name=f, path=SCRIPT_DIR).save()
+
+    # get logfiles - but only if debug is turned on
+    if DEBUG:
+        for handler, values in LOGGING['handlers'].iteritems():
+            try:
+                path, f = os.path.split(values['filename'])
+                if f not in utilities:
+                    Utility(name=f, path=path, islogfile=True).save()
+            except KeyError:
+                pass
+
     return HttpResponseRedirect('/console')
 
 
@@ -121,49 +136,73 @@ def execute(utility, form, params_form):
     path = os.path.join(SCRIPT_DIR, utility.name)
     #print 'path: %s' % path
 
-    if params_form.is_valid():
-        parameters = params_form.cleaned_data['parameter_string']
-        cmd = '%s %s' % (path, parameters)
-        cmd = cmd.split()
-    else:
-        cmd = path
+    if not utility.islogfile:
+        if params_form.is_valid():
+            parameters = params_form.cleaned_data['parameter_string']
+            cmd = '%s %s' % (path, parameters)
+            cmd = cmd.split()
+        else:
+            cmd = path
 
-    #print 'cmd: %s' % cmd
+        print 'cmd: %s' % cmd
 
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    line = p.stdout.readline()
-    while line:
-        res.append(line)
-        print line
-        # force browser buffer to flush with spaces
-        #yield '{} <br> {}'.format(line, ' '*1024)
-        yield '{}'.format(line)
-        line = p.stdout.readline()
-    p.stdout.close()
-
-    errflag = False
-    err = p.stderr.readline()
-    while err:
-        res.append(err)
-        yield '{} <br> {}'.format(err, ' ')
-        errflag = True
-        err = p.stderr.readline()
-    p.stderr.close()
-
-    Results(utility=utility, results=res).save()
-
-    if errflag:
-        # rerun with help command to show additional info
-        p = subprocess.Popen([path, '--help'], stdout=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         line = p.stdout.readline()
         while line:
             res.append(line)
-            print line
             # force browser buffer to flush with spaces
             #yield '{} <br> {}'.format(line, ' '*1024)
             yield '{}'.format(line)
             line = p.stdout.readline()
         p.stdout.close()
+
+        errflag = False
+        err = p.stderr.readline()
+        while err:
+            res.append(err)
+            yield '{} <br> {}'.format(err, ' ')
+            errflag = True
+            err = p.stderr.readline()
+        p.stderr.close()
+
+        Results(utility=utility, results=res).save()
+
+        if errflag:
+            # rerun with help command to show additional info
+            p = subprocess.Popen([path, '--help'], stdout=subprocess.PIPE)
+            line = p.stdout.readline()
+            while line:
+                res.append(line)
+                # force browser buffer to flush with spaces
+                #yield '{} <br> {}'.format(line, ' '*1024)
+                yield '{}'.format(line)
+                line = p.stdout.readline()
+            p.stdout.close()
+    else:
+        log = os.path.join(utility.path, utility.name)
+
+        # scan near the end of the log first
+        # TODO make this configurable
+        avg_line_length = 80
+        lines = 30
+
+        with open(log, 'r') as f:
+            try:
+                f.seek(-lines*avg_line_length, 2)
+            except IOError:
+                # seeked too far?
+                f.seek(0)
+
+            while 1:
+                where = f.tell()
+                line = f.readline()
+                if not line:
+                    time.sleep(3)
+                    f.seek(where)
+                else:
+                    yield line
+
+
 
 
 def status(request, script_id):

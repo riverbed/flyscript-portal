@@ -26,6 +26,7 @@ class UtilityDetailForm(forms.ModelForm):
 
     class Meta:
         model = Utility
+        exclude = ['islogfile']
 
 
 class ParameterDetailForm(forms.ModelForm):
