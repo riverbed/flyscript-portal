@@ -33,7 +33,7 @@ def main(request):
     """
     logfiles = Utility.objects.filter(islogfile=True).select_related()
     utilities = Utility.objects.filter(islogfile=False).select_related()
-    results = [u.results_set.all() for u in utilities]
+    results = [u.results_set.all().order_by('-run_date') for u in utilities]
 
     utility_list = []
     for u, r in zip(utilities, results):

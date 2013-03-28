@@ -32,7 +32,7 @@
                 client.send(serializedData);
                 client.onprogress = function(){
                     //console.log(this.responseText);
-                    $("#results").html(this.responseText);
+                    $("#results").text(this.responseText);
                     scrollBottom("#results")
                 }
                 client.onloadend = function(){

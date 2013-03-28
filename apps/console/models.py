@@ -88,11 +88,12 @@ class ResultsManager(models.Manager):
         results.delete()
 
         results = Results.objects.all().order_by('run_date')
-        if len(results) > number:
-            offset = len(results) - number
+        offset = len(results) - number
+        if offset > 0:
             to_delete = results[:offset]
-            logging.debug('Considering the following %d Results for deletion:' % offset)
+            logging.debug('Deleting the following %d Results:' % offset)
             logging.debug(to_delete)
+            [r.delete() for r in to_delete]
 
 
 class Results(models.Model):
@@ -105,7 +106,11 @@ class Results(models.Model):
     objects = ResultsManager()
 
     def __unicode__(self):
-        return '%s %s' % (self.utility, self.run_date)
+        return '%s %s' % (self.utility.name, self.run_date)
+
+    def save(self, *args, **kwargs):
+        super(Results, self).save(*args, **kwargs)
+        Results.objects.clean_results()
 
 
 class Job(models.Model):
