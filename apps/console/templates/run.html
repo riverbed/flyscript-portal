@@ -73,7 +73,12 @@
                     <div class="span">
                         {% csrf_token %}
                         {{ form }}
-                        <input id="runit" type="submit" value="Run" class="btn btn-primary">
+                        {% if utility.islogfile %}
+                            <input id="runit" type="submit" value="View Log" class="btn btn-primary">
+                        {% else %}
+                            <input id="runit" type="submit" value="Run" class="btn btn-primary">
+                        {% endif %}
+
                     </div>
                 </div>
             </div>

@@ -6,12 +6,15 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import sys
+import datetime
 
 from django.db import models
 
 from apps.datasource.models import Device
 from apps.datasource.devicemanager import DeviceManager
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Utility(models.Model):
     """ Base class for tools and scripts installed locally
@@ -19,6 +22,9 @@ class Utility(models.Model):
     name = models.CharField(max_length=200)
     path = models.CharField(max_length=200)
     islogfile = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return '%s %s %s' % (self.name, self.path, self.islogfile)
 
 
 class ParameterManager(models.Manager):
@@ -71,12 +77,35 @@ class Parameter(models.Model):
             return self.name
 
 
+class ResultsManager(models.Manager):
+    def clean_results(self, days=30, number=30):
+        """ Remove Results objects older than `days` or when
+            there is more than `number` of objects
+        """
+        old_date = datetime.datetime.now() - datetime.timedelta(days=days)
+        results = Results.objects.filter(run_date__lte=old_date)
+        logger.debug('Found %d old results to delete.' % len(results))
+        results.delete()
+
+        results = Results.objects.all().order_by('run_date')
+        if len(results) > number:
+            offset = len(results) - number
+            to_delete = results[:offset]
+            logging.debug('Considering the following %d Results for deletion:' % offset)
+            logging.debug(to_delete)
+
+
 class Results(models.Model):
     """ Storage of Utility results
     """
     utility = models.ForeignKey(Utility)
     run_date = models.DateTimeField(auto_now=True)
     results = models.TextField(editable=False)
+
+    objects = ResultsManager()
+
+    def __unicode__(self):
+        return '%s %s' % (self.utility, self.run_date)
 
 
 class Job(models.Model):

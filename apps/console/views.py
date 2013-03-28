@@ -31,10 +31,19 @@ SCRIPT_DIR = os.path.join(PROJECT_ROOT,'apps', 'console', 'scripts')
 def main(request):
     """ Provide list of installed scripts
     """
-    utilities = Utility.objects.filter(islogfile=False).select_related()
     logfiles = Utility.objects.filter(islogfile=True).select_related()
+    utilities = Utility.objects.filter(islogfile=False).select_related()
+    results = [u.results_set.all() for u in utilities]
+
+    utility_list = []
+    for u, r in zip(utilities, results):
+        if r:
+            utility_list.append((u, r[0].run_date, len(r)))
+        else:
+            utility_list.append((u, '--', len(r)))
+
     return render_to_response('main.html',
-                              {'utilities': utilities,
+                              {'utilities': utility_list,
                                'logfiles': logfiles},
                               context_instance=RequestContext(request))
 
@@ -189,6 +198,7 @@ def execute(utility, form, params_form):
         with open(log, 'r') as f:
             try:
                 f.seek(-lines*avg_line_length, 2)
+                f.readline()
             except IOError:
                 # seeked too far?
                 f.seek(0)
