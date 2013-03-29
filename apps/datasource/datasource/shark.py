@@ -19,14 +19,13 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common import timeutils
 
 
-from apps.datasource.models import TableColumn
+from apps.datasource.models import Column
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 from libs.options import Options
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
-
 
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
@@ -40,6 +39,11 @@ class TableOptions(Options):
         self.filter = filter
         self.aggregated = aggregated
 
+class ColumnOptions(Options):
+    def __init__(self, extractor, operation=None, *args, **kwargs):
+        super(Options, self).__init__(*args, **kwargs)
+        self.extractor = extractor
+        self.operation = operation
 
 class Table_Query:
     # Used by Table to actually run a query
@@ -61,30 +65,31 @@ class Table_Query:
             table = self.table
             options = table.get_options()
 
-            shark = DeviceManager.get_device(options.device)
+            shark = DeviceManager.get_device(table.device.id)
 
             columns = []
-            for tc in TableColumn.objects.filter(table=table).select_related():
-                if tc.column.source_key:
-                    c = Key(tc.column.source_name, description=tc.column.label)
+            for tc in table.get_columns():
+                tc_options = tc.get_options()
+                if tc.iskey:
+                    c = Key(tc_options.extractor, description=tc.label)
                 else:
-                    if tc.column.source_operation:
+                    if tc_options.operation:
                         try:
-                            operation = getattr(Operation, tc.column.source_operation)
+                            operation = getattr(Operation, tc_options.operation)
                         except AttributeError:
                             operation = Operation.sum
-                            print 'ERROR: Unknown operation attribute %s for column %s.' % (tc.column.source_operation,
-                                                                                            tc.column.name)
+                            print 'ERROR: Unknown operation attribute %s for column %s.' % (tc_options.operation,
+                                                                                            tc.name)
                     else:
                         operation = Operation.sum
 
-                    c = Value(tc.column.source_name, operation, description=tc.column.label)
+                    c = Value(tc_options.extractor, operation, description=tc.label)
 
                 columns.append(c)
 
             sortcol=None
             if table.sortcol is not None:
-                sortcol=table.sortcol.source_name
+                sortcol=table.sortcol.get_options().extractor
 
             # get source type from options
             try:
@@ -142,3 +147,4 @@ class Table_Query:
         for d in self.data:
             out.extend(x for x in d['vals'])
         self.data = out
+

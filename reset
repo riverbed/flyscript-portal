@@ -9,9 +9,8 @@
 
 killall -9 Python
 rm project.db
-rm job*.data
-rm table*.cache
+rm datacache/*
 rm log*.txt
-python manage.py syncdb
+python manage.py syncdb --noinput
 python sample_setup.py
 python manage.py runserver

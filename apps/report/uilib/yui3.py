@@ -98,6 +98,7 @@ def TimeSeriesWidget(widget, data):
                         "styles" : { "label": { "rotation": -60 }}}}
 
     for wc in widget.table().get_columns():
+        # XXXCJ should not use name, maybe use datatype?
         if wc.name == 'time':
             continue
         

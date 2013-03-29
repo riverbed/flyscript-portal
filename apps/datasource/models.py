@@ -35,7 +35,7 @@ lock = threading.Lock()
 #
 class Device(models.Model):
     name = models.CharField(max_length=200)
-    sourcetype = models.CharField(max_length=200)
+    module = models.CharField(max_length=200)
     host = models.CharField(max_length=200)
     port = models.IntegerField()
     username = models.CharField(max_length=100)
@@ -49,7 +49,8 @@ class Device(models.Model):
 #
 class Table(models.Model):
     name = models.CharField(max_length=200)
-    source = models.CharField(max_length=200)    # source module name
+    module = models.CharField(max_length=200)    # source module name
+    device = models.ForeignKey(Device, null=True)
     filterexpr = models.TextField(blank=True)
     duration = models.IntegerField()             # length of query in minutes
     resolution = models.IntegerField(default=60) # resolution of graph in seconds
@@ -60,12 +61,12 @@ class Table(models.Model):
 
     def get_options(self):
         import apps.datasource.datasource
-        cls = apps.datasource.datasource.__dict__[self.source].TableOptions
+        cls = apps.datasource.datasource.__dict__[self.module].TableOptions
         return cls.decode(json.dumps(self.options))
 
     def poll(self, ts=1):
         # Ultimately, this function must return the data for the Table
-        # The actual data is pulled from the "Table.source" function.
+        # The actual data is pulled from the "Table.module.TableQuery" 
         #
         # This class *may* do caching, in which case there either may be
         # no actual call to the source to get data, or the call my cover
@@ -84,9 +85,9 @@ class Table(models.Model):
                 job = Job(table=self, handle=jobhandle)
                 job.save()
 
-                # Lookup the query class for this source
+                # Lookup the query class for this table
                 import apps.datasource.datasource
-                queryclass = apps.datasource.datasource.__dict__[self.source].Table_Query
+                queryclass = apps.datasource.datasource.__dict__[self.module].Table_Query
                 
                 # Create an asynchronous worker to do the work
                 worker = AsyncWorker(job, queryclass)
@@ -94,46 +95,31 @@ class Table(models.Model):
 
         return job
 
-    def add_columns(self, colnames, sortcol=None):
-        i=1
-        for colname in colnames:
-            try:
-                col = Column.objects.get(source=self.source, name=colname)
-            except:
-                raise ValueError("Failed to find a column '%s' associated with source '%s'" % (colname, self.source))
-                
-            tc = TableColumn(table=self, column=col, position=i)
-            i = i + 1
-            tc.save()
-            if sortcol == colname:
-                self.sortcol = col
-                self.save()
-                
     def __unicode__(self):
         return str(self.id)
 
     def get_columns(self):
-        return [tc.column for tc in TableColumn.objects.filter(table=self).order_by('position').select_related()]
+        return Column.objects.filter(table=self).order_by('position')
 
 class Column(models.Model):
 
-    source = models.CharField(max_length=200)
+    table = models.ForeignKey(Table)
     name = models.CharField(max_length=30)
-    source_name = models.CharField(max_length=30)
-    source_key = models.BooleanField(default=False)
-    source_operation = models.CharField(max_length=10, default='')
+    iskey = models.BooleanField(default=False)
     label = models.CharField(max_length=30)
-    datatype = models.CharField(max_length=50, default='')
-    units = models.CharField(max_length=50, default='')
-    
+    datatype = models.CharField(max_length=50, default='') # metric, bytes, time -> XXXCJ make enumeration
+    units = models.CharField(max_length=50, default='') 
+    position = models.IntegerField()
+    options = JSONField()
+
     def __unicode__(self):
         return self.label
 
-class TableColumn(models.Model):
-    table = models.ForeignKey(Table)
-    column = models.ForeignKey(Column)
-    position = models.IntegerField()
-    
+    def get_options(self):
+        import apps.datasource.datasource
+        cls = apps.datasource.datasource.__dict__[self.table.module].ColumnOptions
+        return cls.decode(json.dumps(self.options))
+
 #
 # Job
 #

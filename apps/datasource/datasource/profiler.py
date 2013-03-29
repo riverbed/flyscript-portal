@@ -15,7 +15,7 @@ import threading
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
-from apps.datasource.models import TableColumn
+from apps.datasource.models import Column
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 from libs.options import Options
@@ -58,17 +58,14 @@ class Table_Query:
             table = self.table
             options = table.get_options()
 
-            profiler = DeviceManager.get_device(options.device)
+            profiler = DeviceManager.get_device(table.device.id)
             report = rvbd.profiler.report.SingleQueryReport(profiler)
 
-            columns = []
+            columns = [col.name for col in table.get_columns()]
 
-            for tc in TableColumn.objects.filter(table=table).select_related():
-                columns.append(tc.column.source_name)
-                
             sortcol=None
             if table.sortcol is not None:
-                sortcol=table.sortcol.source_name
+                sortcol=table.sortcol.name
 
             realm = options.realm or 'traffic_summary'
 
@@ -106,3 +103,4 @@ class Table_Query:
             f.close()
 
         return True
+

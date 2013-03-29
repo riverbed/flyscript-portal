@@ -15,47 +15,24 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from apps.datasource.models import *
 from apps.report.models import *
 from apps.geolocation.models import *
+from apps.datasource.datasource.shark import ColumnOptions as shark_ColumnOptions
 
-profiler = Device(name="tm08-1",
-                  sourcetype="profiler",
-                  host="tm08-1.lab.nbttech.com",
-                  port=443,
-                  username="admin",
-                  password="admin")
-profiler.save()
+tm08 = Device(name="tm08-1",
+              module="profiler",
+              host="tm08-1.lab.nbttech.com",
+              port=443,
+              username="admin",
+              password="admin")
+tm08.save()
 
-shark = Device(name="vdorothy10",
-                  sourcetype="shark",
-                  host="vdorothy10.lab.nbttech.com",
-                  port=443,
-                  username="admin",
-                  password="admin")
-shark.save()
+v10 = Device(name="vdorothy10",
+             module="shark",
+             host="vdorothy10.lab.nbttech.com",
+               port=443,
+             username="admin",
+             password="admin")
+v10.save()
 
-Column(source='profiler', name='time', source_name='time', label = 'Time', datatype='time').save()
-Column(source='profiler', name='host_ip', source_name='host_ip', label = 'Host IP').save()
-Column(source='profiler', name='avg_bytes', source_name='avg_bytes', label = 'Avg Bytes/s', units = 'B/s', datatype='bytes').save()
-Column(source='profiler', name='group_name', source_name='group_name', label = 'Group Name').save()
-Column(source='profiler', name='total_bytes', source_name='total_bytes', label = 'Total Bytes', datatype='bytes').save()
-Column(source='profiler', name='avg_pkts', source_name='avg_pkts', label = 'Avg Pkts/s', datatype='metric').save()
-Column(source='profiler', name='avg_conns_active', source_name='avg_conns_active', label = 'Active Conns/s', datatype='metric').save()
-Column(source='profiler', name='total_conns_rsts_pct', source_name='total_conns_rsts_pct', label = '% Resets', datatype='metric').save()
-Column(source='profiler', name='total_bytes_rtx_pct', source_name='total_bytes_rtx_pct', label = '% Retrans', datatype='metric').save()
-Column(source='profiler', name='response_time', source_name='response_time', label = 'Resp Time (ms)', datatype='metric').save()
-Column(source='profiler', name='network_rtt', source_name='network_rtt', label = 'Network RTT (ms)', datatype='metric').save()
-Column(source='profiler', name='server_delay', source_name='server_delay', label = 'Srv Delay (ms)', datatype='metric').save()
-Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util').save()
-Column(source='profiler', name='interface_dns', source_name='interface_dns', label = 'Interface').save()
-
-Column(source='shark', name='time', source_name='generic.absolute_time', source_key='True', label='Time (ns)').save()
-Column(source='shark', name='ip_src', source_name='ip.src', source_key='True', label='Source IP').save()
-Column(source='shark', name='ip_dst', source_name='ip.dst', source_key='True', label='Destination IP').save()
-Column(source='shark', name='generic_packets', source_name='generic.packets', label='Packets').save()
-Column(source='shark', name='http_duration_max', source_name='http.duration', source_operation='max', label='Max Duration').save()
-Column(source='shark', name='http_duration_avg', source_name='http.duration', source_operation='avg', label='Avg Duration').save()
-Column(source='shark', name='max_microburst_1ms_packets', source_name='generic.max_microburst_1ms.packets', source_operation='max', label='Microburst 1ms Pkts').save()
-Column(source='shark', name='max_microburst_10ms_packets', source_name='generic.max_microburst_10ms.packets',source_operation='max',  label='Microburst 10ms Pkts').save()
-Column(source='shark', name='max_microburst_100ms_packets', source_name='generic.max_microburst_100ms.packets',source_operation='max',  label='Microburst 100ms Pkts').save()
 
 Location(name="Seattle", address="10.99.11.0", mask="255.255.255.0", latitude=47.6097, longitude=-122.3331).save()
 Location(name="LosAngeles", address="10.99.12.0", mask="255.255.255.0", latitude=34.0522, longitude=-118.2428).save()
@@ -67,47 +44,21 @@ Location(name="Philadelphia", address="10.99.17.0", mask="255.255.255.0", latitu
 Location(name="Hartford", address="10.99.18.0", mask="255.255.255.0", latitude=41.73, longitude=-72.65).save()
 Location(name="DataCenter", address="10.100.0.0", mask="255.255.0.0", latitude=35.9139, longitude=-81.5392).save()
 
-
-overall = Report(title="Overall")
-overall.save()
-
-# Google Map example
-themap = Report(title="Map")
-themap.save()
-
-#
-# Google Map example
-#
-
-# Define a table, group by location
-dt = Table(source='profiler', duration=60, rows=20,
-           filterexpr = 'host 10.99/16',
-           options={'device': profiler.id,
-                    'groupby': 'host_group'})
-dt.save()
-dt.add_columns(['group_name', 'avg_bytes'], 'avg_bytes')
-
-# Map wdiget on top of that table
-wid = Widget(report=themap, title="Map",
-             row=2, col=2, colwidth=12,
-             options = {'key': 'group_name',
-                        'value': 'avg_bytes'},
-             uilib="google_maps", uiwidget="MapWidget",
-             uioptions = {'minHeight': 500})
-wid.save()
-wid.tables.add(dt)
-
 #
 # Overall report
 #
 
+overall = Report(title="Overall")
+overall.save()
+
 # Define a TimeSeries 
-dt = Table(name='ts1', source='profiler', duration=60,
-           options={'device': profiler.id,
-                    'realm': 'traffic_overall_time_series',
+dt = Table(name='ts1', module='profiler', device=tm08, duration=60, 
+           options={'realm': 'traffic_overall_time_series',
                     'groupby': 'time'})
 dt.save()
-dt.add_columns(['time', 'avg_bytes'])
+Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
+Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
+
 wid = Widget(report=overall, title="Overall Traffic (last hour)", 
              row=1, col=1, colwidth=12,
              options={'axes': {'0': {'title': 'bytes/s',
@@ -121,15 +72,15 @@ wid.tables.add(dt)
 
 
 # Define a TimeSeries 
-dt = Table(source='profiler', duration=60,
-               filterexpr = 'host 10.99/16',
-               options={'device': profiler.id,
-                        'realm': 'traffic_overall_time_series',
-                        'groupby': 'time'})
+dt = Table(name='ts2', module='profiler', device=tm08, duration=60,
+           filterexpr = 'host 10.99/16',
+           options={'realm': 'traffic_overall_time_series',
+                    'groupby': 'time'})
 dt.save()
-dt.add_columns(['time', 'avg_bytes'])
+Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
+Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
 
-wid = Widget(report=overall, title="Traffic for hosts in  10.99/16 (last hour)", 
+wid = Widget(report=overall, title="Traffic for hosts in 10.99/16 (last hour)", 
              row=2, col=1, colwidth=6,
              options={'axes': {'0': {'title': 'bytes/s',
                                      'position': 'left',
@@ -141,13 +92,13 @@ wid.save()
 wid.tables.add(dt)
 
 # Define a TimeSeries 
-dt = Table(source='profiler', duration=60,
-               filterexpr = 'host 10.99.15/24',
-               options={'device': profiler.id,
-                        'realm': 'traffic_overall_time_series',
-                        'groupby': 'time'})
+dt = Table(name='ts3', module='profiler', device=tm08, duration=60,
+           filterexpr = 'host 10.99.15/24',
+           options={'realm': 'traffic_overall_time_series',
+                    'groupby': 'time'})
 dt.save()
-dt.add_columns(['time', 'avg_bytes'])
+Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
+Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
 
 wid = Widget(report=overall, title="Traffic for hosts in  10.99.15/24 (last hour)", 
              row=2, col=2, colwidth=6,
@@ -160,14 +111,15 @@ wid = Widget(report=overall, title="Traffic for hosts in  10.99.15/24 (last hour
 wid.save()
 wid.tables.add(dt)
 
-#######
-
 # Define a Table
-dt = Table(source='profiler', duration=60,
-               options={'device': profiler.id,
-                        'groupby': 'host_group'})
+dt = Table(name='hg', module='profiler', device=tm08, duration=60,
+               options={'groupby': 'host_group'})
 dt.save()
-dt.add_columns(['group_name', 'total_bytes'], 'total_bytes')
+Column(table=dt, name='group_name', iskey=True, label = 'Group Name', position=1).save()
+c = Column(table=dt, name='total_bytes', iskey=False, label = 'Total Bytes', datatype='bytes', units='B', position=2)
+c.save()
+dt.sortcol = c
+dt.save()
 
 wid = Widget(report=overall, title="Locations by Bytes",  
              row=3, col=1, rows=10, colwidth=6, 
@@ -179,11 +131,11 @@ wid.save()
 wid.tables.add(dt)
 
 # Define a Table
-dt = Table(source='profiler', duration=60,
-               options={'device': profiler.id,
-                        'groupby': 'host_group'})
+dt = Table(name='hg2', module='profiler', device=tm08, duration=60,
+           options={'groupby': 'host_group'})
 dt.save()
-dt.add_columns(['group_name', 'response_time'], 'response_time')
+Column(table=dt, name='group_name', iskey=True, label = 'Group Name', position=1).save()
+Column(table=dt, name='response_time', iskey=False, label = 'Response Time', datatype='metric', units='s', position=2).save()
 
 wid = Widget(report=overall, title="Locations by Response Time", 
              row=3, col=2, rows=10, colwidth=6, 
@@ -196,9 +148,35 @@ wid.save()
 wid.tables.add(dt)
 
 #
+# Google Map example
+#
+
+# Google Map example
+themap = Report(title="Map")
+themap.save()
+
+# Define a table, group by location
+dt = Table(name='maploc', module='profiler', device=tm08, duration=60, rows=20,
+           filterexpr = 'host 10.99/16',
+           options={'groupby': 'host_group'})
+dt.save()
+Column(table=dt, name='group_name', iskey=True, label = 'Group Name', position=1).save()
+Column(table=dt, name='avg_bytes', iskey=False, label = 'Avg Bytes/s', datatype='bytes', units='B/s', position=2).save()
+
+# Map wdiget on top of that table
+wid = Widget(report=themap, title="Map",
+             row=2, col=2, colwidth=12,
+             options = {'key': 'group_name',
+                        'value': 'avg_bytes'},
+             uilib="google_maps", uiwidget="MapWidget",
+             uioptions = {'minHeight': 500})
+wid.save()
+wid.tables.add(dt)
+
+#
 # Define a Table
 #
-#dt = Table(name='ifs_day', source='profiler', duration=(60*24), resolution=60,
+#dt = Table(name='ifs_day', module='profiler', duration=(60*24), resolution=60,
 #           options={'device': profiler.id,
 #                    'groupby': 'interface'})
 #dt.save()
@@ -226,15 +204,16 @@ wid.tables.add(dt)
 shark_report = Report(title="Shark Report")
 shark_report.save()
 
-dt = Table(name='Packet Traffic', source='shark', duration=10,
-           options={'device': shark.id,
-                    'view': 'jobs/Flyscript-tests-job',
+dt = Table(name='Packet Traffic', module='shark', device=v10, duration=10,
+           options={'view': 'jobs/Flyscript-tests-job',
                     })
 dt.save()
-dt.add_columns(['ip_src',
-               'ip_dst',
-               'generic_packets',
-               ])
+Column(table=dt, name='ip_src', iskey=True, label='Source IP', position=1,
+       options=shark_ColumnOptions(extractor='ip.src').__dict__).save()
+Column(table=dt, name='ip_dst', iskey=True, label='Dest IP', position=2,
+       options=shark_ColumnOptions(extractor='ip.dst').__dict__).save()
+Column(table=dt, name='generic_packets', iskey=False, label='Packets', position=3,
+       options=shark_ColumnOptions(extractor='generic.packets', operation='sum').__dict__).save()
 
 wid = Widget(report=shark_report, title="Shark Packets (last 10 minutes)",
              row=1, col=1, rows=1000, colwidth=12,
@@ -242,8 +221,9 @@ wid = Widget(report=shark_report, title="Shark Packets (last 10 minutes)",
 wid.save()
 wid.tables.add(dt)
 
+exit(0)
 
-dt = Table(name='MicroburstsTotal', source='shark', duration=10,
+dt = Table(name='MicroburstsTotal', module='shark', duration=10,
            options={'device': shark.id,
                     'aggregated': True,
                     'view': 'jobs/Flyscript-tests-job',
@@ -260,7 +240,7 @@ wid = Widget(report=shark_report, title="Microburst Packets (last 10 minutes)",
 wid.save()
 wid.tables.add(dt)
 
-dt = Table(name='MicroburstsTime', source='shark', duration=10,
+dt = Table(name='MicroburstsTime', module='shark', duration=10,
            options={'device': shark.id,
                     'aggregated': False,
                     'view': 'jobs/Flyscript-tests-job',
@@ -283,6 +263,9 @@ wid = Widget(report=shark_report, title="Microburst Packets Timeseries (last 10 
 wid.save()
 wid.tables.add(dt)
 #
+
+exit(0)
+
 translations = { "Avg Bytes/s": "平均バイト数/秒",
                  "Overall Traffic (last hour)": "全てのトラッフィック (過去１時間以内)",
                  "Traffic for hosts in  10.99/16 (last hour)" : "10.99/16サブネット内のホストへのトラッフィック (過去１時間以内)",
@@ -302,3 +285,29 @@ translations = { "Avg Bytes/s": "平均バイト数/秒",
                  "Srv Delay (ms)": "サーバーの遅延時間（ミリ秒）",
                  "": "インターフェイス （過去１日間以内）" }
 
+
+
+Column(source='profiler', name='time', source_name='time', label = 'Time', datatype='time').save()
+Column(source='profiler', name='host_ip', source_name='host_ip', label = 'Host IP').save()
+Column(source='profiler', name='avg_bytes', source_name='avg_bytes', label = 'Avg Bytes/s', units = 'B/s', datatype='bytes').save()
+Column(source='profiler', name='group_name', source_name='group_name', label = 'Group Name').save()
+Column(source='profiler', name='total_bytes', source_name='total_bytes', label = 'Total Bytes', datatype='bytes').save()
+Column(source='profiler', name='avg_pkts', source_name='avg_pkts', label = 'Avg Pkts/s', datatype='metric').save()
+Column(source='profiler', name='avg_conns_active', source_name='avg_conns_active', label = 'Active Conns/s', datatype='metric').save()
+Column(source='profiler', name='total_conns_rsts_pct', source_name='total_conns_rsts_pct', label = '% Resets', datatype='metric').save()
+Column(source='profiler', name='total_bytes_rtx_pct', source_name='total_bytes_rtx_pct', label = '% Retrans', datatype='metric').save()
+Column(source='profiler', name='response_time', source_name='response_time', label = 'Resp Time (ms)', datatype='metric').save()
+Column(source='profiler', name='network_rtt', source_name='network_rtt', label = 'Network RTT (ms)', datatype='metric').save()
+Column(source='profiler', name='server_delay', source_name='server_delay', label = 'Srv Delay (ms)', datatype='metric').save()
+Column(source='profiler', name='avg_util', source_name='avg_util', label = '% Util').save()
+Column(source='profiler', name='interface_dns', source_name='interface_dns', label = 'Interface').save()
+
+Column(source='shark', name='time', source_name='generic.absolute_time', source_key='True', label='Time (ns)').save()
+Column(source='shark', name='ip_src', source_name='ip.src', source_key='True', label='Source IP').save()
+Column(source='shark', name='ip_dst', source_name='ip.dst', source_key='True', label='Destination IP').save()
+Column(source='shark', name='generic_packets', source_name='generic.packets', label='Packets').save()
+Column(source='shark', name='http_duration_max', source_name='http.duration', source_operation='max', label='Max Duration').save()
+Column(source='shark', name='http_duration_avg', source_name='http.duration', source_operation='avg', label='Avg Duration').save()
+Column(source='shark', name='max_microburst_1ms_packets', source_name='generic.max_microburst_1ms.packets', source_operation='max', label='Microburst 1ms Pkts').save()
+Column(source='shark', name='max_microburst_10ms_packets', source_name='generic.max_microburst_10ms.packets',source_operation='max',  label='Microburst 10ms Pkts').save()
+Column(source='shark', name='max_microburst_100ms_packets', source_name='generic.max_microburst_100ms.packets',source_operation='max',  label='Microburst 100ms Pkts').save()
