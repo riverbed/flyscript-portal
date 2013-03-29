@@ -15,9 +15,10 @@ import threading
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
-from apps.datasource.models import TableColumn, Options
+from apps.datasource.models import TableColumn
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
+from libs.options import Options
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -31,7 +32,7 @@ def DeviceManager_new(*args, **kwargs):
 
 class TableOptions(Options):
     def __init__(self, groupby, realm=None, centricity=None, *args, **kwargs):
-        super(Options, self).__init__(*args, **kwargs)
+        super(TableOptions, self).__init__(*args, **kwargs)
         self.groupby = groupby
         self.realm = realm
         self.centricity = centricity

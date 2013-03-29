@@ -30,18 +30,6 @@ from apps.datasource.devicemanager import DeviceManager
 
 lock = threading.Lock()
 
-
-class Options(object):
-    def __init__(self, device):
-        self.device = device
-
-    def encode(self):
-        return json.dumps(self.__dict__)
-
-    @classmethod
-    def decode(cls, obj):
-        return cls(**json.loads(obj))
-
 #
 # Device
 #
@@ -72,7 +60,7 @@ class Table(models.Model):
 
     def get_options(self):
         import apps.datasource.datasource
-        cls = apps.datasource.datasource.__dict__[self.source].Options
+        cls = apps.datasource.datasource.__dict__[self.source].TableOptions
         return cls.decode(json.dumps(self.options))
 
     def poll(self, ts=1):

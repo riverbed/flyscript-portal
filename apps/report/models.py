@@ -18,8 +18,19 @@ from django.http import HttpResponse
 from model_utils.managers import InheritanceManager
 from jsonfield import JSONField
 from apps.datasource.models import Table, Job
+from libs.options import Options
 
 logger = logging.getLogger(__name__)
+
+
+class WidgetOptions(Options):
+    def __init__(self, key=None, value=None, axes=None, *args, **kwargs):
+        super(Options, self).__init__(*args, **kwargs)
+        self.key = key
+        self.value = value
+        if axes:
+            self.axes = Axes(axes)
+
 
 #######################################################################
 #
@@ -57,10 +68,13 @@ class Widget(models.Model):
     def get_uioptions(self):
         return json.dumps(self.uioptions)
 
+    def get_options(self):
+        return WidgetOptions.decode(json.dumps(self.options))
+
     def get_option(self, option, default=None):
-        if option in self.options:
+        try:
             return self.options[option]
-        else:
+        except KeyError:
             return default
 
     def table(self, i=0):
@@ -97,7 +111,8 @@ class Widget(models.Model):
             
         resp['message'] = cgi.escape(resp['message'])
         return HttpResponse(json.dumps(resp))
-    
+
+
 class Axes:
     def __init__(self, definition):
         self.definition = definition
