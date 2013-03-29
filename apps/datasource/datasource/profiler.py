@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
+import json
 import time
 import pickle
 import logging
@@ -14,7 +15,7 @@ import threading
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
-from apps.datasource.models import TableColumn
+from apps.datasource.models import TableColumn, Options
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 
@@ -26,6 +27,14 @@ lock = threading.Lock()
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
+
+
+class TableOptions(Options):
+    def __init__(self, groupby, realm=None, centricity=None, *args, **kwargs):
+        super(Options, self).__init__(*args, **kwargs)
+        self.groupby = groupby
+        self.realm = realm
+        self.centricity = centricity
 
 
 class Table_Query:
@@ -46,8 +55,9 @@ class Table_Query:
         else:
             logger.debug("Running new report")
             table = self.table
+            options = table.get_options()
 
-            profiler = DeviceManager.get_device(table.options['device'])
+            profiler = DeviceManager.get_device(options.device)
             report = rvbd.profiler.report.SingleQueryReport(profiler)
 
             columns = []
@@ -59,14 +69,11 @@ class Table_Query:
             if table.sortcol is not None:
                 sortcol=table.sortcol.source_name
 
-            if 'realm' in table.options:
-                realm = table.options['realm']
-            else:
-                realm = 'traffic_summary'
+            realm = options.realm or 'traffic_summary'
 
             with lock:
                 report.run(realm=realm,
-                           groupby=profiler.groupbys[table.options['groupby']],
+                           groupby=profiler.groupbys[options.groupby],
                            columns=columns,
                            timefilter=TimeFilter.parse_range("last %d m" % table.duration),
                            trafficexpr = TrafficFilter(table.filterexpr),

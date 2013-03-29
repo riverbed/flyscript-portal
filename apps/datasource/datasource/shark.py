@@ -19,7 +19,7 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common import timeutils
 
 
-from apps.datasource.models import TableColumn
+from apps.datasource.models import TableColumn, Options
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 
@@ -30,6 +30,14 @@ lock = threading.Lock()
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
     return Shark(*args, **kwargs)
+
+
+class TableOptions(Options):
+    def __init__(self, view, filter=None, aggregated=False, *args, **kwargs):
+        super(Options, self).__init__(*args, **kwargs)
+        self.view = view
+        self.filter = filter
+        self.aggregated = aggregated
 
 
 class Table_Query:
@@ -50,8 +58,9 @@ class Table_Query:
         else:
             logger.debug("Running new report")
             table = self.table
+            options = table.get_options()
 
-            shark = DeviceManager.get_device(table.options['device'])
+            shark = DeviceManager.get_device(options.device)
 
             columns = []
             for tc in TableColumn.objects.filter(table=table).select_related():
@@ -79,14 +88,14 @@ class Table_Query:
             # get source type from options
             try:
                 with lock:
-                    source = path_to_class(shark, table.options['view'])
+                    source = path_to_class(shark, options.view)
             except RvbdHTTPException, e:
                 source = None
                 raise e
 
             filters = []
-            if 'filter' in table.options:
-                filters.append(SharkFilter(table.options['filter']))
+            if options.filter:
+                filters.append(SharkFilter(options.filter))
 
             if table.duration:
                 filters.append(TimeFilter.parse_range("last %d m" % table.duration))
@@ -110,12 +119,8 @@ class Table_Query:
                 done = (s == 100)
 
             # Retrieve the data
-            if 'aggregated' in table.options:
-                aggregated = table.options['aggregated']
-            else:
-                aggregated = False
             with lock:
-                self.data = view.get_data(aggregated=aggregated)
+                self.data = view.get_data(aggregated=options.aggregated)
                 view.close()
 
             if table.rows > 0:
