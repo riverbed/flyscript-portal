@@ -2,7 +2,7 @@
 #
 # This software is licensed under the terms and conditions of the 
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -29,8 +29,8 @@ class DeviceManager:
 
         with lock:
             if ds.id not in cls.devices:
-                import apps.datasource.datasource
-                create_func = apps.datasource.datasource.__dict__[ds.module].DeviceManager_new
+                import apps.datasource.modules
+                create_func = apps.datasource.modules.__dict__[ds.module].DeviceManager_new
 
                 logger.debug("Creating new Device: %s(%s:%s)" % (ds.module, ds.host, ds.port))
                 cls.devices[ds.id] = create_func(host=ds.host, port=ds.port,

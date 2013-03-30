@@ -2,7 +2,7 @@
 #
 # This software is licensed under the terms and conditions of the 
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -60,8 +60,8 @@ class Table(models.Model):
     options = JSONField()
 
     def get_options(self):
-        import apps.datasource.datasource
-        cls = apps.datasource.datasource.__dict__[self.module].TableOptions
+        import apps.datasource.modules
+        cls = apps.datasource.modules.__dict__[self.module].TableOptions
         return cls.decode(json.dumps(self.options))
 
     def poll(self, ts=1):
@@ -86,8 +86,8 @@ class Table(models.Model):
                 job.save()
 
                 # Lookup the query class for this table
-                import apps.datasource.datasource
-                queryclass = apps.datasource.datasource.__dict__[self.module].Table_Query
+                import apps.datasource.modules
+                queryclass = apps.datasource.modules.__dict__[self.module].Table_Query
                 
                 # Create an asynchronous worker to do the work
                 worker = AsyncWorker(job, queryclass)
@@ -116,8 +116,8 @@ class Column(models.Model):
         return self.label
 
     def get_options(self):
-        import apps.datasource.datasource
-        cls = apps.datasource.datasource.__dict__[self.table.module].ColumnOptions
+        import apps.datasource.modules
+        cls = apps.datasource.modules.__dict__[self.table.module].ColumnOptions
         return cls.decode(json.dumps(self.options))
 
 #

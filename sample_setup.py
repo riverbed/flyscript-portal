@@ -3,7 +3,7 @@
 #
 # This software is licensed under the terms and conditions of the 
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -15,7 +15,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from apps.datasource.models import *
 from apps.report.models import *
 from apps.geolocation.models import *
-from apps.datasource.datasource.shark import ColumnOptions as shark_ColumnOptions
+from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
 
 tm08 = Device(name="tm08-1",
               module="profiler",
@@ -65,7 +65,7 @@ wid = Widget(report=overall, title="Overall Traffic (last hour)",
                                      'position': 'left',
                                      'columns': ['avg_bytes']}
                                }},
-             uilib="yui3", uiwidget="TimeSeriesWidget",
+             module="yui3", uiwidget="TimeSeriesWidget",
              uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
@@ -86,7 +86,7 @@ wid = Widget(report=overall, title="Traffic for hosts in 10.99/16 (last hour)",
                                      'position': 'left',
                                      'columns': ['avg_bytes']}
                                }},
-             uilib="yui3", uiwidget="TimeSeriesWidget",
+             module="yui3", uiwidget="TimeSeriesWidget",
              uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
@@ -106,7 +106,7 @@ wid = Widget(report=overall, title="Traffic for hosts in  10.99.15/24 (last hour
                                      'position': 'left',
                                      'columns': ['avg_bytes']}
                                }},
-             uilib="yui3", uiwidget="TimeSeriesWidget",
+             module="yui3", uiwidget="TimeSeriesWidget",
              uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
@@ -125,7 +125,7 @@ wid = Widget(report=overall, title="Locations by Bytes",
              row=3, col=1, rows=10, colwidth=6, 
              options = {'key': 'group_name',
                         'value': 'total_bytes'},
-             uilib="yui3", uiwidget="PieWidget",
+             module="yui3", uiwidget="PieWidget",
              uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
@@ -141,7 +141,7 @@ wid = Widget(report=overall, title="Locations by Response Time",
              row=3, col=2, rows=10, colwidth=6, 
              options = {'key': 'group_name',
                         'values': ['response_time']},
-             uilib="yui3", uiwidget="BarWidget",
+             module="yui3", uiwidget="BarWidget",
              uioptions = {'minHeight': 300})
 
 wid.save()
@@ -168,7 +168,7 @@ wid = Widget(report=themap, title="Map",
              row=2, col=2, colwidth=12,
              options = {'key': 'group_name',
                         'value': 'avg_bytes'},
-             uilib="google_maps", uiwidget="MapWidget",
+             module="google_maps", uiwidget="MapWidget",
              uioptions = {'minHeight': 500})
 wid.save()
 wid.tables.add(dt)
@@ -194,7 +194,7 @@ wid.tables.add(dt)
 #
 #wid = Widget(report=overall, title="Interfaces (last day)", 
 #             row=4, col=1, rows=1000, colwidth=12,
-#             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+#             module="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
 #wid.save()
 #wid.tables.add(dt)
 
@@ -217,7 +217,7 @@ Column(table=dt, name='generic_packets', iskey=False, label='Packets', position=
 
 wid = Widget(report=shark_report, title="Shark Packets (last 10 minutes)",
              row=1, col=1, rows=1000, colwidth=12,
-             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+             module="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
 
@@ -236,7 +236,7 @@ dt.add_columns([
 ])
 wid = Widget(report=shark_report, title="Microburst Packets (last 10 minutes)",
              row=2, col=1, rows=1000, colwidth=12,
-             uilib="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
+             module="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
 
@@ -259,7 +259,7 @@ wid = Widget(report=shark_report, title="Microburst Packets Timeseries (last 10 
                                      'position': 'left',
                                      'columns': ['max_microburst_1ms_packets']}
              }},
-             uilib="yui3", uiwidget="TimeSeriesWidget", uioptions = {'minHeight': 300})
+             module="yui3", uiwidget="TimeSeriesWidget", uioptions = {'minHeight': 300})
 wid.save()
 wid.tables.add(dt)
 #

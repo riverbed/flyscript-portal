@@ -2,7 +2,7 @@
 #
 # This software is licensed under the terms and conditions of the 
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -53,7 +53,7 @@ class Widget(models.Model):
     rows = models.IntegerField(default=-1)
     options = JSONField()
 
-    uilib = models.CharField(max_length=100)
+    module = models.CharField(max_length=100)
     uiwidget = models.CharField(max_length=100)
     uioptions = JSONField()
     
@@ -63,7 +63,7 @@ class Widget(models.Model):
         return self.title
 
     def widgettype(self):
-        return 'rvbd_%s.%s' % (self.uilib, self.uiwidget)
+        return 'rvbd_%s.%s' % (self.module, self.uiwidget)
 
     def get_uioptions(self):
         return json.dumps(self.uioptions)
@@ -90,8 +90,8 @@ class Widget(models.Model):
         elif job.status == Job.ERROR:
             resp = job.json()
         else:
-            import apps.report.uilib
-            widget_func = apps.report.uilib.__dict__[self.uilib].__dict__[self.uiwidget]
+            import apps.report.modules
+            widget_func = apps.report.modules.__dict__[self.module].__dict__[self.uiwidget]
             if self.rows > 0:
                 tabledata = job.data()[:self.rows]
             else:
