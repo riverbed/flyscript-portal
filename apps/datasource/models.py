@@ -124,6 +124,9 @@ class Column(models.Model):
 # Job
 #
 class Job(models.Model):
+
+    table = models.ForeignKey(Table)
+    criteria = JSONField(default={})
     handle = models.CharField(max_length=100)
 
     NEW = 0
@@ -140,21 +143,24 @@ class Job(models.Model):
     message = models.CharField(max_length=200, default="")
     progress = models.IntegerField(default=-1)
     remaining = models.IntegerField(default=-1)
-    table = models.ForeignKey(Table)
 
     def __unicode__(self):
-        return "%s, %s %s%%" % (self.handle, self.status, self.progress)
+        return "%s, %s %s%%" % (self.table.name, self.status, self.progress)
     
     def done(self):
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
-        return os.path.join(settings.DATA_CACHE, self.handle + ".data")
+        return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
     
     def data(self):
-        f = open(self.datafile(), "r")
-        reportdata = pickle.load(f)
-        f.close()
+        if os.path.exists(self.datafile()):
+            f = open(self.datafile(), "r")
+            reportdata = pickle.load(f)
+            f.close()
+        else:
+            reportdata = None
+
         return reportdata
 
     def savedata(self, data):
@@ -168,6 +174,15 @@ class Job(models.Model):
                  'status': self.status,
                  'message': self.message,
                  'data': data }
+
+    def start(self):
+        # Lookup the query class for this table
+        import apps.datasource.modules
+        queryclass = apps.datasource.modules.__dict__[self.table.module].Table_Query
+
+        # Create an asynchronous worker to do the work
+        worker = AsyncWorker(self, queryclass)
+        worker.start()
 
 #
 # AsyncWorker

@@ -28,7 +28,7 @@
                   class: 'blackbox span' + w.colwidth })
                   .text ("Widget " + w.widgetid)
                   .appendTo(row);
-              new global[w.widgettype[0]][w.widgettype[1]] ( w.callback, wid, w.options, w.ts );
+              new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, w.options, w.ts );
           });
       }
       

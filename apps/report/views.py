@@ -12,8 +12,13 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
 
-from apps.report.models import Report, Widget
+from apps.datasource.models import Job
+from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import JSONParser
 
 import logging
 logger = logging.getLogger(__name__)
@@ -94,7 +99,7 @@ def report_structure(request, report_id):
     for row in rows:
         for w in row:
             widget_def = { "widgettype": w.widgettype().split("."),
-                           "callback": "/report/%d/widget/%d" % (report.id, w.id),
+                           "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
                            "options": json.loads(w.get_uioptions()),
                            "widgetid": w.id,
                            "row": w.row,
@@ -151,5 +156,33 @@ def configure(request, report_id, widget_id=None):
                                    'reportForm': report_form,
                                    'widgetForms': widget_forms},
                                   context_instance=RequestContext(request))
+
+class WidgetJobsList(APIView):
+
+    parser_classes = (JSONParser,)
+
+    def get(self, request, format=None):
+        print "WidgetJobList get: %s" % request.DATA
+        return Response({"status": 3, "message": "test error"})
+
+    def post(self, request, report_id, widget_id, format=None):
+        print "WidgetJobs post: %s" % request.DATA
+        widget = Widget.objects.get(id=widget_id)
+        job = Job(table=widget.table(), handle="table-%d" % widget.table().id)
+        job.save()
+        job.start()
+
+        wjob = WidgetJob(widget=widget, job=job)
+        wjob.save()
+        
+        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_id, widget_id, wjob.id)})
+    
+class WidgetJobDetail(APIView):
+
+    def get(self, request, report_id, widget_id, job_id, format=None):
+        print "WidgetJobDetail (%s) get: %s" % (job_id, request.DATA)
+        wjob = WidgetJob.objects.get(id=job_id)
+        return wjob.response()
+        
 
 

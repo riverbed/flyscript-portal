@@ -80,9 +80,14 @@ class Widget(models.Model):
     def table(self, i=0):
         return self.tables.all()[i]
     
-    def poll(self, ts):
-        job = self.table().poll(ts)
+class WidgetJob(models.Model):
 
+    widget = models.ForeignKey(Widget)
+    job = models.ForeignKey(Job)
+
+    def response(self):
+        job = self.job
+        widget = self.widget
         if not job.done():
             # job not yet done, return an empty data structure
             logger.debug("widget.poll: Not done yet, %d%% complete" % job.progress)
@@ -91,14 +96,14 @@ class Widget(models.Model):
             resp = job.json()
         else:
             import apps.report.modules
-            widget_func = apps.report.modules.__dict__[self.module].__dict__[self.uiwidget]
-            if self.rows > 0:
-                tabledata = job.data()[:self.rows]
+            widget_func = apps.report.modules.__dict__[widget.module].__dict__[widget.uiwidget]
+            if widget.rows > 0:
+                tabledata = job.data()[:widget.rows]
             else:
                 tabledata = job.data()
 
             try:
-                data = widget_func(self, tabledata)
+                data = widget_func(widget, tabledata)
                 resp = job.json(data)
                 logger.debug("widget.poll: Job complete")
             except:
@@ -108,11 +113,11 @@ class Widget(models.Model):
                 traceback.print_exc()
 
             job.delete()
+            self.delete()
             
         resp['message'] = cgi.escape(resp['message'])
         return HttpResponse(json.dumps(resp))
-
-
+    
 class Axes:
     def __init__(self, definition):
         self.definition = definition

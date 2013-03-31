@@ -9,8 +9,9 @@
 
 killall -9 Python
 rm project.db
-rm datacache/*
+rm datacache/job*
 rm log*.txt
 python manage.py syncdb --noinput
 python sample_setup.py
 python manage.py runserver
+#python manage.py runserver `facter ipaddress`:8000

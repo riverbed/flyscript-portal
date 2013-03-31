@@ -26,8 +26,8 @@ function resize() {
 
 window.onresize = resize;
 
-function Widget (dataurl, divid, options, ts) {
-    this.dataurl = dataurl
+function Widget (posturl, divid, options, ts) {
+    this.posturl = posturl, 
     this.divid = divid;
     this.options = options;
 
@@ -41,15 +41,25 @@ function Widget (dataurl, divid, options, ts) {
     $('#' + divid).showLoading();
     $('#' + divid).setLoading(0);
     var self = this;
-    setTimeout(function() { self.getData(ts || $.now()) }, 0);
+    $.ajax({
+        dataType: "json",
+        type: "POST",
+        url: self.posturl,
+        data : { widget_id: self.widget_id,
+                 ts: ts },
+        success: function(data, textStatus) {
+            self.joburl = data.joburl,
+            setTimeout(function() { self.getData(ts) }, 1000);
+        },
+        error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
+    });
 }
-
 
 Widget.prototype.getData = function(ts) {
     var self = this;
     $.ajax({
         dataType: "json",
-        url: this.dataurl + "?ts=" + ts,
+        url: self.joburl, 
         data: null,
         success: function(data, textStatus) { self.processResponse(ts, data, textStatus); },
         error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
