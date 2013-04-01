@@ -13,6 +13,7 @@ import pickle
 import logging
 import traceback
 import threading
+import numpy
 
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
@@ -87,7 +88,7 @@ class Table(models.Model):
 
                 # Lookup the query class for this table
                 import apps.datasource.modules
-                queryclass = apps.datasource.modules.__dict__[self.module].Table_Query
+                queryclass = apps.datasource.modules.__dict__[self.module].TableQuery
                 
                 # Create an asynchronous worker to do the work
                 worker = AsyncWorker(job, queryclass)
@@ -105,12 +106,14 @@ class Column(models.Model):
 
     table = models.ForeignKey(Table)
     name = models.CharField(max_length=30)
-    iskey = models.BooleanField(default=False)
     label = models.CharField(max_length=30)
-    datatype = models.CharField(max_length=50, default='') # metric, bytes, time -> XXXCJ make enumeration
-    units = models.CharField(max_length=50, default='') 
     position = models.IntegerField()
     options = JSONField()
+
+    iskey = models.BooleanField(default=False)
+    isnumeric = models.BooleanField(default=True)
+    datatype = models.CharField(max_length=50, default='') # metric, bytes, time -> XXXCJ make enumeration
+    units = models.CharField(max_length=50, default='') 
 
     def __unicode__(self):
         return self.label
@@ -126,8 +129,7 @@ class Column(models.Model):
 class Job(models.Model):
 
     table = models.ForeignKey(Table)
-    criteria = JSONField(default={})
-    handle = models.CharField(max_length=100)
+    criteria = JSONField(null=True)
 
     NEW = 0
     RUNNING = 1
@@ -146,6 +148,10 @@ class Job(models.Model):
 
     def __unicode__(self):
         return "%s, %s %s%%" % (self.table.name, self.status, self.progress)
+
+    @property
+    def handle(self):
+        return self.table.id
     
     def done(self):
         return self.status == Job.COMPLETE or self.status == Job.ERROR
@@ -167,6 +173,43 @@ class Job(models.Model):
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()
+
+    def pandas_dataframe(self):
+        import pandas
+
+        frame = pandas.DataFrame(self.data(),
+                                 columns = [col.name for col in self.table.get_columns()])
+
+        return frame
+        
+    def export_sqlite(self, dbfilename, tablename=None):
+        import sqlite3
+        if tablename is None:
+            tablename = "table%d" % self.table.id
+        conn = sqlite3.connect(dbfilename)
+        c = conn.cursor()
+        dbcols = []
+        for col in self.table.get_columns():
+            dbcols.append("%s %s" % (col.name, "real" if col.isnumeric else "text"))
+
+        c.execute("DROP TABLE IF EXISTS %s" % tablename)
+        dbstr = "CREATE TABLE %s (%s)" % (tablename, ",".join(dbcols))
+        print dbstr
+        c.execute(dbstr)
+
+        data = self.data()
+        for row in data:
+            dbcols = []
+            for col in row:
+                if type(col) in [str, unicode]:
+                    dbcols.append("'%s'" % col)
+                else:
+                    dbcols.append(str(col))
+            dbstr = "INSERT INTO %s VALUES(%s)" % (tablename, ",".join(dbcols))
+            print dbstr
+            c.execute(dbstr)
+        conn.commit()
+        conn.close()
         
     def json(self, data=None):
         return { 'progress': self.progress,
@@ -178,7 +221,7 @@ class Job(models.Model):
     def start(self):
         # Lookup the query class for this table
         import apps.datasource.modules
-        queryclass = apps.datasource.modules.__dict__[self.table.module].Table_Query
+        queryclass = apps.datasource.modules.__dict__[self.table.module].TableQuery
 
         # Create an asynchronous worker to do the work
         worker = AsyncWorker(self, queryclass)

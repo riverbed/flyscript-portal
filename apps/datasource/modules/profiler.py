@@ -6,7 +6,6 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
-import json
 import time
 import pickle
 import logging
@@ -38,7 +37,7 @@ class TableOptions(Options):
         self.centricity = centricity
 
 
-class Table_Query:
+class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
         self.table = table

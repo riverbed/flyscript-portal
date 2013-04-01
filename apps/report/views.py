@@ -168,7 +168,7 @@ class WidgetJobsList(APIView):
     def post(self, request, report_id, widget_id, format=None):
         print "WidgetJobs post: %s" % request.DATA
         widget = Widget.objects.get(id=widget_id)
-        job = Job(table=widget.table(), handle="table-%d" % widget.table().id)
+        job = Job(table=widget.table())
         job.save()
         job.start()
 

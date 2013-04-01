@@ -60,7 +60,7 @@ def PieWidget(widget, data):
 
     rows = []
 
-    if data:
+    if len(data) > 0:
         for reportrow in data:
             row = {}
             for i in range(0,len(qcols)):

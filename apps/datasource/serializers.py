@@ -12,7 +12,7 @@ class ColumnSerializer(serializers.ModelSerializer):
 class JobListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
-        fields = ('id', 'table', 'criteria', 'handle', 'status', 'message', 'progress', 'remaining')
+        fields = ('id', 'table', 'criteria', 'status', 'message', 'progress', 'remaining')
         read_only_fields = ('id', 'status', 'message', 'progress', 'remaining')
 
 class JobDataField(serializers.Field):
@@ -24,6 +24,6 @@ class JobSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Job
-        fields = ('table', 'criteria', 'handle', 'status', 'message', 'progress', 'remaining', 'data')
+        fields = ('table', 'criteria', 'status', 'message', 'progress', 'remaining', 'data')
         read_only_fields = ('status', 'message', 'progress', 'remaining')
 

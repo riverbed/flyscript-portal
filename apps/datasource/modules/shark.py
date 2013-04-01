@@ -45,7 +45,7 @@ class ColumnOptions(Options):
         self.extractor = extractor
         self.operation = operation
 
-class Table_Query:
+class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
         self.table = table
