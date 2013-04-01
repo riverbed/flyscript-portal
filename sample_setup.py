@@ -17,6 +17,9 @@ from apps.report.models import *
 from apps.geolocation.models import *
 from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
 
+
+#### Customize devices and authorization here
+
 tm08 = Device(name="tm08-1",
               module="profiler",
               host="tm08-1.lab.nbttech.com",
@@ -33,6 +36,7 @@ v10 = Device(name="vdorothy10",
              password="admin")
 v10.save()
 
+#### End device customization
 
 Location(name="Seattle", address="10.99.11.0", mask="255.255.255.0", latitude=47.6097, longitude=-122.3331).save()
 Location(name="LosAngeles", address="10.99.12.0", mask="255.255.255.0", latitude=34.0522, longitude=-118.2428).save()
