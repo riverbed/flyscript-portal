@@ -61,8 +61,6 @@ def main(request, report_id=None):
     except:
         ts = 1
 
-    print "TIME: %s" % ts
-        
     c = RequestContext( request,
                         { 'report' : report,
                           'reports' : reports,
@@ -109,20 +107,6 @@ def report_structure(request, report_id):
 
     return HttpResponse(json.dumps(definition))
 
-def poll(request, report_id, widget_id):
-    try:
-        if 'ts' in request.GET:
-            ts = request.GET['ts']
-        elif 'ts' in request.POST:
-            ts = request.POST['ts']
-        else:
-            ts = 1
-        widget = Widget.objects.get(id=widget_id)
-        return widget.poll(ts)
-    except:
-        traceback.print_exc()
-        return HttpResponse("Internal Error")
-
 def configure(request, report_id, widget_id=None):
     try:
         reports = Report.objects.all()
@@ -162,11 +146,9 @@ class WidgetJobsList(APIView):
     parser_classes = (JSONParser,)
 
     def get(self, request, format=None):
-        print "WidgetJobList get: %s" % request.DATA
         return Response({"status": 3, "message": "test error"})
 
     def post(self, request, report_id, widget_id, format=None):
-        print "WidgetJobs post: %s" % request.DATA
         widget = Widget.objects.get(id=widget_id)
         job = Job(table=widget.table())
         job.save()
@@ -180,7 +162,6 @@ class WidgetJobsList(APIView):
 class WidgetJobDetail(APIView):
 
     def get(self, request, report_id, widget_id, job_id, format=None):
-        print "WidgetJobDetail (%s) get: %s" % (job_id, request.DATA)
         wjob = WidgetJob.objects.get(id=job_id)
         return wjob.response()
         

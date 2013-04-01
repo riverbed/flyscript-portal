@@ -65,37 +65,6 @@ class Table(models.Model):
         cls = apps.datasource.modules.__dict__[self.module].TableOptions
         return cls.decode(json.dumps(self.options))
 
-    def poll(self, ts=1):
-        # Ultimately, this function must return the data for the Table
-        # The actual data is pulled from the "Table.module.TableQuery" 
-        #
-        # This class *may* do caching, in which case there either may be
-        # no actual call to the source to get data, or the call my cover
-        # a different timeframe
-
-        # Always create a Job
-        jobhandle = "job-table%s-ts%s" % (self.id, ts)
-        with lock:
-            try:
-                job = Job.objects.get(handle=jobhandle)
-                logger.debug("Table Job in progress: %s" % jobhandle)
-
-            except ObjectDoesNotExist:
-                logger.debug("New Table Job: %s" % jobhandle)
-
-                job = Job(table=self, handle=jobhandle)
-                job.save()
-
-                # Lookup the query class for this table
-                import apps.datasource.modules
-                queryclass = apps.datasource.modules.__dict__[self.module].TableQuery
-                
-                # Create an asynchronous worker to do the work
-                worker = AsyncWorker(job, queryclass)
-                worker.start()
-
-        return job
-
     def __unicode__(self):
         return str(self.id)
 
@@ -193,9 +162,7 @@ class Job(models.Model):
             dbcols.append("%s %s" % (col.name, "real" if col.isnumeric else "text"))
 
         c.execute("DROP TABLE IF EXISTS %s" % tablename)
-        dbstr = "CREATE TABLE %s (%s)" % (tablename, ",".join(dbcols))
-        print dbstr
-        c.execute(dbstr)
+        c.execute("CREATE TABLE %s (%s)" % (tablename, ",".join(dbcols)))
 
         data = self.data()
         for row in data:
@@ -205,9 +172,7 @@ class Job(models.Model):
                     dbcols.append("'%s'" % col)
                 else:
                     dbcols.append(str(col))
-            dbstr = "INSERT INTO %s VALUES(%s)" % (tablename, ",".join(dbcols))
-            print dbstr
-            c.execute(dbstr)
+            c.execute("INSERT INTO %s VALUES(%s)" % (tablename, ",".join(dbcols)))
         conn.commit()
         conn.close()
         

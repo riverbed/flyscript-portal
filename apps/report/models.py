@@ -90,7 +90,7 @@ class WidgetJob(models.Model):
         widget = self.widget
         if not job.done():
             # job not yet done, return an empty data structure
-            logger.debug("widget.poll: Not done yet, %d%% complete" % job.progress)
+            logger.debug("WidgetJob %d: Not done yet, %d%% complete" % (self.id, job.progress))
             resp = job.json()
         elif job.status == Job.ERROR:
             resp = job.json()
@@ -105,7 +105,7 @@ class WidgetJob(models.Model):
             try:
                 data = widget_func(widget, tabledata)
                 resp = job.json(data)
-                logger.debug("widget.poll: Job complete")
+                logger.debug("WidgetJob %d complete" % self.id)
             except:
                 resp = job.json()
                 resp['status'] = Job.ERROR
