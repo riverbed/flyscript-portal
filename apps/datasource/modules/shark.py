@@ -27,6 +27,7 @@ from libs.options import Options
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
+
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
     return Shark(*args, **kwargs)
@@ -39,11 +40,13 @@ class TableOptions(Options):
         self.filter = filter
         self.aggregated = aggregated
 
+
 class ColumnOptions(Options):
     def __init__(self, extractor, operation=None, *args, **kwargs):
         super(Options, self).__init__(*args, **kwargs)
         self.extractor = extractor
         self.operation = operation
+
 
 class TableQuery:
     # Used by Table to actually run a query
@@ -52,93 +55,80 @@ class TableQuery:
         self.job = job
 
     def run(self):
-        cachefile = os.path.join(settings.DATA_CACHE, "table-%s.cache" % self.table.id)
-        if os.path.exists(cachefile):
-            # XXXCJ This cachefile hack is temporary and is only good for testing to avoid actually
-            # having to run the report every single time.
-            logger.debug("Using cache file")
-            f = open(cachefile, "r")
-            self.data = pickle.load(f)
-            f.close()
-        else:
-            logger.debug("Running new report")
-            table = self.table
-            options = table.get_options()
+        table = self.table
+        options = table.get_options()
 
-            shark = DeviceManager.get_device(table.device.id)
+        shark = DeviceManager.get_device(table.device.id)
 
-            columns = []
-            for tc in table.get_columns():
-                tc_options = tc.get_options()
-                if tc.iskey:
-                    c = Key(tc_options.extractor, description=tc.label)
-                else:
-                    if tc_options.operation:
-                        try:
-                            operation = getattr(Operation, tc_options.operation)
-                        except AttributeError:
-                            operation = Operation.sum
-                            print 'ERROR: Unknown operation attribute %s for column %s.' % (tc_options.operation,
-                                                                                            tc.name)
-                    else:
-                        operation = Operation.sum
-
-                    c = Value(tc_options.extractor, operation, description=tc.label)
-
-                columns.append(c)
-
-            sortcol=None
-            if table.sortcol is not None:
-                sortcol=table.sortcol.get_options().extractor
-
-            # get source type from options
-            try:
-                with lock:
-                    source = path_to_class(shark, options.view)
-            except RvbdHTTPException, e:
-                source = None
-                raise e
-
-            filters = []
-            if options.filter:
-                filters.append(SharkFilter(options.filter))
-
-            criteria = self.job.get_criteria()
-            tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
-                            end=datetime.datetime.fromtimestamp(criteria.t1))
-            filters.append(tf)
-
-            if source is not None:
-                with lock:
-                    view = shark.create_view(source, columns, filters=filters, sync=False)
-                    #sort_col=sortcol,
+        columns = []
+        for tc in table.get_columns():
+            tc_options = tc.get_options()
+            if tc.iskey:
+                c = Key(tc_options.extractor, description=tc.label)
             else:
-                # XXX raise other exception
-                return None
+                if tc_options.operation:
+                    try:
+                        operation = getattr(Operation, tc_options.operation)
+                    except AttributeError:
+                        operation = Operation.sum
+                        print 'ERROR: Unknown operation attribute %s for column %s.' % (tc_options.operation,
+                                                                                        tc.name)
+                else:
+                    operation = Operation.sum
 
-            done = False
-            logger.info("Waiting for report to complete")
-            while not done:
-                time.sleep(0.5)
-                with lock:
-                    s = view.get_progress()
-                    self.job.progress = s
-                    self.job.save()
-                done = (s == 100)
+                c = Value(tc_options.extractor, operation, description=tc.label)
 
-            # Retrieve the data
+            columns.append(c)
+
+        sortcol=None
+        if table.sortcol is not None:
+            sortcol=table.sortcol.get_options().extractor
+
+        # get source type from options
+        try:
             with lock:
-                self.data = view.get_data(aggregated=options.aggregated)
-                view.close()
+                source = path_to_class(shark, options.view)
+        except RvbdHTTPException, e:
+            source = None
+            raise e
 
-            if table.rows > 0:
-                self.data = self.data[:table.rows]
+        filters = []
+        if options.filter:
+            filters.append(SharkFilter(options.filter))
 
-            self.parse_data()
+        criteria = self.job.get_criteria()
+        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
+                        end=datetime.datetime.fromtimestamp(criteria.t1))
+        filters.append(tf)
 
-            f = open(cachefile, "w")
-            pickle.dump(self.data, f)
-            f.close()
+        if source is not None:
+            with lock:
+                view = shark.create_view(source, columns, filters=filters, sync=False)
+                #sort_col=sortcol,
+        else:
+            # XXX raise other exception
+            return None
+
+        done = False
+        logger.info("Waiting for report to complete")
+        while not done:
+            time.sleep(0.5)
+            with lock:
+                s = view.get_progress()
+                self.job.progress = s
+                self.job.save()
+            done = (s == 100)
+
+        # Retrieve the data
+        with lock:
+            self.data = view.get_data(aggregated=options.aggregated)
+            view.close()
+
+        if table.rows > 0:
+            self.data = self.data[:table.rows]
+
+
+        self.parse_data()
 
         return True
 

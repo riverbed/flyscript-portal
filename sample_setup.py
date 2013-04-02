@@ -227,7 +227,7 @@ wid.tables.add(dt)
 exit(0)
 
 dt = Table(name='MicroburstsTotal', module='shark', duration=10,
-           options={'device': shark.id,
+           options={
                     'aggregated': True,
                     'view': 'jobs/Flyscript-tests-job',
                     })
@@ -244,7 +244,7 @@ wid.save()
 wid.tables.add(dt)
 
 dt = Table(name='MicroburstsTime', module='shark', duration=10,
-           options={'device': shark.id,
+           options={
                     'aggregated': False,
                     'view': 'jobs/Flyscript-tests-job',
            })

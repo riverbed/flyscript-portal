@@ -39,7 +39,7 @@ class ReportView(APIView):
     #
     # Main handler for /report/{id}
     #
-    def get(self, request, report_id):
+    def get(self, request, report_id=None):
         try:
             reports = Report.objects.all()
             if report_id is None:
