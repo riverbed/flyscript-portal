@@ -45,3 +45,9 @@ see some plots:
 <p align="center">
 <img src="https://splash.riverbed.com/servlet/JiveServlet/showImage/102-1751-1-2059/Screen+Shot+2013-04-01+at+12.32.15+AM.png?raw=true" alt="FlyScript Portal Example Page" />
 </p>
+
+*Note:*
+This project utilizes file storage caching of the data results, and these files are
+stored in the `datacache` directory.  Eventually these files will be automatically
+cleaned, but in the interim, there are no ill effects if they are manually deleted
+periodically to reclaim storage space.
