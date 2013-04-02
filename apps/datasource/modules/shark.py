@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
-import time
+import time, datetime
 import pickle
 import logging
 import threading
@@ -103,8 +103,10 @@ class TableQuery:
             if options.filter:
                 filters.append(SharkFilter(options.filter))
 
-            if table.duration:
-                filters.append(TimeFilter.parse_range("last %d m" % table.duration))
+            criteria = self.job.get_criteria()
+            tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
+                            end=datetime.datetime.fromtimestamp(criteria.t1))
+            filters.append(tf)
 
             if source is not None:
                 with lock:

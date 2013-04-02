@@ -9,8 +9,8 @@
 
 var rvbd_yui3 = {};
 
-rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options, ts) {
-    Widget.apply(this, [dataurl, divid, options, ts]);
+rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options, timeinfo) {
+    Widget.apply(this, [dataurl, divid, options, timeinfo]);
 }
 
 rvbd_yui3.TimeSeriesWidget.prototype = inherit(Widget.prototype)
@@ -75,8 +75,8 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
     });
 }
 
-rvbd_yui3.TableWidget = function (dataurl, divid, options) {
-    Widget.apply(this, [dataurl, divid, options]);
+rvbd_yui3.TableWidget = function (dataurl, divid, options, timeinfo) {
+    Widget.apply(this, [dataurl, divid, options, timeinfo]);
 };
 rvbd_yui3.TableWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.TableWidget.prototype.constructor = rvbd_yui3.TableWidget;
@@ -121,8 +121,8 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
 }
 
 
-rvbd_yui3.BarWidget = function (dataurl, divid, options) {
-    Widget.apply(this, [dataurl, divid, options]);
+rvbd_yui3.BarWidget = function (dataurl, divid, options, timeinfo) {
+    Widget.apply(this, [dataurl, divid, options, timeinfo]);
 }
 rvbd_yui3.BarWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.BarWidget.prototype.constructor = rvbd_yui3.BarWidget;
@@ -184,8 +184,8 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
     });
 }
 
-rvbd_yui3.PieWidget = function (dataurl, divid, options) {
-    Widget.apply(this, [dataurl, divid, options]);
+rvbd_yui3.PieWidget = function (dataurl, divid, options, timeinfo) {
+    Widget.apply(this, [dataurl, divid, options, timeinfo]);
 }
 rvbd_yui3.PieWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.PieWidget.prototype.constructor = rvbd_yui3.PieWidget;

@@ -10,9 +10,7 @@
 @media print
 {
   div 
-  {
-    page-break-inside: avoid;
-    }
+  { page-break-inside: avoid; }
 }
 
 .blackbox
@@ -21,14 +19,6 @@
   margin-bottom: 10px;                                          
   }
 
-@media (min-width: 980px) 
-{
-  body 
-  {
-    padding-top: 60px;
-    padding-bottom: 42px;
-    }
-}
 
 .loading-indicator
  {
@@ -68,3 +58,4 @@
 
 #map_canvas img { max-width: none; }
 
+.navbar .nav > li { z-index: 10000; }

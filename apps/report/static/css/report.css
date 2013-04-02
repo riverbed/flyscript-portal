@@ -3,3 +3,7 @@
  }
 
 .mapcanvas img { max-width: none; }
+
+.date { width: 100px; }
+.time { width: 100px; }
+.duration { width: 100px; }

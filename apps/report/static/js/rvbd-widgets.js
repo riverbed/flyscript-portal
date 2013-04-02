@@ -26,7 +26,7 @@ function resize() {
 
 window.onresize = resize;
 
-function Widget (posturl, divid, options, ts) {
+function Widget (posturl, divid, options, timeinfo) {
     this.posturl = posturl, 
     this.divid = divid;
     this.options = options;
@@ -38,50 +38,50 @@ function Widget (posturl, divid, options, ts) {
     if (options.minHeight) {
         $('#' + divid).height(options.minHeight);
     }
-    $('#' + divid).showLoading();
-    $('#' + divid).setLoading(0);
+    //$('#' + divid).showLoading();
+    //$('#' + divid).setLoading(0);
     var self = this;
     $.ajax({
         dataType: "json",
         type: "POST",
         url: self.posturl,
         data : { widget_id: self.widget_id,
-                 ts: ts },
+                 timeinfo: JSON.stringify(timeinfo) },
         success: function(data, textStatus) {
             self.joburl = data.joburl,
-            setTimeout(function() { self.getData(ts) }, 1000);
+            setTimeout(function() { self.getData(timeinfo) }, 1000);
         },
         error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
     });
 }
 
-Widget.prototype.getData = function(ts) {
+Widget.prototype.getData = function(timeinfo) {
     var self = this;
     $.ajax({
         dataType: "json",
         url: self.joburl, 
         data: null,
-        success: function(data, textStatus) { self.processResponse(ts, data, textStatus); },
+        success: function(data, textStatus) { self.processResponse(timeinfo, data, textStatus); },
         error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
     });
 }
 
-Widget.prototype.processResponse = function(ts, response, textStatus)
+Widget.prototype.processResponse = function(timeinfo, response, textStatus)
 {
     var self = this;
     if (response.status == 2) {
         // COMPLETE
-        $('#' + this.divid).hideLoading();
+        //$('#' + this.divid).hideLoading();
         this.render(response.data);
     } else if (response.status == 3) {
         // ERROR
-        $('#' + this.divid).hideLoading();
+        //$('#' + this.divid).hideLoading();
         $('#' + this.divid).html("<p>Server error: <pre>" + response.message + "</pre></p>");
     } else {
         if (response.progress > 0) {
             $('#' + this.divid).setLoading(response.progress);
         }
-        setTimeout(function() { self.getData(ts) }, 1000);
+        setTimeout(function() { self.getData(timeinfo) }, 1000);
     }
 }
 

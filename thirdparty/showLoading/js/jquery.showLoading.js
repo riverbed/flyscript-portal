@@ -37,7 +37,7 @@ jQuery.fn.showLoading = function(options) {
     jQuery.extend(settings, options);
     
     var loadingDiv = jQuery('<div style="text-align:center"></div>');
-    var overlayDiv = jQuery('<div></div>');
+    var overlayDiv = jQuery('<div style="border: solid 1px green"></div>');
 
     //
     // Set up ID and classes
@@ -48,7 +48,11 @@ jQuery.fn.showLoading = function(options) {
     else {
 	indicatorID = jQuery(this).attr('id');
     }
-    
+
+    //jQuery(this).resize(function(e) {
+    //    alert("Change event");
+    //});
+
     jQuery(loadingDiv).attr('id', 'loading-indicator-' + indicatorID );
     jQuery(loadingDiv).addClass('loading-indicator');
 
@@ -91,8 +95,8 @@ jQuery.fn.showLoading = function(options) {
     //
     border_top_width = isNaN(parseInt(border_top_width)) ? 0 : border_top_width;
     border_left_width = isNaN(parseInt(border_left_width)) ? 0 : border_left_width;
-    
-    var overlay_left_pos = jQuery(this).offset().left + parseInt(border_left_width);
+
+    var overlay_left_pos = jQuery(this).offset().left + parseInt(border_left_width);// +  $(document.body).css( "border-left" );
     var overlay_top_pos = jQuery(this).offset().top + parseInt(border_top_width);
     
     if ( settings.overlayWidth !== null ) {

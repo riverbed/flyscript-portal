@@ -16,8 +16,10 @@ class Options(object):
 
     @classmethod
     def decode(cls, obj):
-        if obj != '""':
-            return cls(**json.loads(obj))
+        kwargs = json.loads(obj)
+        if kwargs is not None:
+            o = cls(**kwargs)
+            return o
         return cls()
     
 

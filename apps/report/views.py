@@ -7,18 +7,21 @@
 
 import json
 import traceback
+import datetime
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
 
-from apps.datasource.models import Job
+from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+
+from rvbd.common import datetime_to_seconds, parse_timedelta
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,81 +34,64 @@ def root(request):
 
     return HttpResponseRedirect('/report/%d' % reports[0].id)
 
-#
-# Main handler for /report/{id}
-#
-def main(request, report_id=None):
-    try:
-        reports = Report.objects.all()
-        if report_id is None:
-            report = reports[0]
-        else:
-            report = Report.objects.get(pk=int(report_id))
-    except:
-        raise Http404
-
-    t = loader.get_template('report.html')
-
-    lastrow = -1
-    i = -1
-    rows = []
-    for w in Widget.objects.filter(report=report).order_by('row','col'):
-        if w.row != lastrow:
-            i = i+1
-            lastrow = w.row
-            rows.append([])
-        rows[i].append(Widget.objects.get_subclass(id=w.id))
-
-    try:
-        ts = request.POST['ts']
-    except:
-        ts = 1
-
-    c = RequestContext( request,
-                        { 'report' : report,
-                          'reports' : reports,
-                          'rows': rows,
-                          'ts': ts
-                          } )
+class ReportView(APIView):
     
-    return HttpResponse(t.render(c))
+    #
+    # Main handler for /report/{id}
+    #
+    def get(self, request, report_id):
+        try:
+            reports = Report.objects.all()
+            if report_id is None:
+                report = reports[0]
+            else:
+                report = Report.objects.get(pk=int(report_id))
+        except:
+            raise Http404
 
-def report_structure(request, report_id):
-    try:
-        report = Report.objects.get(pk=int(report_id))
-    except:
-        raise Http404
+        t = loader.get_template('report.html')
+        c = RequestContext( request,
+                            { 'report' : report,
+                              'reports' : reports
+                              } );
 
-    lastrow = -1
-    i = -1
-    rows = []
-    for w in Widget.objects.filter(report=report).order_by('row','col'):
-        if w.row != lastrow:
-            i = i+1
-            lastrow = w.row
-            rows.append([])
-        rows[i].append(Widget.objects.get_subclass(id=w.id))
+        return HttpResponse(t.render(c))
 
-    if 'ts' in request.GET:
-        ts = request.GET['ts']
-    elif 'ts' in request.POST:
-        ts = request.POST['ts']
-    else:
-        ts = 1
+    def put(self, request, report_id):
+        try:
+            report = Report.objects.get(pk=int(report_id))
+        except:
+            raise Http404
 
-    definition = []
-    for row in rows:
-        for w in row:
-            widget_def = { "widgettype": w.widgettype().split("."),
-                           "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
-                           "options": json.loads(w.get_uioptions()),
-                           "widgetid": w.id,
-                           "row": w.row,
-                           "colwidth": w.colwidth,
-                           "ts" : ts }
-            definition.append(widget_def)
+        lastrow = -1
+        i = -1
+        rows = []
+        for w in Widget.objects.filter(report=report).order_by('row','col'):
+            if w.row != lastrow:
+                i = i+1
+                lastrow = w.row
+                rows.append([])
+            rows[i].append(Widget.objects.get_subclass(id=w.id))
 
-    return HttpResponse(json.dumps(definition))
+        params = json.loads(request.raw_post_data)
+        d = datetime.datetime.strptime(params['date'] + ' ' + params['time'], '%m/%d/%Y %I:%M%p')
+
+
+        definition = []
+        for row in rows:
+            for w in row:
+                widget_def = { "widgettype": w.widgettype().split("."),
+                               "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
+                               "options": json.loads(w.get_uioptions()),
+                               "widgetid": w.id,
+                               "row": w.row,
+                               "colwidth": w.colwidth,
+                               "timeinfo" : { 'endtime': datetime_to_seconds(d),
+                                              'duration': params['duration'] }
+                               }
+                definition.append(widget_def)
+
+        return HttpResponse(json.dumps(definition))
 
 def configure(request, report_id, widget_id=None):
     try:
@@ -145,14 +131,26 @@ class WidgetJobsList(APIView):
 
     parser_classes = (JSONParser,)
 
-    def get(self, request, format=None):
-        return Response({"status": 3, "message": "test error"})
-
     def post(self, request, report_id, widget_id, format=None):
+        logger.debug("WidgetJob(%s,%s) POST: %s" %
+                     (report_id, widget_id, request.POST))
+
+        timeinfo = json.loads(request.POST['timeinfo'])
+
         widget = Widget.objects.get(id=widget_id)
-        job = Job(table=widget.table())
+
+        if timeinfo['duration'] == 'Default':
+            duration = None
+        else:
+            duration = parse_timedelta(timeinfo['duration']).total_seconds()
+            
+        criteria = Criteria(t1=timeinfo['endtime'],
+                            duration=duration)
+        job = Job(table=widget.table(),
+                  criteria=criteria.__dict__)
         job.save()
         job.start()
+
 
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()

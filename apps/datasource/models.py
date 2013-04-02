@@ -13,10 +13,13 @@ import pickle
 import logging
 import traceback
 import threading
-import numpy
+import time
+import md5
 
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+
+from libs.options import Options
 
 from project import settings
 
@@ -92,6 +95,29 @@ class Column(models.Model):
         cls = apps.datasource.modules.__dict__[self.table.module].ColumnOptions
         return cls.decode(json.dumps(self.options))
 
+class Criteria(Options):
+    def __init__(self, t0=None, t1=None, duration=None, *args, **kwargs):
+        super(Criteria, self).__init__(*args, **kwargs)
+        self.t0 = t0
+        self.t1 = t1
+        self.duration = duration
+
+    def compute_times(self, table):
+        if self.t1 is None:
+            self.t1 = time.time()
+
+        # Snap backwards based on table resolution
+        self.t1 = self.t1 - self.t1 % table.resolution
+
+        if self.t0 is None:
+            if self.duration is None:
+                self.duration = table.duration*60
+
+            self.t0 = self.t1 - self.duration
+
+        self.t0 = self.t0 - self.t0 % table.resolution
+            
+
 #
 # Job
 #
@@ -120,7 +146,11 @@ class Job(models.Model):
 
     @property
     def handle(self):
-        return self.table.id
+        h = md5.new()
+        h.update(str(self.table.id))
+        h.update('.'.join([c.name for c in self.table.get_columns()]))
+        h.update(json.dumps(self.criteria))
+        return h.hexdigest()
     
     def done(self):
         return self.status == Job.COMPLETE or self.status == Job.ERROR
@@ -183,14 +213,37 @@ class Job(models.Model):
                  'message': self.message,
                  'data': data }
 
-    def start(self):
-        # Lookup the query class for this table
-        import apps.datasource.modules
-        queryclass = apps.datasource.modules.__dict__[self.table.module].TableQuery
+    def get_criteria(self):
+        c = Criteria.decode(json.dumps(self.criteria))
+        return c
 
-        # Create an asynchronous worker to do the work
-        worker = AsyncWorker(self, queryclass)
-        worker.start()
+    def save_criteria(self, criteria):
+        self.criteria = json.loads(criteria.encode())
+        self.save()
+        
+    def start(self):
+        # First, recompute the criteria times
+        criteria = self.get_criteria()
+        criteria.compute_times(self.table)
+        self.save_criteria(criteria)
+        criteria = self.get_criteria()
+
+        # See if this job was run before and we have a valid cache file
+        if os.path.exists(self.datafile()):
+            logger.debug("Job %s: results from cachefile" % str(self))
+            self.status = self.COMPLETE
+            self.progress = 100
+            self.save()
+
+        else:
+            logger.debug("Job %s: Spawning AsyncWorker to run report" % str(self))
+            # Lookup the query class for this table
+            import apps.datasource.modules
+            queryclass = apps.datasource.modules.__dict__[self.table.module].TableQuery
+            
+            # Create an asynchronous worker to do the work
+            worker = AsyncWorker(self, queryclass)
+            worker.start()
 
 #
 # AsyncWorker

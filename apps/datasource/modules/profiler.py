@@ -10,6 +10,7 @@ import time
 import pickle
 import logging
 import threading
+import datetime
 
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
@@ -36,7 +37,6 @@ class TableOptions(Options):
         self.realm = realm
         self.centricity = centricity
 
-
 class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
@@ -44,62 +44,52 @@ class TableQuery:
         self.job = job
         
     def run(self):
-        cachefile = os.path.join(settings.DATA_CACHE, "table-%s.cache" % self.table.id)
-        if os.path.exists(cachefile):
-            # XXXCJ This cachefile hack is temporary and is only good for testing to avoid actually
-            # having to run the report every single time.
-            logger.debug("Using cache file")
-            f = open(cachefile, "r")
-            self.data = pickle.load(f)
-            f.close()
-        else:
-            logger.debug("Running new report")
-            table = self.table
-            options = table.get_options()
+        table = self.table
+        options = table.get_options()
 
-            profiler = DeviceManager.get_device(table.device.id)
-            report = rvbd.profiler.report.SingleQueryReport(profiler)
+        profiler = DeviceManager.get_device(table.device.id)
+        report = rvbd.profiler.report.SingleQueryReport(profiler)
 
-            columns = [col.name for col in table.get_columns()]
+        columns = [col.name for col in table.get_columns()]
 
-            sortcol=None
-            if table.sortcol is not None:
-                sortcol=table.sortcol.name
+        sortcol=None
+        if table.sortcol is not None:
+            sortcol=table.sortcol.name
 
-            realm = options.realm or 'traffic_summary'
+        realm = options.realm or 'traffic_summary'
 
+        criteria = self.job.get_criteria()
+        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
+                        end=datetime.datetime.fromtimestamp(criteria.t1))
+
+        with lock:
+            report.run(realm=realm,
+                       groupby=profiler.groupbys[options.groupby],
+                       columns=columns,
+                       timefilter=tf, 
+                       trafficexpr = TrafficFilter(table.filterexpr),
+                       resolution="%dmin" % (int(table.resolution / 60)),
+                       sort_col=sortcol,
+                       sync=False
+                       )
+
+        done = False
+        logger.info("Waiting for report to complete")
+        while not done:
+            time.sleep(0.5)
             with lock:
-                report.run(realm=realm,
-                           groupby=profiler.groupbys[options.groupby],
-                           columns=columns,
-                           timefilter=TimeFilter.parse_range("last %d m" % table.duration),
-                           trafficexpr = TrafficFilter(table.filterexpr),
-                           resolution="%dmin" % (int(table.resolution / 60)),
-                           sort_col=sortcol,
-                           sync=False
-                           )
+                s = report.status()
 
-            done = False
-            logger.info("Waiting for report to complete")
-            while not done:
-                time.sleep(0.5)
-                with lock:
-                    s = report.status()
+            self.job.progress = int(s['percent'])
+            self.job.save()
+            done = (s['status'] == 'completed')
 
-                self.job.progress = int(s['percent'])
-                self.job.save()
-                done = (s['status'] == 'completed')
+        # Retrieve the data
+        with lock:
+            self.data = report.get_data()
 
-            # Retrieve the data
-            with lock:
-                self.data = report.get_data()
-
-            if table.rows > 0:
-                self.data = self.data[:table.rows]
-                
-            f = open(cachefile, "w")
-            pickle.dump(self.data, f)
-            f.close()
+        if table.rows > 0:
+            self.data = self.data[:table.rows]
 
         return True
 

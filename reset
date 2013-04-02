@@ -13,5 +13,6 @@ rm datacache/job*
 rm log*.txt
 python manage.py syncdb --noinput
 python sample_setup.py
+#python perf_massager.py
 python manage.py runserver
 #python manage.py runserver `facter ipaddress`:8000

@@ -63,7 +63,7 @@ dt.save()
 Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
 Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
 
-wid = Widget(report=overall, title="Overall Traffic (last hour)", 
+wid = Widget(report=overall, title="Overall Traffic", 
              row=1, col=1, colwidth=12,
              options={'axes': {'0': {'title': 'bytes/s',
                                      'position': 'left',
@@ -74,7 +74,6 @@ wid = Widget(report=overall, title="Overall Traffic (last hour)",
 wid.save()
 wid.tables.add(dt)
 
-
 # Define a TimeSeries 
 dt = Table(name='ts2', module='profiler', device=tm08, duration=60,
            filterexpr = 'host 10.99/16',
@@ -84,7 +83,7 @@ dt.save()
 Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
 Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
 
-wid = Widget(report=overall, title="Traffic for hosts in 10.99/16 (last hour)", 
+wid = Widget(report=overall, title="Traffic for hosts in 10.99/16", 
              row=2, col=1, colwidth=6,
              options={'axes': {'0': {'title': 'bytes/s',
                                      'position': 'left',
@@ -104,7 +103,7 @@ dt.save()
 Column(table=dt, name='time', iskey=True, label='Time', datatype='time', position=1).save()
 Column(table=dt, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
 
-wid = Widget(report=overall, title="Traffic for hosts in  10.99.15/24 (last hour)", 
+wid = Widget(report=overall, title="Traffic for hosts in  10.99.15/24", 
              row=2, col=2, colwidth=6,
              options={'axes': {'0': {'title': 'bytes/s',
                                      'position': 'left',
@@ -272,8 +271,8 @@ exit(0)
 
 translations = { "Avg Bytes/s": "平均バイト数/秒",
                  "Overall Traffic (last hour)": "全てのトラッフィック (過去１時間以内)",
-                 "Traffic for hosts in  10.99/16 (last hour)" : "10.99/16サブネット内のホストへのトラッフィック (過去１時間以内)",
-                 "Traffic for hosts in  10.99.15/24 (last hour)" : "10.99.15/24サブネット内のホストへのトラッフィック (過去１時間以内)",
+                 "Traffic for hosts in  10.99/16" : "10.99/16サブネット内のホストへのトラッフィック",
+                 "Traffic for hosts in  10.99.15/24" : "10.99.15/24サブネット内のホストへのトラッフィック",
                  "Total Bytes" : "合計バイト数",
                  "Locations by Bytes" : "場所別　合計バイト数/秒の割合",
                  "Location" : "場所",
