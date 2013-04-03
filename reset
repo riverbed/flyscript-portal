@@ -16,9 +16,9 @@ PYTHONPATH=$PYTHONPATH:`pwd`
 python manage.py syncdb --noinput
 python config/devices.py
 python config/locations.py
-python config/reports/1-overall.py
-python config/reports/2-profiler.py
-python config/reports/3-shark.py
-python config/reports/4-map.py
+python config/reports/1_overall.py
+python config/reports/2_profiler.py
+python config/reports/3_shark.py
+python config/reports/4_map.py
 python manage.py runserver
 #python manage.py runserver `facter ipaddress`:8000
