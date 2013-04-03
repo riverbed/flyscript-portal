@@ -11,11 +11,9 @@ import os
 import pickle
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import *
-from apps.report.models import *
+from apps.datasource.models import Device, Column
+from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
-from apps.geolocation.models import *
-from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
 from apps.datasource.modules.profiler import TimeSeriesTable
 
 #### Load devices that are defined

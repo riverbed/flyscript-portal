@@ -9,9 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import *
-from apps.report.models import *
-from apps.geolocation.models import *
+from apps.datasource.models import Device, Column
+from apps.report.models import Report, Table
 from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
 import apps.report.modules.yui3 as yui3
 
@@ -36,6 +35,8 @@ Column(table=table, name='ip_dst', iskey=True, label='Dest IP', position=2,
        options=shark_ColumnOptions(extractor='ip.dst').__dict__).save()
 Column(table=table, name='generic_packets', iskey=False, label='Packets', position=3,
        options=shark_ColumnOptions(extractor='generic.packets', operation='sum').__dict__).save()
+
+#foo()
 
 yui3.TableWidget.create(report, table, "Shark Packets (last 10 minutes)", width=12)
 

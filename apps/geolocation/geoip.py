@@ -5,12 +5,15 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
+import socket
 import pygeoip
+import threading
 from pygeoip.util import ip2long
 
 from rvbd.common.utils import DictObject
 
-from apps.geolocation.models import *
+from apps.geolocation.models import Location
 
 GEOLOCATION_DATA_FILE = '/tmp/GeoLiteCity.dat1'
 lookup_lock = threading.Lock()

@@ -9,11 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import *
-from apps.report.models import *
-from apps.geolocation.models import *
-from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
-
+from apps.datasource.models import Device, Column
+from apps.report.models import Report, Table
 import apps.report.modules.google_maps as google_maps
 
 #### Customize devices and authorization here

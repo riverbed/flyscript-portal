@@ -7,16 +7,12 @@
 
 import pygeoip
 from pygeoip.util import ip2long
-import socket
-import json
-import socket
 import threading
 import os.path
 
-from apps.report.models import *
+from apps.report.models import Widget
 from apps.geolocation.models import Location
 from apps.geolocation.geoip import Lookup
-from rvbd.common.utils import DictObject
 
 class MapWidget:
     @classmethod
@@ -62,7 +58,7 @@ class MapWidget:
 
             if col.datatype == 'bytes':
                 formatter = 'formatBytes'
-            elif wc.datatype == 'metric':
+            elif col.datatype == 'metric':
                 formatter = 'formatMetric'
             else:
                 formatter = None;

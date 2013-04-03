@@ -6,13 +6,9 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.db import models
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.core.exceptions import ObjectDoesNotExist
 
 import logging
 logger = logging.getLogger(__name__)
-
-from apps.datasource.models import *
 
 #######################################################################
 #
