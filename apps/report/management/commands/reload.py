@@ -23,7 +23,7 @@ def import_directory(root):
     rootpath = os.path.basename(root)
     for path, dirs, files in os.walk(root):
         for f in files:
-            if f.endswith('.pyc') or f == '__init__.py':
+            if not f.endswith('.py'):
                 continue
             f = os.path.splitext(f)[0]
             dirpath = os.path.relpath(path, root)
@@ -43,8 +43,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # clear everything
         management.call_command('clean', all=True)
-        time.sleep(1)
         management.call_command('syncdb', interactive=False)
-        time.sleep(1)
         CONFIG_DIR = os.path.join(settings.PROJECT_ROOT, 'config')
         import_directory(CONFIG_DIR)
