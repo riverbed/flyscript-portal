@@ -5,6 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
 import json
 import traceback
 import datetime
@@ -12,6 +13,7 @@ import datetime
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
+from django.core import management
 
 from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
@@ -33,6 +35,20 @@ def root(request):
         return HttpResponse("No reports defined!")
 
     return HttpResponseRedirect('/report/%d' % reports[0].id)
+
+
+def reload_config(request):
+    from project import settings
+    management.call_command('reload')
+
+    # sets modified time on file so development server will restart
+    os.utime(os.path.join(settings.PROJECT_ROOT, 'project', 'urls.py'), None)
+
+    try:
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    except KeyError:
+        return HttpResponseRedirect('/report')
+
 
 class ReportView(APIView):
     

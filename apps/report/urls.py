@@ -18,6 +18,8 @@ urlpatterns = patterns(
     'apps.report.views',
     url(r'^$', views.ReportView.as_view()),
 
+    url(r'^reload$', 'reload_config'),
+
     url(r'^(?P<report_id>[0-9]+)/$',
         views.ReportView.as_view()),
 

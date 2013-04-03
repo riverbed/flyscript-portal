@@ -42,8 +42,7 @@ wid = Widget(report=report, title="Shark Packets (last 10 minutes)",
 wid.save()
 wid.tables.add(dt)
 
-exit(0)
-
+"""
 dt = Table(name='MicroburstsTotal', module='shark', duration=10,
            options={
                     'aggregated': True,
@@ -84,4 +83,4 @@ wid = Widget(report=report, title="Microburst Packets Timeseries (last 10 minute
 wid.save()
 wid.tables.add(dt)
 #
-
+"""
