@@ -11,9 +11,11 @@ import cgi
 import json
 import logging
 import traceback
+import importlib
 
 from django.db import models
 from django.http import HttpResponse
+from django.db.models import Max, Sum
 
 from model_utils.managers import InheritanceManager
 from jsonfield import JSONField
@@ -50,7 +52,8 @@ class Widget(models.Model):
     title = models.CharField(max_length=100)
     row = models.IntegerField()
     col = models.IntegerField()
-    colwidth = models.IntegerField(default=1)
+    width = models.IntegerField(default=1)
+    height = models.IntegerField(default=300)
     rows = models.IntegerField(default=-1)
     options = JSONField()
 
@@ -64,7 +67,7 @@ class Widget(models.Model):
         return self.title
 
     def widgettype(self):
-        return 'rvbd_%s.%s' % (self.module, self.uiwidget)
+        return 'rvbd_%s.%s' % (self.module.split('.')[-1], self.uiwidget)
 
     def get_uioptions(self):
         return json.dumps(self.uioptions)
@@ -80,7 +83,24 @@ class Widget(models.Model):
 
     def table(self, i=0):
         return self.tables.all()[i]
-    
+
+    def compute_row_col(self):
+        rowmax = Widget.objects.filter(report=self.report).aggregate(Max('row'))
+        row = rowmax['row__max']
+        if row is None:
+            row = 1
+            col = 1
+        else:
+            widthsum = Widget.objects.filter(report=self.report, row=row).aggregate(Sum('width'))
+            width = widthsum['width__sum']
+            if width + self.width > 12:
+                row = row + 1
+                col = 1
+            else:
+                col = width + 1
+        self.row = row
+        self.col = col
+
 class WidgetJob(models.Model):
 
     widget = models.ForeignKey(Widget)
@@ -96,8 +116,8 @@ class WidgetJob(models.Model):
         elif job.status == Job.ERROR:
             resp = job.json()
         else:
-            import apps.report.modules
-            widget_func = apps.report.modules.__dict__[widget.module].__dict__[widget.uiwidget]
+            i = importlib.import_module(widget.module)
+            widget_func = i.__dict__[widget.uiwidget].process
             if widget.rows > 0:
                 tabledata = job.data()[:widget.rows]
             else:

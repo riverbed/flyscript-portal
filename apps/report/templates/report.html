@@ -3,6 +3,7 @@
 {% block header %}
     <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
     <script type="text/javascript">
+      var runRequested = false;
       $(document).ready( function() {
           //run();
           $('#date').datepicker({
@@ -21,6 +22,7 @@
              $('#date').datepicker('setDate', new Date()); 
           });
           $('#time').timepicker('setTime', new Date());
+          $("#criteria").on('hidden', function() { dorun() });
         });
 
     </script>
@@ -41,27 +43,36 @@
               var wid = "chart_" + w.widgetid;
               $('<div />',
                 { id: wid,
-                  class: 'blackbox span' + w.colwidth })
+                  class: 'blackbox span' + w.width })
                   .text ("Widget " + w.widgetid)
                   .appendTo(row);
-              new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, w.options, w.timeinfo );
+
+              debugger;
+              var opts = w.options || {};
+              opts.height = w.height;
+              new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.timeinfo );
           });
       }
       
       function run() {
+          runRequested = true;
           $("#criteria").collapse('hide');
-          $("#criteria").on('hidden', function () {
-            $.ajax({
-                dataType:"json",
-                type: "PUT",
-                url: "/report/{{ report.id }}/",
-                data: JSON.stringify({ time: $("#time").val(),
-                        date: $("#date").val(),
-                        duration: $("#duration").val()
-                        }),
-                success: function(data, textStatus) { renderReport(data); },
-                error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
-            });
+      }
+
+      function dorun() {
+          if (!runRequested)
+              return;
+          runRequested = false;
+          $.ajax({
+              dataType:"json",
+              type: "PUT",
+              url: "/report/{{ report.id }}/",
+              data: JSON.stringify({ time: $("#time").val(),
+                                     date: $("#date").val(),
+                                     duration: $("#duration").val()
+                                   }),
+              success: function(data, textStatus) { renderReport(data); },
+              error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
           });
       }
     </script>
