@@ -30,8 +30,9 @@ report.save()
 # Define a Overall TimeSeries showing Avg Bytes/s
 table = TimeSeriesTable.create('ts1', 'tm08-1', duration=60)
 
-Column(table=table, name='time', iskey=True, label='Time', datatype='time', position=1).save()
-Column(table=table, name='avg_bytes', iskey=False, label='Avg Bytes/s', datatype='bytes', units = 'B/s', position=2).save()
+Column.create(table, 'time', 'Time', datatype='time', iskey=True)
+Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
+Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
 yui3.TimeSeriesWidget.create(report, table, "Overall Traffic", width=12)
 

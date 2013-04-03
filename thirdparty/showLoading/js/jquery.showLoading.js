@@ -37,7 +37,7 @@ jQuery.fn.showLoading = function(options) {
     jQuery.extend(settings, options);
     
     var loadingDiv = jQuery('<div style="text-align:center"></div>');
-    var overlayDiv = jQuery('<div style="border: solid 1px green"></div>');
+    var overlayDiv = jQuery('<div></div>');
 
     //
     // Set up ID and classes

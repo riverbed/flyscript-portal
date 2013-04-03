@@ -115,6 +115,7 @@ class WidgetJob(models.Model):
             resp = job.json()
         elif job.status == Job.ERROR:
             resp = job.json()
+            self.delete()
         else:
             i = importlib.import_module(widget.module)
             widget_func = i.__dict__[widget.uiwidget].process
@@ -133,7 +134,7 @@ class WidgetJob(models.Model):
                 resp['message'] = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
                 traceback.print_exc()
 
-            job.delete()
+            #job.delete()
             self.delete()
             
         resp['message'] = cgi.escape(resp['message'])

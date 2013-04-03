@@ -32,22 +32,26 @@ def DeviceManager_new(*args, **kwargs):
 
 class TimeSeriesTable:
     @classmethod
-    def create(cls, name, devicename, duration, filterexpr=None):
+    def create(cls, name, devicename, duration, filterexpr=None, interface=False):
         device = Device.objects.get(name=devicename)
+        centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
                   options={'realm': 'traffic_overall_time_series',
+                           'centricity': centricity,
                            'groupby': 'time'})
         t.save()
         return t
         
 class GroupByTable:
     @classmethod
-    def create(cls, name, devicename, groupby, duration, filterexpr=None):
+    def create(cls, name, devicename, groupby, duration, filterexpr=None, interface=False):
         device = Device.objects.get(name=devicename)
+        centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
-                  options={'groupby': groupby})
+                  options={'centricity': centricity,
+                           'groupby': groupby})
         t.save()
         return t
         
@@ -80,15 +84,16 @@ class TableQuery:
         realm = options.realm or 'traffic_summary'
 
         criteria = self.job.get_criteria()
-        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
-                        end=datetime.datetime.fromtimestamp(criteria.t1))
+        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
+                        end=datetime.datetime.fromtimestamp(criteria.endtime))
 
         with lock:
             report.run(realm=realm,
                        groupby=profiler.groupbys[options.groupby],
+                       centricity=options.centricity,
                        columns=columns,
                        timefilter=tf, 
-                       trafficexpr = TrafficFilter(table.filterexpr),
+                       trafficexpr = TrafficFilter(self.job.combine_filterexprs()),
                        resolution="%dmin" % (int(table.resolution / 60)),
                        sort_col=sortcol,
                        sync=False

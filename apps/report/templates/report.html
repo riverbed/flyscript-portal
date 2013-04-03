@@ -50,7 +50,7 @@
               debugger;
               var opts = w.options || {};
               opts.height = w.height;
-              new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.timeinfo );
+              new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.criteria );
           });
       }
       
@@ -69,7 +69,8 @@
               url: "/report/{{ report.id }}/",
               data: JSON.stringify({ time: $("#time").val(),
                                      date: $("#date").val(),
-                                     duration: $("#duration").val()
+                                     duration: $("#duration").val(),
+                                     filterexpr: $("#filterexpr").val()
                                    }),
               success: function(data, textStatus) { renderReport(data); },
               error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
@@ -92,7 +93,7 @@
     <div class="container-fluid">
       <div class="row-fluid">
           <div class="span2">
-              <h2>{{ report.title }}</h2>
+              <h3>{{ report.title }}</h3>
           </div>
       </div>
       <div class="row-fluid">
@@ -121,6 +122,7 @@
                       <option>1 day</option>
                     </select>
                 </td></tr>
+                <tr><td>Filter Expression:</td><td><input id="filterexpr"></input></td></tr>
               </table>
               <button onclick="run()">Run</button>
             </div> 

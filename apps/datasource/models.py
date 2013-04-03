@@ -86,7 +86,7 @@ class Column(models.Model):
 
     iskey = models.BooleanField(default=False)
     isnumeric = models.BooleanField(default=True)
-    datatype = models.CharField(max_length=50, default='') # metric, bytes, time -> XXXCJ make enumeration
+    datatype = models.CharField(max_length=50, default='') # metric, bytes, time ->git  XXXCJ make enumeration
     units = models.CharField(max_length=50, default='') 
 
     def __unicode__(self):
@@ -108,26 +108,27 @@ class Column(models.Model):
             table.save()
         
 class Criteria(Options):
-    def __init__(self, t0=None, t1=None, duration=None, *args, **kwargs):
+    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
-        self.t0 = t0
-        self.t1 = t1
+        self.starttime = starttime
+        self.endtime = endtime
         self.duration = duration
+        self.filterexpr = filterexpr
 
     def compute_times(self, table):
-        if self.t1 is None:
-            self.t1 = time.time()
+        if self.endtime is None:
+            self.endtime = time.time()
 
         # Snap backwards based on table resolution
-        self.t1 = self.t1 - self.t1 % table.resolution
+        self.endtime = self.endtime - self.endtime % table.resolution
 
-        if self.t0 is None:
+        if self.starttime is None:
             if self.duration is None:
                 self.duration = table.duration*60
 
-            self.t0 = self.t1 - self.duration
+            self.starttime = self.endtime - self.duration
 
-        self.t0 = self.t0 - self.t0 % table.resolution
+        self.starttime = self.starttime - self.starttime % table.resolution
             
 
 #
@@ -233,6 +234,20 @@ class Job(models.Model):
         self.criteria = json.loads(criteria.encode())
         self.save()
         
+    def combine_filterexprs(self, joinstr="and"):
+        exprs = []
+        criteria = self.get_criteria()
+        for e in [self.table.filterexpr, criteria.filterexpr]:
+            if e != "" and e != None:
+                exprs.append(e)
+
+        if len(exprs) > 1:
+            return "(" + (") " + joinstr + " (").join(exprs) + ")"
+        elif len(exprs) == 1:
+            return exprs[0]
+        else:
+            return ""
+            
     def start(self):
         # First, recompute the criteria times
         criteria = self.get_criteria()

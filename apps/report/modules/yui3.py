@@ -144,8 +144,8 @@ class TimeSeriesWidget:
         axes = { "time" : { "keys" : ["time"],
                             "position": "bottom",
                             "type": "time",
-                            "labelFormat": "%l:%M:%S %p",
-                            "styles" : { "label": { "rotation": -60 }}}}
+                            "labelFormat": "%k:%M",
+                            "styles" : { "label": { "fontSize": "8pt" }}}}
 
         for wc in widget.table().get_columns():
             # XXXCJ should not use name, maybe use datatype?
@@ -155,8 +155,8 @@ class TimeSeriesWidget:
             series.append({"xKey": "time",
                            "yKey": wc.name,
                            "styles": { "line": { "weight" : 1 },
-                                       "marker": { "height": 6,
-                                                   "width": 6 }}})
+                                       "marker": { "height": 3,
+                                                   "width": 3 }}})
             qcols.append(wc.name)
             wc_axis = w_axes.getaxis(wc.name)
             qcol_axis.append(wc_axis)
@@ -235,7 +235,10 @@ class TimeSeriesWidget:
             "stacked" : stacked,
             "dataProvider": rows,
             "seriesCollection" : series,
-            "axes": axes
+            "axes": axes,
+            "legend" : { "position" : "bottom",
+                         "fontSize" : "8pt",
+                         "styles" : { "gap": 0 } }
             }
 
         return data

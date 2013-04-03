@@ -26,7 +26,7 @@ function resize() {
 
 window.onresize = resize;
 
-function Widget (posturl, divid, options, timeinfo) {
+function Widget (posturl, divid, options, criteria) {
     this.posturl = posturl, 
     this.divid = divid;
     this.options = options;
@@ -39,50 +39,56 @@ function Widget (posturl, divid, options, timeinfo) {
     if (options.height) {
         $('#' + divid).height(options.height);
     }
-    //$('#' + divid).showLoading();
-    //$('#' + divid).setLoading(0);
+    $('#' + divid).showLoading();
+    $('#' + divid).setLoading(0);
     var self = this;
     $.ajax({
         dataType: "json",
         type: "POST",
         url: self.posturl,
         data : { widget_id: self.widget_id,
-                 timeinfo: JSON.stringify(timeinfo) },
+                 criteria: JSON.stringify(criteria) },
         success: function(data, textStatus) {
             self.joburl = data.joburl,
-            setTimeout(function() { self.getData(timeinfo) }, 1000);
+            setTimeout(function() { self.getData(criteria) }, 1000);
         },
-        error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
+        error: function(jqXHR, textStatus, errorThrown) { 
+            alert("an error occured: " + textStatus + " : " + errorThrown); 
+            $('#' + self.divid).hideLoading();
+        }
     });
 }
 
-Widget.prototype.getData = function(timeinfo) {
+Widget.prototype.getData = function(criteria) {
     var self = this;
     $.ajax({
         dataType: "json",
         url: self.joburl, 
         data: null,
-        success: function(data, textStatus) { self.processResponse(timeinfo, data, textStatus); },
-        error: function(jqXHR, textStatus, errorThrown) { alert("an error occured: " + textStatus + " : " + errorThrown); }
+        success: function(data, textStatus) { self.processResponse(criteria, data, textStatus); },
+        error: function(jqXHR, textStatus, errorThrown) { 
+            alert("an error occured: " + textStatus + " : " + errorThrown); 
+            $('#' + self.divid).hideLoading();
+        }
     });
 }
 
-Widget.prototype.processResponse = function(timeinfo, response, textStatus)
+Widget.prototype.processResponse = function(criteria, response, textStatus)
 {
     var self = this;
     if (response.status == 2) {
         // COMPLETE
-        //$('#' + this.divid).hideLoading();
+        $('#' + this.divid).hideLoading();
         this.render(response.data);
     } else if (response.status == 3) {
         // ERROR
-        //$('#' + this.divid).hideLoading();
+        $('#' + this.divid).hideLoading();
         $('#' + this.divid).html("<p>Server error: <pre>" + response.message + "</pre></p>");
     } else {
         if (response.progress > 0) {
             $('#' + this.divid).setLoading(response.progress);
         }
-        setTimeout(function() { self.getData(timeinfo) }, 1000);
+        setTimeout(function() { self.getData(criteria) }, 1000);
     }
 }
 

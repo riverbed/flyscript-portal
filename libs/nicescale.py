@@ -11,8 +11,8 @@ import math
 class NiceScale:
 
     def __init__(self, minval, maxval, maxticks=10, forcezero=False, zerothresh=0.2):
-        self.minval = minval
-        self.maxval = maxval
+        self.minval = minval if type(minval) in (int, float) else 0
+        self.maxval = maxval if type(maxval) in (int, float) else 0
         self.maxticks = maxticks
         self.zerothresh = zerothresh
         self.forcezero = forcezero

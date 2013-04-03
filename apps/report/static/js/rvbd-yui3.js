@@ -9,8 +9,8 @@
 
 var rvbd_yui3 = {};
 
-rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options, timeinfo) {
-    Widget.apply(this, [dataurl, divid, options, timeinfo]);
+rvbd_yui3.TimeSeriesWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
 }
 
 rvbd_yui3.TimeSeriesWidget.prototype = inherit(Widget.prototype)
@@ -70,13 +70,13 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
         };
 
     data.render =  "#" + contentid
-    YUI().use('charts', function(Y) {
+    YUI().use('charts-legend', function(Y) {
         var chart = new Y.Chart(data);
     });
 }
 
-rvbd_yui3.TableWidget = function (dataurl, divid, options, timeinfo) {
-    Widget.apply(this, [dataurl, divid, options, timeinfo]);
+rvbd_yui3.TableWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
 };
 rvbd_yui3.TableWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.TableWidget.prototype.constructor = rvbd_yui3.TableWidget;
@@ -121,8 +121,8 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
 }
 
 
-rvbd_yui3.BarWidget = function (dataurl, divid, options, timeinfo) {
-    Widget.apply(this, [dataurl, divid, options, timeinfo]);
+rvbd_yui3.BarWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
 }
 rvbd_yui3.BarWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.BarWidget.prototype.constructor = rvbd_yui3.BarWidget;
@@ -179,13 +179,13 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
         };
 
     data.render =  "#" + contentid
-    YUI().use('charts', function(Y) {
+    YUI().use('charts-legend', function(Y) {
         var chart = new Y.Chart(data);
     });
 }
 
-rvbd_yui3.PieWidget = function (dataurl, divid, options, timeinfo) {
-    Widget.apply(this, [dataurl, divid, options, timeinfo]);
+rvbd_yui3.PieWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
 }
 rvbd_yui3.PieWidget.prototype = inherit(Widget.prototype)
 rvbd_yui3.PieWidget.prototype.constructor = rvbd_yui3.PieWidget;
@@ -210,7 +210,7 @@ rvbd_yui3.PieWidget.prototype.render = function(data)
         height(div.height()-42)
 
     data.render =  "#" + contentid
-    YUI().use('charts', 'charts-legend', function(Y) {
+    YUI().use('charts-legend', function(Y) {
         var chart = new Y.Chart(data);
     });
 }

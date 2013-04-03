@@ -9,8 +9,8 @@
 
 var rvbd_google_maps = {};
 
-rvbd_google_maps.MapWidget = function (dataurl, divid, options, timeinfo) {
-    Widget.apply(this, [dataurl, divid, options, timeinfo]);
+rvbd_google_maps.MapWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
 };
 rvbd_google_maps.MapWidget.prototype = inherit(Widget.prototype)
 rvbd_google_maps.MapWidget.prototype.constructor = rvbd_google_maps.MapWidget;

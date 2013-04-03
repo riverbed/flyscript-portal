@@ -34,12 +34,10 @@ def DeviceManager_new(*args, **kwargs):
 
 
 class TableOptions(Options):
-    def __init__(self, view, filter=None, aggregated=False, *args, **kwargs):
+    def __init__(self, view, aggregated=False, *args, **kwargs):
         super(TableOptions, self).__init__(*args, **kwargs)
         self.view = view
-        self.filter = filter
         self.aggregated = aggregated
-
 
 class ColumnOptions(Options):
     def __init__(self, extractor, operation=None, *args, **kwargs):
@@ -93,12 +91,13 @@ class TableQuery:
             raise e
 
         filters = []
-        if options.filter:
-            filters.append(SharkFilter(options.filter))
+        filterexpr = self.job.combine_filterexprs(joinstr="&")
+        if filterexpr:
+            filters.append(SharkFilter(filterexpr))
 
         criteria = self.job.get_criteria()
-        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.t0),
-                        end=datetime.datetime.fromtimestamp(criteria.t1))
+        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
+                        end=datetime.datetime.fromtimestamp(criteria.endtime))
         filters.append(tf)
 
         if source is not None:

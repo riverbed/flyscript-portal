@@ -92,7 +92,6 @@ class ReportView(APIView):
         params = json.loads(request.raw_post_data)
         d = datetime.datetime.strptime(params['date'] + ' ' + params['time'], '%m/%d/%Y %I:%M%p')
 
-
         definition = []
         for row in rows:
             for w in row:
@@ -103,8 +102,9 @@ class ReportView(APIView):
                                "row": w.row,
                                "width": w.width,
                                "height": w.height,
-                               "timeinfo" : { 'endtime': datetime_to_seconds(d),
-                                              'duration': params['duration'] }
+                               "criteria" : { 'endtime': datetime_to_seconds(d),
+                                              'duration': params['duration'],
+                                              'filterexpr': params['filterexpr']}
                                }
                 definition.append(widget_def)
 
@@ -152,17 +152,18 @@ class WidgetJobsList(APIView):
         logger.debug("WidgetJob(%s,%s) POST: %s" %
                      (report_id, widget_id, request.POST))
 
-        timeinfo = json.loads(request.POST['timeinfo'])
+        criteria = json.loads(request.POST['criteria'])
 
         widget = Widget.objects.get(id=widget_id)
 
-        if timeinfo['duration'] == 'Default':
+        if criteria['duration'] == 'Default':
             duration = None
         else:
-            duration = parse_timedelta(timeinfo['duration']).total_seconds()
+            duration = parse_timedelta(criteria['duration']).total_seconds()
             
-        criteria = Criteria(t1=timeinfo['endtime'],
-                            duration=duration)
+        criteria = Criteria(endtime=criteria['endtime'],
+                            duration=duration,
+                            filterexpr=criteria['filterexpr'])
         job = Job(table=widget.table(),
                   criteria=criteria.__dict__)
         job.save()
