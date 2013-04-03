@@ -101,7 +101,8 @@ class ReportView(APIView):
                                "options": json.loads(w.get_uioptions()),
                                "widgetid": w.id,
                                "row": w.row,
-                               "colwidth": w.colwidth,
+                               "width": w.width,
+                               "height": w.height,
                                "timeinfo" : { 'endtime': datetime_to_seconds(d),
                                               'duration': params['duration'] }
                                }

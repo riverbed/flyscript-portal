@@ -69,7 +69,7 @@ class Table(models.Model):
         return cls.decode(json.dumps(self.options))
 
     def __unicode__(self):
-        return str(self.id)
+        return "%s (id=%s)" % (self.name, str(self.id))
 
     def get_columns(self):
         return Column.objects.filter(table=self).order_by('position')
