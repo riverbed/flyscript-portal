@@ -14,7 +14,7 @@ import logging
 import traceback
 import threading
 import time
-import md5
+import hashlib
 
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
@@ -146,7 +146,7 @@ class Job(models.Model):
 
     @property
     def handle(self):
-        h = md5.new()
+        h = hashlib.md5()
         h.update(str(self.table.id))
         h.update('.'.join([c.name for c in self.table.get_columns()]))
         h.update(json.dumps(self.criteria))
