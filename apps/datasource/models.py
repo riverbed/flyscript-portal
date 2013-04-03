@@ -15,9 +15,11 @@ import traceback
 import threading
 import time
 import hashlib
+import importlib
 
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Max
 
 from libs.options import Options
 
@@ -55,7 +57,7 @@ class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)    # source module name
     device = models.ForeignKey(Device, null=True)
-    filterexpr = models.TextField(blank=True)
+    filterexpr = models.TextField(null=True)
     duration = models.IntegerField()             # length of query in minutes
     resolution = models.IntegerField(default=60) # resolution of graph in seconds
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
@@ -64,8 +66,8 @@ class Table(models.Model):
     options = JSONField()
 
     def get_options(self):
-        import apps.datasource.modules
-        cls = apps.datasource.modules.__dict__[self.module].TableOptions
+        i = importlib.import_module(self.module)
+        cls = i.TableOptions
         return cls.decode(json.dumps(self.options))
 
     def __unicode__(self):
@@ -91,10 +93,20 @@ class Column(models.Model):
         return self.label
 
     def get_options(self):
-        import apps.datasource.modules
-        cls = apps.datasource.modules.__dict__[self.table.module].ColumnOptions
+        i = importlib.import_module(self.module)
+        cls = i.ColumnOptions
         return cls.decode(json.dumps(self.options))
 
+    @classmethod
+    def create(cls, table, name, label=None, datatype='', units='', iskey=False, issortcol=False):
+        c = Column(table=table, name=name, label=label, datatype=datatype, units=units, iskey=iskey)
+        posmax = Column.objects.filter(table=table).aggregate(Max('position'))
+        c.position = posmax['position__max'] or 1
+        c.save()
+        if issortcol:
+            table.sortcol = c
+            table.save()
+        
 class Criteria(Options):
     def __init__(self, t0=None, t1=None, duration=None, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
@@ -238,8 +250,8 @@ class Job(models.Model):
         else:
             logger.debug("Job %s: Spawning AsyncWorker to run report" % str(self))
             # Lookup the query class for this table
-            import apps.datasource.modules
-            queryclass = apps.datasource.modules.__dict__[self.table.module].TableQuery
+            i = importlib.import_module(self.table.module)
+            queryclass = i.TableQuery
             
             # Create an asynchronous worker to do the work
             worker = AsyncWorker(self, queryclass)

@@ -15,7 +15,8 @@ import datetime
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
-from apps.datasource.models import Column
+from apps.datasource.models import Device, Table
+import apps.datasource.models 
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 from libs.options import Options
@@ -29,7 +30,27 @@ def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
 
-
+class TimeSeriesTable:
+    @classmethod
+    def create(cls, name, devicename, duration, filterexpr=None):
+        device = Device.objects.get(name=devicename)
+        t = Table(name=name, module=__name__, device=device, duration=duration,
+                  filterexpr=filterexpr,
+                  options={'realm': 'traffic_overall_time_series',
+                           'groupby': 'time'})
+        t.save()
+        return t
+        
+class GroupByTable:
+    @classmethod
+    def create(cls, name, devicename, groupby, duration, filterexpr=None):
+        device = Device.objects.get(name=devicename)
+        t = Table(name=name, module=__name__, device=device, duration=duration,
+                  filterexpr=filterexpr,
+                  options={'groupby': groupby})
+        t.save()
+        return t
+        
 class TableOptions(Options):
     def __init__(self, groupby, realm=None, centricity=None, *args, **kwargs):
         super(TableOptions, self).__init__(*args, **kwargs)
