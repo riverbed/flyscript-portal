@@ -9,10 +9,16 @@
 
 killall -9 Python
 rm project.db
-rm datacache/job*
+rm datacache/*
 rm log*.txt
+
+PYTHONPATH=$PYTHONPATH:`pwd`
 python manage.py syncdb --noinput
-python sample_setup.py
-#python perf_massager.py
+python config/devices.py
+python config/locations.py
+python config/reports/1-overall.py
+python config/reports/2-profiler.py
+python config/reports/3-shark.py
+python config/reports/4-map.py
 python manage.py runserver
 #python manage.py runserver `facter ipaddress`:8000
