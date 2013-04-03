@@ -6,12 +6,20 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
+import time
 import subprocess
 
-from django.http import Http404, HttpResponse, StreamingHttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
-import time
+
+try:
+    from django.http import StreamingHttpResponse
+except ImportError:
+    # if we get here we are on older django so this app shouldn't
+    # even be visible - this will silence code error checkers though
+    from django.http import HttpResponse as StreamingHttpResponse
 
 from apps.console.models import Utility, Results, Parameter, Job
 from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringForm,
