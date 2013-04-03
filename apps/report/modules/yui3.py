@@ -87,7 +87,10 @@ class PieWidget:
 
         series = []
         series.append({"categoryKey": catcol.name,
-                       "valueKey": col.name})
+                       "categoryDisplayName": catcol.label,
+                       "valueKey": col.name,
+                       "valueDisplayName": col.label
+                       })
 
         rows = []
 
@@ -153,7 +156,9 @@ class TimeSeriesWidget:
                 continue
 
             series.append({"xKey": "time",
+                           "xDisplayName": "Time",
                            "yKey": wc.name,
+                           "yDisplayName": wc.label,
                            "styles": { "line": { "weight" : 1 },
                                        "marker": { "height": 3,
                                                    "width": 3 }}})
@@ -255,7 +260,7 @@ class BarWidget:
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
             
-        valuecols = [col.name for col in table.get_columns() if col.iskey == True]
+        valuecols = [col.name for col in table.get_columns() if col.iskey == False]
         w.options = { 'key' : keycols[0],
                       'values': valuecols }
         w.save()
@@ -279,7 +284,9 @@ class BarWidget:
 
         for wc in cols:
             series.append({"xKey": catcol.name,
+                           "xDisplayName": "Time",
                            "yKey": wc.name,
+                           "yDisplayName": wc.label,
                            "styles": { "line": { "weight" : 1 },
                                        "marker": { "height": 6,
                                                    "width": 20 }}})
