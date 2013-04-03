@@ -23,7 +23,7 @@ def import_directory(root):
     rootpath = os.path.basename(root)
     for path, dirs, files in os.walk(root):
         for f in files:
-            if not f.endswith('.py'):
+            if not f.endswith('.py') or '__init__' in f:
                 continue
             f = os.path.splitext(f)[0]
             dirpath = os.path.relpath(path, root)
@@ -32,8 +32,12 @@ def import_directory(root):
             else:
                 name = os.path.join(rootpath, f)
             name = '.'.join(name.split(os.path.sep))
-            print 'importing %s as %s' % (f, name)
-            __import__(name)
+            if name in sys.modules:
+                print 'reloading %s as %s' % (f, name)
+                reload(sys.modules[name])
+            else:
+                print 'importing %s as %s' % (f, name)
+                __import__(name)
 
 
 class Command(BaseCommand):

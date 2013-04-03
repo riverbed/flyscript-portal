@@ -42,11 +42,11 @@ def reload_config(request):
     management.call_command('reload')
 
     # sets modified time on file so development server will restart
-    os.utime(os.path.join(settings.PROJECT_ROOT, 'project', 'urls.py'), None)
+    #os.utime(os.path.join(settings.PROJECT_ROOT, 'project', 'urls.py'), None)
 
-    try:
+    if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
-    except KeyError:
+    else:
         return HttpResponseRedirect('/report')
 
 

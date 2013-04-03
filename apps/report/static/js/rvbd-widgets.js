@@ -35,7 +35,7 @@ function Widget (posturl, divid, options, timeinfo) {
 
     this.container.innerHTML = '<p>Loading...</p>';
     
-    debugger;
+    //debugger;
     if (options.height) {
         $('#' + divid).height(options.height);
     }
