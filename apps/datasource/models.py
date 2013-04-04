@@ -92,8 +92,12 @@ class Column(models.Model):
     def __unicode__(self):
         return self.label
 
-    def get_options(self):
-        i = importlib.import_module(self.module)
+    def get_options(self, module=None):
+        if module:
+            i = importlib.import_module(module)
+        else:
+            i = importlib.import_module(self.module)
+
         cls = i.ColumnOptions
         return cls.decode(json.dumps(self.options))
 
@@ -106,7 +110,8 @@ class Column(models.Model):
         if issortcol:
             table.sortcol = c
             table.save()
-        
+        return c
+
 class Criteria(Options):
     def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)

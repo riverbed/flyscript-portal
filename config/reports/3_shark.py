@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Device, Column
 from apps.report.models import Report, Table
-from apps.datasource.modules.shark import ColumnOptions as shark_ColumnOptions
+from apps.datasource.modules.shark import SharkTable, create_shark_column
 import apps.report.modules.yui3 as yui3
 
 #### Customize devices and authorization here
@@ -25,60 +25,31 @@ v10 = Device.objects.get(name="vdorothy10")
 report = Report(title="Shark", position=3)
 report.save()
 
-table = Table(name='Packet Traffic', module='shark', device=v10, duration=10,
-           options={'view': 'jobs/Flyscript-tests-job',
-                    })
-table.save()
-Column(table=table, name='ip_src', iskey=True, label='Source IP', position=1,
-       options=shark_ColumnOptions(extractor='ip.src').__dict__).save()
-Column(table=table, name='ip_dst', iskey=True, label='Dest IP', position=2,
-       options=shark_ColumnOptions(extractor='ip.dst').__dict__).save()
-Column(table=table, name='generic_packets', iskey=False, label='Packets', position=3,
-       options=shark_ColumnOptions(extractor='generic.packets', operation='sum').__dict__).save()
+t = SharkTable.create(name='Packet Traffic', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
+
+
+create_shark_column(t, 'ip_src', label='Source IP', iskey=True, extractor='ip.src')
+create_shark_column(t, 'ip_dst', label='Dest IP', iskey=True, extractor='ip.dst')
+create_shark_column(t, 'generic_packets', label='Packets', iskey=False, extractor='generic.packets', operation='sum')
 
 #foo()
 
-yui3.TableWidget.create(report, table, "Shark Packets (last 10 minutes)", width=12)
+yui3.TableWidget.create(report, t, "Shark Packets (last 10 minutes)", width=12)
 
-"""
-table = Table(name='MicroburstsTotal', module='shark', duration=10,
-           options={
-                    'aggregated': True,
-                    'view': 'jobs/Flyscript-tests-job',
-                    })
-table.save()
-table.add_columns([
-     'max_microburst_1ms_packets',
-     'max_microburst_10ms_packets',
-     'max_microburst_100ms_packets',
-])
-wid = Widget(report=report, title="Microburst Packets (last 10 minutes)",
-             row=2, col=1, rows=1000, width=12,
-             module="yui3", uiwidget="TableWidget", uioptions = {'minHeight': 300})
-wid.save()
-wid.tables.add(table)
+t = SharkTable.create(name='MicroburstsTotal', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=True)
 
-table = Table(name='MicroburstsTime', module='shark', duration=10,
-           options={
-                    'aggregated': False,
-                    'view': 'jobs/Flyscript-tests-job',
-           })
+create_shark_column(t, 'max_microburst_1ms_packets', extractor='generic.max_microburst_1ms.packets', operation='max', label='Microburst 1ms Pkts')
+create_shark_column(t, 'max_microburst_10ms_packets', extractor='generic.max_microburst_10ms.packets', operation='max',  label='Microburst 10ms Pkts')
+create_shark_column(t, 'max_microburst_100ms_packets', extractor='generic.max_microburst_100ms.packets', operation='max',  label='Microburst 100ms Pkts')
 
-table.save()
-table.add_columns([
-    'time',
-    'max_microburst_1ms_packets',
-#    'max_microburst_10ms_packets',
-#    'max_microburst_100ms_packets',
-    ])
-wid = Widget(report=report, title="Microburst Packets Timeseries (last 10 minutes)",
-             row=3, col=1, rows=1000, width=12,
-             options={'axes': {'0': {'title': 'pkts/ms',
-                                     'position': 'left',
-                                     'columns': ['max_microburst_1ms_packets']}
-             }},
-             module="yui3", uiwidget="TimeSeriesWidget", uioptions = {'minHeight': 300})
-wid.save()
-wid.tables.add(table)
+yui3.TableWidget.create(report, t, "Microburst Packets (last 10 minutes)", width=12)
+
+
+t = SharkTable.create(name='MicroburstsTime', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
+
+create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=True, label='Time (ns)')
+create_shark_column(t, 'max_microburst_1ms_packets', extractor='generic.max_microburst_1ms.packets', operation='max', label='Microburst 1ms Pkts')
+
+yui3.TimeSeriesWidget.create(report, t, "Microburst Packets Timeseries (last 10 minutes)", width=12)
+
 #
-"""

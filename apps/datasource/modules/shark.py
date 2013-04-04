@@ -19,7 +19,7 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common import timeutils
 
 
-from apps.datasource.models import Column
+from apps.datasource.models import Column, Device, Table
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 from libs.options import Options
@@ -39,11 +39,32 @@ class TableOptions(Options):
         self.view = view
         self.aggregated = aggregated
 
+
 class ColumnOptions(Options):
     def __init__(self, extractor, operation=None, *args, **kwargs):
         super(Options, self).__init__(*args, **kwargs)
         self.extractor = extractor
         self.operation = operation
+
+
+class SharkTable:
+    @classmethod
+    def create(cls, name, devicename, view, duration, aggregated=False, filterexpr=None):
+        device = Device.objects.get(name=devicename)
+        options = TableOptions(view, aggregated).encode()
+        t = Table(name=name, module=__name__, device=device, duration=duration,
+                  filterexpr=filterexpr, options=options)
+        t.save()
+        return t
+
+
+def create_shark_column(table, name, label=None, datatype='', units='', iskey=False, issortcol=False,
+                        extractor=None, operation=None):
+    c = Column.create(table, name, label=label, datatype=datatype, units=units, iskey=iskey, issortcol=issortcol)
+    options = ColumnOptions(extractor, operation=operation)
+    c.options = options.encode()
+    c.save()
+    return c
 
 
 class TableQuery:
@@ -60,7 +81,7 @@ class TableQuery:
 
         columns = []
         for tc in table.get_columns():
-            tc_options = tc.get_options()
+            tc_options = tc.get_options(__name__)
             if tc.iskey:
                 c = Key(tc_options.extractor, description=tc.label)
             else:

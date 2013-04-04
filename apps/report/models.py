@@ -138,7 +138,10 @@ class WidgetJob(models.Model):
             self.delete()
             
         resp['message'] = cgi.escape(resp['message'])
-        return HttpResponse(json.dumps(resp))
+        try:
+            return HttpResponse(json.dumps(resp))
+        except TypeError:
+            from IPython import embed; embed()
     
 class Axes:
     def __init__(self, definition):
