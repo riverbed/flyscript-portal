@@ -93,7 +93,7 @@ class TableQuery:
                         print 'ERROR: Unknown operation attribute %s for column %s.' % (tc_options.operation,
                                                                                         tc.name)
                 else:
-                    operation = Operation.sum
+                    operation = Operation.none
 
                 c = Value(tc_options.extractor, operation, description=tc.label)
 
@@ -141,7 +141,12 @@ class TableQuery:
 
         # Retrieve the data
         with lock:
-            self.data = view.get_data(aggregated=options.aggregated)
+            if options.aggregated:
+                self.data = view.get_data(aggregated=options.aggregated)
+            else:
+                default_delta = 1000000000          # one second
+                delta = default_delta * table.resolution
+                self.data = view.get_data(delta=delta)
             view.close()
 
         if table.rows > 0:
