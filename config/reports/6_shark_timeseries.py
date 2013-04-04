@@ -27,26 +27,19 @@ report.save()
 
 ### Table and Widget 1
 
-t = SharkTable.create(name='Packet Traffic', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
-
+t = SharkTable.create(name='Total Traffic Bytes', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
 
 create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time (ns)')
 create_shark_column(t, 'generic_bytes', label='Bytes', iskey=False, extractor='generic.bytes', operation='sum')
 
-yui3.TimeSeriesWidget.create(report, t, "Shark Packets (last 10 minutes)", width=12)
+yui3.TimeSeriesWidget.create(report, t, "Total Traffic (Bytes)", width=12)
 
 ### Table and Widget 2
 
-t = SharkTable.create(name='Detailed Packet Traffic', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
+t = SharkTable.create(name='Traffic by TCP/UDP', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
 
 create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time (ns)')
-create_shark_column(t, 'udp_bytes', extractor='udp.bytes', iskey=False, operation='sum', label='UDP Bytes')
-yui3.TimeSeriesWidget.create(report, t, "Packets By Type", width=12)
-
-### Table and Widget 3
-
-t = SharkTable.create(name='Detailed Packet Traffic', devicename=v10, view='jobs/Flyscript-tests-job', duration=10, aggregated=False)
-create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time (ns)')
-create_shark_column(t, 'tcp_bytes', extractor='tcp.bytes', iskey=False, operation='sum', label='TCP Bytes')
-yui3.TimeSeriesWidget.create(report, t, "Packets By Type", width=12)
+create_shark_column(t, 'udp_bytes', extractor='udp.bytes', iskey=False, operation='sum', label='UDP Bytes', default_value=0)
+create_shark_column(t, 'tcp_bytes', extractor='tcp.bytes', iskey=False, operation='sum', label='TCP Bytes', default_value=0)
+yui3.TimeSeriesWidget.create(report, t, "Traffic By Type (Bytes)", width=12)
 
