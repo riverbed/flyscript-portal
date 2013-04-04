@@ -106,12 +106,15 @@ class WidgetJob(models.Model):
     widget = models.ForeignKey(Widget)
     job = models.ForeignKey(Job)
 
+    def __unicode__(self):
+        return "%s: widget %s, job %s" % (self.id, self.widget.id, self.job.id)
+    
     def response(self):
         job = self.job
         widget = self.widget
         if not job.done():
             # job not yet done, return an empty data structure
-            logger.debug("WidgetJob %d: Not done yet, %d%% complete" % (self.id, job.progress))
+            logger.debug("WidgetJob %s: Not done yet, %d%% complete" % (str(self), job.progress))
             resp = job.json()
         elif job.status == Job.ERROR:
             resp = job.json()
@@ -127,7 +130,7 @@ class WidgetJob(models.Model):
             try:
                 data = widget_func(widget, tabledata)
                 resp = job.json(data)
-                logger.debug("WidgetJob %d complete" % self.id)
+                logger.debug("WidgetJob %s complete" % str(self))
             except:
                 resp = job.json()
                 resp['status'] = Job.ERROR

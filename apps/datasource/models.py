@@ -187,6 +187,7 @@ class Job(models.Model):
         return reportdata
 
     def savedata(self, data):
+        logger.debug("Job %s (table %s) saving data to datafile %s" % (str(self), str(self.table), self.datafile()))
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()

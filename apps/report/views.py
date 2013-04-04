@@ -149,7 +149,7 @@ class WidgetJobsList(APIView):
     parser_classes = (JSONParser,)
 
     def post(self, request, report_id, widget_id, format=None):
-        logger.debug("WidgetJob(%s,%s) POST: %s" %
+        logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
                      (report_id, widget_id, request.POST))
 
         criteria = json.loads(request.POST['criteria'])
@@ -169,9 +169,11 @@ class WidgetJobsList(APIView):
         job.save()
         job.start()
 
-
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()
+
+        logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
+                     (str(wjob), report_id, widget_id, job.id, job.handle))
         
         return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_id, widget_id, wjob.id)})
     
