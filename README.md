@@ -10,18 +10,19 @@ Installation
 Along with a working python installation, the following packages will need to
 be installed:
 
-- Django==1.4.5
+- Django>=1.4.5
 - django-model-utils==1.2.0
 - djangorestframework==2.2.5
-- flyscript==latest
-- jsonfield==0.9.13
-- numpy==1.7.0
-- pandas==0.10.1
-- pygeoip==0.2.6
-- python-dateutil==2.1
-- pytz==2013b
-- six==1.3.0
-- wsgiref==0.1.2
+- django-extensions==1.1.1
+- flyscript>=0.53
+- jsonfield==0.9.5
+- numpy>=1.7.0
+- pandas>=0.10.1
+- pygeoip>=0.2.6
+- python-dateutil>=2.1
+- pytz>=2013b
+- six>=1.3.0
+- wsgiref>=0.1.2
 
 After cloning this repository to a local directory, these dependencies can be
 installed/checked by using the included requirements.txt file.  For example:
