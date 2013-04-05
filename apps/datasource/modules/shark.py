@@ -67,6 +67,18 @@ def create_shark_column(table, name, label=None, datatype='', units='', iskey=Fa
     return c
 
 
+def setup_capture_job(sharkid, name):
+    shark = DeviceManager.get_device(sharkid)
+    try:
+        job = shark.get_capture_job_by_name(name)
+    except ValueError:
+        # create a capture job on the first available interface
+        interface = shark.get_interfaces()[0]
+        job = shark.create_job(interface, name, '40%', indexing_size_limit='2GB',
+                               start_immediately=True)
+    return job
+
+
 class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
