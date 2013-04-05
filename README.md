@@ -44,7 +44,7 @@ files in the config directory:
 - config/reports/*.py
     - reports, data tables and widgets
 
-The config directoy defines a set of 4 reports based on two devices
+The config directory defines a set of 4 reports based on two devices
 named "profiler" and "shark1" defined in config/devices.py. 
 
 To get started, edit the file `config/devices.py` and fill appropriate
@@ -53,9 +53,9 @@ set the `host`, `username`, and `password` fields for each device.  For
 the SHARK, a live view named 'flyscript-portal' is created on the
 first available capture interface.
 
-(If you only have a SHARK device, you can leave ignore the PROFILER
+(If you only have a SHARK device, you can ignore the PROFILER
 settings, it just means you won't be able to render any of the sample
-PROFILER widgets.  Similalry if you just have a PROFILER, ignore the SHARK
+PROFILER widgets.  Similarly if you just have a PROFILER, ignore the SHARK
 settings.)
 
 Customize the `config/locations.py` file to setup the IP address for 
@@ -110,6 +110,83 @@ database.  To enable this integration, download the GeoLite City database from
 [MaxMind GeoLite Free Downloadable Databases](http://dev.maxmind.com/geoip/geolite#Downloads-5).
 
 Install the unpacked database at the file location: /tmp/GeoLiteCity.dat
+
+Running Reports
+===============
+
+Currently, each report has the same criteria:
+
+- End Time - the end time/date of the reporting interval that will be used 
+
+- Duration - the duration the reporting interval.  If left at 'Default', each
+  widget in the report will use the duration configured for that widget's associated
+  data table, which may be different for each table.  
+
+- Filter Expression - an arbitrary filter expression to be passed to the
+  data source that will execute the query for a table.  The syntax of the
+  expression is dependent on the datasource. 
+
+Note that since there may be a mix of different data sources in the
+same report, the filter expression generally will not work in such
+mixed reports because the filter expression syntax differs for each data
+source.  This will will be addressed in a future release.
+
+Defining Tables
+===============
+
+A data table is the root of data for a widget.  It defines the data source (one
+of the modules in the apps/datasource/modules directory) and general table
+attributes such as the default duration.  
+
+Columns are associated with the table and define the keys and values of interest.
+Each data table may have any number of columns.  
+
+A column has the following common attributes:
+
+- `name` - a imple name for referring to this column in the widget
+- `label` - string label to used for display
+- `iskey` - boolean indicating if this is a key column
+- `datatype` - null, or one of 'metric', 'bytes', or 'time'
+  - use 'metric' to automatically format the value with with metric unites
+  - use 'bytes' to format as metric, but with Bytes attached
+  - use 'time' for time based columns
+- `units` - optional units for display purposes
+- `module` - defines the module to use to query for data
+
+In addition, each column supports an `options` attribute with defines additional
+configuration options relevant to the the data source that will be performing
+the query for this column.
+
+A new data source may be defined by adding a new module to the apps/datasource/modules
+directory.  See the existing modules as an example.  
+
+Defining Widgets
+================
+
+Widgets are the UI representations of a data table.  Multiple widgets may be 
+associated with the same table, for example to show both a bar chart and a
+pie chart of the same data.
+
+Each widget simply binds a table to a particular widget type.  The possible
+widget types are defined by the modules in apps/report/modules.  
+
+Widgets have the following attributes:
+
+- `title` - the display title
+- `width` - the column width for the widget, each page is 12 columns wide, defaults
+  to 6 for half width
+- `height` - the height in pixels, defaults to 300
+- `module` - defines the module to use to render this widget
+- `uiwidget` - defines the specific widget within the module
+
+Widget specific options are specified in the `options` attribute.
+
+A new widget may be defined by adding approiate code to an existing
+module or create new module in the apps/datasource/modules
+directory.  See the existing modules and widgets as an example.  
+Note that each module and uiwidget has associated JavaScript code
+in the apps/report/static/js directory that handles turning the
+data and options into rendered widget.
 
 License
 =======
