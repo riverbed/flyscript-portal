@@ -50,11 +50,10 @@ class ColumnOptions(Options):
 
 class SharkTable:
     @classmethod
-    def create(cls, name, devicename, view, duration, aggregated=False, filterexpr=None):
-        device = Device.objects.get(name=devicename)
+    def create(cls, name, device, view, duration, aggregated=False, filterexpr=None, resolution=60):
         options = TableOptions(view, aggregated).encode()
         t = Table(name=name, module=__name__, device=device, duration=duration,
-                  filterexpr=filterexpr, options=options)
+                  filterexpr=filterexpr, options=options, resolution=resolution)
         t.save()
         return t
 
@@ -82,7 +81,7 @@ class TableQuery:
 
         columns = []
         for tc in table.get_columns():
-            tc_options = tc.get_options(__name__)
+            tc_options = tc.get_options()
             if tc.iskey:
                 c = Key(tc_options.extractor, description=tc.label, default_value=tc_options.default_value)
             else:

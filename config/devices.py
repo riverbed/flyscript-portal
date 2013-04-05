@@ -13,19 +13,23 @@ from apps.datasource.models import *
 
 #### Customize devices and authorization here
 
-tm08 = Device(name="tm08-1",
-              module="profiler",
-              host="tm08-1.lab.nbttech.com",
-              port=443,
-              username="admin",
-              password="admin")
-tm08.save()
+# The name="profiler" is used in all reports scripts.  If you change the name,
+# you'll need to replace it at the top of each report script
+PROFILER = Device(name="profiler", 
+                  module="profiler",
+                  host="fill.in.profiler.host.or.ip",
+                  port=443,
+                  username="<username>",
+                  password="<password>")
+PROFILER.save()
 
-v10 = Device(name="vdorothy10",
-             module="shark",
-             host="vdorothy10.lab.nbttech.com",
-             port=443,
-             username="admin",
-             password="admin")
-v10.save()
+# The name="shark1" is used in all reports scripts.  If you change the name,
+# you'll need to replace it at the top of each report script
+SHARK1 = Device(name="shark1",
+                module="shark",
+                host="fill.in.shark.host.or.ip",
+                port=443,
+                username="<username>",
+                password="<password>")
 
+SHARK1.save()

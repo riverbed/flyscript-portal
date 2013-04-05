@@ -23,7 +23,7 @@ class NiceScale:
     # minimum and maximum data points on the axis.
     #
     def calculate(self):
-        if self.forcezero or (self.minval > 0) and ((float(self.maxval - self.minval) / self.maxval) > self.zerothresh):
+        if self.forcezero or (self.minval > 0) and (self.maxval > 0) and ((float(self.maxval - self.minval) / self.maxval) > self.zerothresh):
             self.minval = 0
 
         vrange = self.maxval - self.minval

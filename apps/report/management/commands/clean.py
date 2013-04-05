@@ -37,7 +37,10 @@ class Command(BaseCommand):
         # clear cache files
         for f in os.listdir(settings.DATA_CACHE):
             if f != '.gitignore':
-                os.unlink(os.path.join(settings.DATA_CACHE, f))
+                try:
+                    os.unlink(os.path.join(settings.DATA_CACHE, f))
+                except OSError:
+                    pass
 
         # empty the existing logs
         for k, v in settings.LOGGING['handlers'].iteritems():

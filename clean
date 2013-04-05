@@ -8,8 +8,9 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 rm project.db
-rm datacache/job*.data
-rm datacache/table*.cache
+rm datacache/*
 rm log*.txt
 python manage.py syncdb --noinput
-python sample_setup.py
+python config/devices.py
+python config/locations.py
+find config/reports -name "[0-9]*.py" | xargs -L 1 -e python

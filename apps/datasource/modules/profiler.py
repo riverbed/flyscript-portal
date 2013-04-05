@@ -32,21 +32,19 @@ def DeviceManager_new(*args, **kwargs):
 
 class TimeSeriesTable:
     @classmethod
-    def create(cls, name, devicename, duration, filterexpr=None, interface=False):
-        device = Device.objects.get(name=devicename)
+    def create(cls, name, device, duration, interface=False, **kwargs):
         centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
-                  filterexpr=filterexpr,
                   options={'realm': 'traffic_overall_time_series',
                            'centricity': centricity,
-                           'groupby': 'time'})
+                           'groupby': 'time'},
+                  **kwargs)
         t.save()
         return t
         
 class GroupByTable:
     @classmethod
-    def create(cls, name, devicename, groupby, duration, filterexpr=None, interface=False):
-        device = Device.objects.get(name=devicename)
+    def create(cls, name, device, groupby, duration, filterexpr=None, interface=False):
         centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
