@@ -32,12 +32,16 @@ def import_directory(root):
             else:
                 name = os.path.join(rootpath, f)
             name = '.'.join(name.split(os.path.sep))
-            if name in sys.modules:
-                print 'reloading %s as %s' % (f, name)
-                reload(sys.modules[name])
-            else:
-                print 'importing %s as %s' % (f, name)
-                __import__(name)
+            try:
+                if name in sys.modules:
+                    print 'reloading %s as %s' % (f, name)
+                    reload(sys.modules[name])
+                else:
+                    print 'importing %s as %s' % (f, name)
+                    __import__(name)
+            except Exception as e:
+                raise type(e), type(e)('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
+
 
 
 class Command(BaseCommand):

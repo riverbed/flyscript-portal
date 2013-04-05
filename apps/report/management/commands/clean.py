@@ -17,6 +17,7 @@ from django.db.models import get_app, get_models
 
 from project import settings
 from apps.report.models import Report
+from apps.datasource.devicemanager import DeviceManager
 
 
 class Command(BaseCommand):
@@ -53,5 +54,8 @@ class Command(BaseCommand):
                 for model in get_models(get_app(app)):
                     print 'Deleting objects from %s' % model
                     model.objects.all().delete()
+            # clear references to existing devices
+            DeviceManager.clear()
+
 
 
