@@ -1,7 +1,7 @@
 Django>=1.4.5
 django-model-utils==1.2.0
 djangorestframework==2.2.5
-flyscript==latest
+flyscript>=0.5.3
 jsonfield>=0.9.5
 numpy>=1.7.0
 pandas>=0.10.1
