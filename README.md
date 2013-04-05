@@ -1,7 +1,7 @@
 Riverbed FlyScript Dashboard
 ============================
 
-This Django project provides a web-based reporting capability utilitizing the
+This Django project provides a web-based reporting capability utilizing the
 FlyScript python package.
 
 Installation
@@ -60,7 +60,7 @@ settings.)
 
 Customize the `config/locations.py` file to setup the IP address for 
 addresses spaces in your network (those addresses that are in the private
-non-routeable IP space such as 10/8 or 192.168/16).  This should typically
+non-routable IP space such as 10/8 or 192.168/16).  This should typically
 match your ByLocation host group configuration on Cascade Profiler.
 
 Initializing the database
@@ -143,7 +143,7 @@ Each data table may have any number of columns.
 
 A column has the following common attributes:
 
-- `name` - a imple name for referring to this column in the widget
+- `name` - a simple name for referring to this column in the widget
 - `label` - string label to used for display
 - `iskey` - boolean indicating if this is a key column
 - `datatype` - null, or one of 'metric', 'bytes', or 'time'
@@ -181,7 +181,7 @@ Widgets have the following attributes:
 
 Widget specific options are specified in the `options` attribute.
 
-A new widget may be defined by adding approiate code to an existing
+A new widget may be defined by adding appropriate code to an existing
 module or create new module in the apps/datasource/modules
 directory.  See the existing modules and widgets as an example.  
 Note that each module and uiwidget has associated JavaScript code
