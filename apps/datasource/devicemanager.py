@@ -19,6 +19,10 @@ class DeviceManager:
     devices = {}
 
     @classmethod
+    def clear(cls):
+        cls.devices = {}
+
+    @classmethod
     def register(cls, dev_class):
         cls.device_class[dev_class.__name__] = dev_class
         
