@@ -9,7 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import *
+from apps.datasource.models import Device 
+from apps.datasource.devicemanager import DeviceManager
 
 #### Customize devices and authorization here
 
@@ -27,9 +28,34 @@ PROFILER.save()
 # you'll need to replace it at the top of each report script
 SHARK1 = Device(name="shark1",
                 module="shark",
-                host="fill.in.shark.host.or.ip",
+                host="fill.in.profiler.host.or.ip",
                 port=443,
                 username="<username>",
                 password="<password>")
 
 SHARK1.save()
+
+
+# Shark capture view setup
+# The configuration files use 'flyscript-portal' as the configured viewname
+# so this step just makes sure the view is active on the Shark
+# If a different view name is desired (perhaps an existing view),
+# change the SHARK_CAPTURE_JOB_NAME below, as well as all of the
+# references in the reports/*.py files.
+#
+
+SHARK_CAPTURE_JOB_NAME = 'flyscript-portal'
+
+
+def setup_capture_job(name):
+    shark = DeviceManager.get_device(SHARK1.id)
+    try:
+        job = shark.get_capture_job_by_name(name)
+    except ValueError:
+        # create a capture job on the first available interface
+        interface = shark.get_interfaces()[0]
+        job = shark.create_job(interface, name, '40%', indexing_size_limit='2GB',
+                               start_immediately=True)
+    return job
+
+setup_capture_job(SHARK_CAPTURE_JOB_NAME)

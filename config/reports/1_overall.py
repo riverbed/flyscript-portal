@@ -47,7 +47,7 @@ Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
 yui3.TimeSeriesWidget.create(report, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
-t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view='jobs/Flyscript-tests-job',
+t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view='jobs/flyscript-portal',
                       duration=10, resolution=1, aggregated=False)
 
 create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time', datatype='time')
