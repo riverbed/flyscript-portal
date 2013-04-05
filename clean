@@ -11,6 +11,5 @@ rm project.db
 rm datacache/*
 rm log*.txt
 python manage.py syncdb --noinput
-python config/devices.py
-python config/locations.py
-find config/reports -name "[0-9]*.py" | xargs -L 1 -e python
+python manage.py reload
+

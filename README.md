@@ -49,7 +49,9 @@ named "profiler" and "shark1" defined in config/devices.py.
 
 To get started, edit the file `config/devices.py` and fill appropriate
 values for the PROFILER device and the SHARK device.  At a minimum,
-set the `host`, `username`, and `password` fields for each device.
+set the `host`, `username`, and `password` fields for each device.  For
+the SHARK, a live view named 'flyscript-portal' is created on the
+first available capture interface.
 
 (If you only have a SHARK device, you can leave ignore the PROFILER
 settings, it just means you won't be able to render any of the sample
@@ -99,3 +101,28 @@ This project utilizes file storage caching of the data results, and these files 
 stored in the `datacache` directory.  Eventually these files will be automatically
 cleaned, but in the interim, there are no ill effects if they are manually deleted
 periodically to reclaim storage space.
+
+Mapping locations for public IP address
+---------------------------------------
+
+The maps widget can identify public IP address using the GeoLite
+database.  To enable this integration, download the GeoLite City database from
+[MaxMind GeoLite Free Downloadable Databases](http://dev.maxmind.com/geoip/geolite#Downloads-5).
+
+Install the unpacked database at the file location: /tmp/GeoLiteCity.dat
+
+License
+=======
+
+Copyright (c) 2013 Riverbed Technology, Inc.
+
+FlyScript Portal is licensed under the terms and conditions of the MIT
+License set forth at
+[LICENSE](https://github.com/riverbed/flyscript-portal/blob/master/LICENSE)
+(“License”).  FlyScript Portal is distributed “AS IS” as set forth in
+the License.  FlyScript Portal also includes certain third party code.
+All such third party code is also distributed “AS IS” and is licensed
+by the respective copyright holders under the applicable terms and
+conditions (including, without limitation, warranty and liability
+disclaimers) identified at
+[LICENSE](https://github.com/riverbed/flyscript-portal/blob/master/LICENSE).
