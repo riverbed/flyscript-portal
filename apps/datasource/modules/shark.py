@@ -41,10 +41,11 @@ class TableOptions(Options):
 
 
 class ColumnOptions(Options):
-    def __init__(self, extractor, operation=None, *args, **kwargs):
+    def __init__(self, extractor, operation=None, default_value=None, *args, **kwargs):
         super(Options, self).__init__(*args, **kwargs)
         self.extractor = extractor
         self.operation = operation
+        self.default_value = default_value
 
 
 class SharkTable:
@@ -59,9 +60,9 @@ class SharkTable:
 
 
 def create_shark_column(table, name, label=None, datatype='', units='', iskey=False, issortcol=False,
-                        extractor=None, operation=None):
+                        extractor=None, operation=None, default_value=None):
     c = Column.create(table, name, label=label, datatype=datatype, units=units, iskey=iskey, issortcol=issortcol)
-    options = ColumnOptions(extractor, operation=operation)
+    options = ColumnOptions(extractor, operation=operation, default_value=default_value)
     c.options = options.encode()
     c.save()
     return c
@@ -83,7 +84,7 @@ class TableQuery:
         for tc in table.get_columns():
             tc_options = tc.get_options(__name__)
             if tc.iskey:
-                c = Key(tc_options.extractor, description=tc.label)
+                c = Key(tc_options.extractor, description=tc.label, default_value=tc_options.default_value)
             else:
                 if tc_options.operation:
                     try:
@@ -95,7 +96,7 @@ class TableQuery:
                 else:
                     operation = Operation.none
 
-                c = Value(tc_options.extractor, operation, description=tc.label)
+                c = Value(tc_options.extractor, operation, description=tc.label, default_value=tc_options.default_value)
 
             columns.append(c)
 
