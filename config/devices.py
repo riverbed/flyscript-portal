@@ -10,7 +10,7 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Device 
-from apps.datasource.models.shark import setup_capture_job
+from apps.datasource.modules.shark import setup_capture_job
 
 #### Customize devices and authorization here
 
@@ -18,20 +18,20 @@ from apps.datasource.models.shark import setup_capture_job
 # you'll need to replace it at the top of each report script
 PROFILER = Device(name="profiler", 
                   module="profiler",
-                  host="fill.in.profiler.host.or.ip",
+                  host="tm08-1.lab.nbttech.com",
                   port=443,
-                  username="<username>",
-                  password="<password>")
+                  username="admin",
+                  password="admin")
 PROFILER.save()
 
 # The name="shark1" is used in all reports scripts.  If you change the name,
 # you'll need to replace it at the top of each report script
 SHARK1 = Device(name="shark1",
                 module="shark",
-                host="fill.in.profiler.host.or.ip",
+                host="vdorothy10.lab.nbttech.com",
                 port=443,
-                username="<username>",
-                password="<password>")
+                username="admin",
+                password="admin")
 
 SHARK1.save()
 
