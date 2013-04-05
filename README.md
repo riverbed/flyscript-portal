@@ -203,3 +203,8 @@ by the respective copyright holders under the applicable terms and
 conditions (including, without limitation, warranty and liability
 disclaimers) identified at
 [LICENSE](https://github.com/riverbed/flyscript-portal/blob/master/LICENSE).
+=======
+flyscript-portal
+================
+
+FlyScript Portal - building dashboards, reports from network device data
