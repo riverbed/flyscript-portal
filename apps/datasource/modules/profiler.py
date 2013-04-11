@@ -44,12 +44,13 @@ class TimeSeriesTable:
         
 class GroupByTable:
     @classmethod
-    def create(cls, name, device, groupby, duration, filterexpr=None, interface=False):
+    def create(cls, name, device, groupby, duration, filterexpr=None, interface=False, **kwargs):
         centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
                   options={'centricity': centricity,
-                           'groupby': groupby})
+                           'groupby': groupby},
+                  **kwargs)
         t.save()
         return t
         
@@ -85,6 +86,11 @@ class TableQuery:
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
 
+        if table.datafilter:
+            datafilter = table.datafilter.split(',')
+        else:
+            datafilter = None
+
         with lock:
             report.run(realm=realm,
                        groupby=profiler.groupbys[options.groupby],
@@ -92,6 +98,7 @@ class TableQuery:
                        columns=columns,
                        timefilter=tf, 
                        trafficexpr = TrafficFilter(self.job.combine_filterexprs()),
+                       data_filter=datafilter,
                        resolution="%dmin" % (int(table.resolution / 60)),
                        sort_col=sortcol,
                        sync=False

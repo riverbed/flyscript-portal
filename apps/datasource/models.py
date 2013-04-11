@@ -62,6 +62,8 @@ class Table(models.Model):
     resolution = models.IntegerField(default=60) # resolution of graph in seconds
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
+    datafilter = models.TextField(null=True, blank=True)  # deprecated interface
+                                                          # key/value separated by comma
 
     options = JSONField()
 
