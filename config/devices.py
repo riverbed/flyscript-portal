@@ -45,5 +45,6 @@ SHARK1.save()
 # references in the reports/*.py files.
 #
 SHARK_CAPTURE_JOB_NAME = 'flyscript-portal'
+SHARK_CAPTURE_JOB_SIZE = '10%'                      # absolute bytes or percentages work here
 
-setup_capture_job(SHARK1.id, SHARK_CAPTURE_JOB_NAME)
+setup_capture_job(SHARK1.id, SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE)
