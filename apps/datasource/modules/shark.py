@@ -167,7 +167,6 @@ class TableQuery:
         if table.rows > 0:
             self.data = self.data[:table.rows]
 
-
         self.parse_data()
 
         return True

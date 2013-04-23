@@ -42,7 +42,15 @@ class TableWidget:
         for reportrow in data:
             row = {}
             for i in range(0,len(qcols)):
-                val = reportrow[i]
+                if qcols[i] == 'time':
+                    t0 = reportrow[i]
+                    try:
+                        val = timeutils.datetime_to_microseconds(t0) / 1000
+                    except AttributeError:
+                        val = t0 * 1000
+                else:
+                    val = reportrow[i]
+
                 row[qcols[i]] = val
                 i = i + 1
 
