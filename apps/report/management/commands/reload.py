@@ -14,6 +14,8 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.core import management
 
+from rvbd.common.exceptions import RvbdHTTPException, RvbdException
+
 from apps.report.models import Report
 from project import settings
 
@@ -40,7 +42,12 @@ def import_directory(root):
                     print 'importing %s as %s' % (f, name)
                     __import__(name)
             except Exception as e:
-                raise type(e), type(e)('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
+                if type(e) == RvbdHTTPException:
+                    # this exception needs some special initialization
+                    # ignore all that and just raise a RvbdException instead
+                    raise RvbdException, RvbdException('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
+                else:
+                    raise type(e), type(e)('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
 
 
 
