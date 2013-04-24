@@ -18,20 +18,20 @@ from apps.datasource.modules.shark import setup_capture_job
 # you'll need to replace it at the top of each report script
 PROFILER = Device(name="profiler", 
                   module="profiler",
-                  host="tm08-1.lab.nbttech.com",
+                  host="fill.in.profiler.host.or.ip",
                   port=443,
-                  username="admin",
-                  password="admin")
+                  username="<username>",
+                  password="<password>")
 PROFILER.save()
 
 # The name="shark1" is used in all reports scripts.  If you change the name,
 # you'll need to replace it at the top of each report script
 SHARK1 = Device(name="shark1",
                 module="shark",
-                host="vdorothy10.lab.nbttech.com",
+                host="fill.in.profiler.host.or.ip",
                 port=443,
-                username="admin",
-                password="admin")
+                username="<username>",
+                password="<password>")
 
 SHARK1.save()
 
