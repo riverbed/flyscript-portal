@@ -28,7 +28,7 @@ PROFILER.save()
 # you'll need to replace it at the top of each report script
 SHARK1 = Device(name="shark1",
                 module="shark",
-                host="fill.in.profiler.host.or.ip",
+                host="fill.in.shark.host.or.ip",
                 port=443,
                 username="<username>",
                 password="<password>")
