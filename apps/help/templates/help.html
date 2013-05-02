@@ -32,6 +32,40 @@
                     }).render('#sort');
                 });
             {% endif %}
+
+            // enable dropdown choices based on this relationship table
+            //|-----------------------------+------------+----------------------|
+            //| realm                       | centricity | groupby              |
+            //|-----------------------------+------------+----------------------|
+            //| traffic_summary             | hos,int    | all (except thu)     |
+            //| traffic_overall_time_series | hos,int    | tim                  |
+            //| traffic_flow_list           | hos        | hos                  |
+            //| identity_list               | hos        | thu                  |
+            //|-----------------------------+------------+----------------------|
+            
+            var realm_options = $('#id_realm').html();
+            var group_options = $('#id_groupby').html();
+            var centricity_options = $('#id_centricity').html();
+
+            $('#id_realm').change(function(e) {
+                var text = $('#id_realm :selected').attr('value');
+                $('#id_groupby').html(group_options);
+                $('#id_centricity').html(centricity_options);
+
+                if (text == 'traffic_summary') {
+                    $('#id_groupby [value="thu"]').remove();
+                } else if (text == 'traffic_overall_time_series') {
+                    $('#id_groupby :not([value^="tim"])').remove();
+                } else if (text == 'traffic_flow_list') {
+                    $('#id_groupby :not([value^="hos"])').remove();
+                    $('#id_centricity :not([value^="hos"])').remove();
+                } else if (text == 'identity_list') {
+                    $('#id_groupby :not([value^="thu"])').remove();
+                    $('#id_centricity :not([value^="hos"])').remove();
+                }
+            });
+
+
         });
     </script>
 

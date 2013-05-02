@@ -17,19 +17,18 @@ def get_device_choices(device_type):
     return [(d.id, d.name) for d in devices]
 
 def get_groupbys():
-    return sorted(((v, k) for k,v in _constants.groupbys.iteritems()))
+    return [('', '---')] + sorted(((v, k) for k,v in _constants.groupbys.iteritems()))
 
 def get_realms():
-    return ((c, c.title().replace('_', ' ')) for c in _constants.realms)
+    return [('', '---')] + [(c, c.title().replace('_', ' ')) for c in _constants.realms]
 
 def get_centricities():
-    return ('hos', 'host'), ('int', 'interface')
+    return ('', '---'), ('hos', 'host'), ('int', 'interface')
 
 
 class ProfilerInputForm(forms.Form):
     device = forms.ChoiceField(choices=get_device_choices('profiler'))
-    include_groupbys = forms.BooleanField(required=False)
-    realms = forms.ChoiceField(choices=get_realms())
-    centricities = forms.ChoiceField(choices=get_centricities())
+    realm = forms.ChoiceField(choices=get_realms())
+    centricity = forms.ChoiceField(choices=get_centricities())
     groupby = forms.ChoiceField(choices=get_groupbys())
 

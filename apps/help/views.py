@@ -50,8 +50,8 @@ class ProfilerColumns(View):
         results = None
         if form.is_valid():
             data = form.cleaned_data
-            results = profiler.search_columns(realms=[data['realms']],
-                                              centricities=[data['centricities']],
+            results = profiler.search_columns(realms=[data['realm']],
+                                              centricities=[data['centricity']],
                                               groupbys=[data['groupby']])
             results.sort(key=operator.attrgetter('key'))
             results.sort(key=operator.attrgetter('iskey'), reverse=True)
