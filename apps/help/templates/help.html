@@ -1,0 +1,67 @@
+<!--
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
+# This software is distributed "AS IS" as set forth in the License.
+-->
+{% extends "base.html" %}
+
+{% block header %}
+    <script type="text/javascript">
+        $(document).ready( function() {
+            {% if results %}
+                YUI().use("datatable-sort", function(Y) {
+                    cols = [
+                        {key:"KeyColumn", label:"Is Key Column", sortable:true},
+                        {key:"Key", label:"Column Key", sortable:true},
+                        {key:"Label", label:"Label", sortable:true},
+                        {key:"ID", label:"Column ID", sortable:true}
+                    ],
+                    data = [
+                        {% for row in results %}
+                            {KeyColumn:"{{ row.iskey }}", Key:"{{ row.key }}", Label:"{{ row.label }}", ID:"{{ row.id }}"},
+                        {% endfor %}
+                    ],
+                    table = new Y.DataTable({
+                        columns: cols,
+                        data: data,
+                        summary: "Column List",
+                        caption: "List of Key and Value Columns"
+                    }).render('#sort');
+                });
+            {% endif %}
+        });
+    </script>
+
+    <style type="text/css">
+        .form-inline input {
+            margin-bottom: 5px;
+        }
+    </style>
+
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <form id="profiler" class="form-inline" action='.' method='post'>
+            <div class="row-fluid">
+                <div class="span10 offset1">
+                    <div class="span">
+                        {% csrf_token %}
+                        <table>{{ form.as_table }}</table>
+                        <input id="submit" type="submit" value="Find Columns" class="btn btn-primary">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% if results %}
+        <div id="results-container" class="container-fluid">
+            <div id="sort" class="row-fluid yui3-skin-sam" align="center">
+            </div>
+        </div>
+    {% endif %}
+    <P></P>
+{% endblock %}

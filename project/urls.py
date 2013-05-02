@@ -18,6 +18,7 @@ urlpatterns = patterns('',
     url(r'^report/', include('apps.report.urls')),
     url(r'^data/', include('apps.datasource.urls')),
     url(r'^geolocation/', include('apps.geolocation.urls')),
+    url(r'^help/', include('apps.help.urls')),
     url(r'^console/', include('apps.console.urls')),
 
     # Examples:
