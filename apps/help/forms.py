@@ -32,3 +32,5 @@ class ProfilerInputForm(forms.Form):
     centricity = forms.ChoiceField(choices=get_centricities())
     groupby = forms.ChoiceField(choices=get_groupbys())
 
+class SharkInputForm(forms.Form):
+    device = forms.ChoiceField(choices=get_device_choices('shark'))

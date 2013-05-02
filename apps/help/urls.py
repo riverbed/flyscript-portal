@@ -15,8 +15,8 @@ urlpatterns = patterns(
     'apps.help.views',
     #url(r'^$', views.ReportView.as_view()),
 
-    url(r'^profiler/$',
-        views.ProfilerColumns.as_view()),
+    url(r'^(?P<device_type>[a-z]+)/$',
+        views.ColumnHelper.as_view()),
 
 #    url(r'^shark/$',
 #        views.SharkColumns.as_view()),

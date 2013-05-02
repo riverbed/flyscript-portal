@@ -18,46 +18,65 @@ from apps.report.models import Report
 from apps.datasource.models import Device
 from apps.datasource.devicemanager import DeviceManager
 
-from apps.help.forms import ProfilerInputForm
+from apps.help.forms import ProfilerInputForm, SharkInputForm
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class ProfilerColumns(View):
+class ColumnHelper(View):
     
-    def get(self, request):
+    def get(self, request, device_type):
         try:
             reports = Report.objects.all()
         except:
             raise Http404
 
-        form = ProfilerInputForm()
+        if device_type == 'profiler':
+            form = ProfilerInputForm()
+        elif device_type == 'shark':
+            form = SharkInputForm()
+        else:
+            raise Http404
 
         return render_to_response('help.html',
-                                  {'reports':reports, 'form': form},
+                                  {'reports':reports, 'device': device_type.title(), 'form': form},
                                   context_instance=RequestContext(request))
 
-    def post(self, request):
+    def post(self, request, device_type):
         try:
             reports = Report.objects.all()
-            device = Device.objects.filter(module='profiler')[0]
-            profiler = DeviceManager.get_device(device.id)
         except:
             raise Http404
 
-        form = ProfilerInputForm(request.POST)
+        if device_type == 'profiler':
+            form = ProfilerInputForm(request.POST)
+        elif device_type == 'shark':
+            form = SharkInputForm(request.POST)
+        else:
+            raise Http404
+
         results = None
         if form.is_valid():
             data = form.cleaned_data
-            results = profiler.search_columns(realms=[data['realm']],
-                                              centricities=[data['centricity']],
-                                              groupbys=[data['groupby']])
-            results.sort(key=operator.attrgetter('key'))
-            results.sort(key=operator.attrgetter('iskey'), reverse=True)
+            if device_type == 'profiler':
+                profiler = DeviceManager.get_device(data['device'])
+
+                results = profiler.search_columns(realms=[data['realm']],
+                                                  centricities=[data['centricity']],
+                                                  groupbys=[data['groupby']])
+                results.sort(key=operator.attrgetter('key'))
+                results.sort(key=operator.attrgetter('iskey'), reverse=True)
+                results = [(c.iskey, c.key, c.label, c.id) for c in results]
+            elif device_type == 'shark':
+                shark = DeviceManager.get_device(data['device'])
+
+                results = [(f.id, f.description, f.type) for f in shark.get_extractor_fields()]
+                results.sort(key=operator.itemgetter(0))
 
         return render_to_response('help.html',
                                   {'reports': reports,
+                                   'device': device_type.title(),
                                    'form': form,
                                    'results': results},
                                   context_instance=RequestContext(request))

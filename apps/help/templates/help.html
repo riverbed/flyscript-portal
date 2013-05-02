@@ -13,22 +13,34 @@
         $(document).ready( function() {
             {% if results %}
                 YUI().use("datatable-sort", function(Y) {
-                    cols = [
-                        {key:"KeyColumn", label:"Is Key Column", sortable:true},
-                        {key:"Key", label:"Column Key", sortable:true},
-                        {key:"Label", label:"Label", sortable:true},
-                        {key:"ID", label:"Column ID", sortable:true}
-                    ],
-                    data = [
-                        {% for row in results %}
-                            {KeyColumn:"{{ row.iskey }}", Key:"{{ row.key }}", Label:"{{ row.label }}", ID:"{{ row.id }}"},
-                        {% endfor %}
-                    ],
+                    {% if device == 'Profiler' %}
+                        cols = [
+                            {key:"KeyColumn", label:"Is Key Column", sortable:true},
+                            {key:"Key", label:"Column Key", sortable:true},
+                            {key:"Label", label:"Label", sortable:true},
+                            {key:"ID", label:"Column ID", sortable:true}
+                        ],
+                        data = [
+                            {% for iskey, key, label, id in results %}
+                                {KeyColumn:"{{ iskey }}", Key:"{{ key }}", Label:"{{ label }}", ID:"{{ id }}"},
+                            {% endfor %}
+                        ],
+                    {% elif device == 'Shark' %}
+                        cols = [
+                            {key:"ID", label:"Column ID", sortable:true},
+                            {key:"Description", label:"Description", sortable:true},
+                            {key:"Type", label:"Column Type", sortable:true}
+                        ],
+                        data = [
+                            {% for id, description, type in results %}
+                                {ID:"{{ id }}", Description:"{{ description }}", Type:"{{ type }}"},
+                            {% endfor %}
+                        ],
+                    {% endif %}
                     table = new Y.DataTable({
                         columns: cols,
                         data: data,
                         summary: "Column List",
-                        caption: "List of Key and Value Columns"
                     }).render('#sort');
                 });
             {% endif %}
@@ -79,13 +91,14 @@
 
 {% block content %}
     <div class="container-fluid">
-        <form id="profiler" class="form-inline" action='.' method='post'>
-            <div class="row-fluid">
+        <h3 align="center">{{ device }} Column Helper</h3>
+        <form id="profiler" class="form-inline" action='.' method='post' align="center">
+            <div class="row-fluid" align="center">
                 <div class="span10 offset1">
                     <div class="span">
                         {% csrf_token %}
                         <table>{{ form.as_table }}</table>
-                        <input id="submit" type="submit" value="Find Columns" class="btn btn-primary">
+                        <br><input id="submit" type="submit" value="Find Columns" class="btn btn-primary">
                     </div>
                 </div>
             </div>
