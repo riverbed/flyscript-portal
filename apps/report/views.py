@@ -65,6 +65,16 @@ class ReportView(APIView):
         except:
             raise Http404
 
+        # check the first device in the report and verify it has been
+        # setup appropriately
+        widget = Widget.objects.filter(report=report.id)[0]
+        table = widget.tables.all()[0]
+        device = table.device
+        if ('host.or.ip' in device.host or device.username == '<username>' or
+                device.password == '<password>'):
+            return HttpResponseRedirect('/data/devices')
+
+
         t = loader.get_template('report.html')
         c = RequestContext( request,
                             { 'report' : report,

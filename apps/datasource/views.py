@@ -5,18 +5,17 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+from django.http import HttpResponseRedirect
 
-# Create your views here.
-import json
-import datetime
-
-from django.http import HttpResponse
 from rest_framework import generics
+from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
+from rest_framework.response import Response
 
-from apps.datasource.serializers import \
-     TableSerializer, ColumnSerializer, \
-     JobSerializer, JobListSerializer
-from apps.datasource.models import Table, Column, Job
+from apps.datasource.serializers import (DeviceSerializer, TableSerializer,
+                                         ColumnSerializer, JobSerializer,
+                                         JobListSerializer)
+from apps.datasource.models import Device, Table, Column, Job
+from apps.datasource.forms import DeviceDetailForm
 
 
 import logging
@@ -49,3 +48,34 @@ class JobDetail(generics.RetrieveAPIView):
     model = Job
     serializer_class = JobSerializer
 
+
+class DeviceList(generics.ListAPIView):
+    model = Device
+    serializer_class = DeviceSerializer
+    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
+
+    def get(self, request, *args, **kwargs):
+        queryset = Device.objects.all()
+        if request.accepted_renderer.format == 'html':
+            forms = [DeviceDetailForm(instance=q) for q in queryset]
+            data = {'devices': queryset, 'forms': forms}
+            return Response(data, template_name='configure.html')
+
+        serializer = DeviceSerializer(instance=queryset)
+        data = serializer.data
+        return Response(data)
+
+    def put(self, request, *args, **kwargs):
+
+        device = Device.objects.get(pk=int(request.DATA['device_id']))
+        form = DeviceDetailForm(request.DATA, instance=device)
+
+        if form.is_valid():
+            form.save()
+        return HttpResponseRedirect(request.META['HTTP_REFERER'])
+
+
+class DeviceDetail(generics.RetrieveUpdateDestroyAPIView):
+    model = Device
+    serializer_class = DeviceSerializer
+    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)

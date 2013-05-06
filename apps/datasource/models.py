@@ -18,7 +18,6 @@ import hashlib
 import importlib
 
 from django.db import models
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Max
 
 from libs.options import Options
@@ -28,11 +27,6 @@ from project import settings
 from jsonfield import JSONField
 
 logger = logging.getLogger(__name__)
-
-from apps.datasource.devicemanager import DeviceManager
-
-# Support subclassing via get_subclass()
-# objects = InheritanceManager()
 
 lock = threading.Lock()
 
@@ -64,7 +58,6 @@ class Table(models.Model):
     rows = models.IntegerField(default=-1)
     datafilter = models.TextField(null=True, blank=True)  # deprecated interface
                                                           # key/value separated by comma
-
     options = JSONField()
 
     def get_options(self):

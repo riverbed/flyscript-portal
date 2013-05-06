@@ -6,9 +6,10 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.conf.urls import patterns, include, url
-from django.views.generic import DetailView, ListView
-from apps.datasource.models import Job
 from rest_framework.urlpatterns import format_suffix_patterns
+
+from apps.datasource.models import Job
+from apps.datasource.views import DeviceList, DeviceDetail
 from apps.datasource.views import TableList, TableDetail
 from apps.datasource.views import ColumnList, ColumnDetail
 from apps.datasource.views import JobList, JobDetail
@@ -19,6 +20,14 @@ for j in Job.objects.all():
 
 urlpatterns = patterns(
     '',
+
+    url(r'^devices/$',
+        DeviceList.as_view(),
+        name='device-list'),
+
+    url(r'^devices/(?P<pk>[0-9]+)/$',
+        DeviceDetail.as_view(),
+        name='device-detail'),
 
     url(r'^tables/$',
         TableList.as_view(),
