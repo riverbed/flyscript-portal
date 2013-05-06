@@ -10,7 +10,6 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Device 
-from apps.datasource.modules.shark import setup_capture_job
 
 #### Customize devices and authorization here
 
@@ -46,5 +45,3 @@ SHARK1.save()
 #
 SHARK_CAPTURE_JOB_NAME = 'flyscript-portal'
 SHARK_CAPTURE_JOB_SIZE = '10%'                      # absolute bytes or percentages work here
-
-setup_capture_job(SHARK1.id, SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE)

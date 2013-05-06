@@ -23,6 +23,7 @@ from apps.datasource.models import Column, Device, Table
 from apps.datasource.devicemanager import DeviceManager
 from project import settings
 from libs.options import Options
+from config.devices import SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -30,7 +31,10 @@ lock = threading.Lock()
 
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
-    return Shark(*args, **kwargs)
+
+    shark = Shark(*args, **kwargs)
+    setup_capture_job(shark, SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE)
+    return shark
 
 
 class TableOptions(Options):
@@ -67,11 +71,10 @@ def create_shark_column(table, name, label=None, datatype='', units='', iskey=Fa
     return c
 
 
-def setup_capture_job(sharkid, name, size=None):
-    if size == None:
+def setup_capture_job(shark, name, size=None):
+    if size is None:
         size = '10%'
 
-    shark = DeviceManager.get_device(sharkid)
     try:
         job = shark.get_capture_job_by_name(name)
     except ValueError:
