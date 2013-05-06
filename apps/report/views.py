@@ -10,6 +10,7 @@ import json
 import traceback
 import datetime
 
+import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
@@ -76,10 +77,11 @@ class ReportView(APIView):
 
 
         t = loader.get_template('report.html')
-        c = RequestContext( request,
-                            { 'report' : report,
-                              'reports' : reports
-                              } );
+        c = RequestContext(request,
+                           {'report': report,
+                            'reports': reports,
+                            'timezones': pytz.common_timezones,
+                           });
 
         return HttpResponse(t.render(c))
 
@@ -100,7 +102,14 @@ class ReportView(APIView):
             rows[i].append(Widget.objects.get_subclass(id=w.id))
 
         params = json.loads(request.raw_post_data)
-        d = datetime.datetime.strptime(params['date'] + ' ' + params['time'], '%m/%d/%Y %I:%M%p')
+
+        timezone = pytz.timezone(params['timezone'])
+        # store for future session reports
+        request.session['django_timezone'] = timezone
+        # create datetime object then convert to given timezone
+        dt_naive = datetime.datetime.strptime(params['date'] + ' ' + params['time'],
+                                              '%m/%d/%Y %I:%M%p')
+        d = timezone.localize(dt_naive)
 
         definition = []
         for row in rows:

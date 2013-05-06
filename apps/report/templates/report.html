@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% load tz %}
+
 {% block header %}
     <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
     <script type="text/javascript">
@@ -47,7 +49,6 @@
                   .text ("Widget " + w.widgetid)
                   .appendTo(row);
 
-              debugger;
               var opts = w.options || {};
               opts.height = w.height;
               new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.criteria );
@@ -68,6 +69,7 @@
               type: "PUT",
               url: "/report/{{ report.id }}/",
               data: JSON.stringify({ time: $("#time").val(),
+                                     timezone: $("#timezone").val(),
                                      date: $("#date").val(),
                                      duration: $("#duration").val(),
                                      filterexpr: $("#filterexpr").val()
@@ -105,22 +107,45 @@
             <div class="widget-content">
               {% csrf_token %}
               <table>
-                <tr><td>End Time:</td><td>
-                    <input id="date" type="text" class="date"></input> <span id="datenow" class="icon-calendar" title="Set date to today"> </span> 
-                    <input id="time" type="text" class="time"></input> <span id="timenow" class="icon-time" title="Set time/date to now"> </span> </td>
+                <tr>
+                    <td>End Time:</td>
+                    <td>
+                        <input id="date" type="text" class="date"></input> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
+                        <input id="time" type="text" class="time"></input> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
+                    </td>
+                    <td>
+                        <label for="timezone">Time zone:</label>
+                    </td>
+                    <td>
+                        <select id="timezone" name="timezone">
+                            {% for tz in timezones %}
+                                <option value="{{ tz }}"{% if tz == TIME_ZONE %} selected="selected"{% endif %}>{{ tz }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
                 </tr>
-                <tr><td>Duration:</td><td>
-                    <select id="duration" class="selectpicker duration">
-                      <option>Default</option>
-                      <option>15 min</option>
-                      <option>1 hour</option>
-                      <option>2 hours</option>
-                      <option>4 hours</option>
-                      <option>12 hours</option>
-                      <option>1 day</option>
-                    </select>
-                </td></tr>
-                <tr><td>Filter Expression:</td><td><input id="filterexpr"></input></td></tr>
+                <tr>
+                    <td>Duration:</td>
+                    <td>
+                        <select id="duration" class="selectpicker duration">
+                          <option>Default</option>
+                          <option>15 min</option>
+                          <option>1 hour</option>
+                          <option>2 hours</option>
+                          <option>4 hours</option>
+                          <option>12 hours</option>
+                          <option>1 day</option>
+                        </select>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Filter Expression:</td>
+                    <td><input id="filterexpr"></input></td>
+                    <td></td>
+                    <td></td>
+                </tr>
               </table>
               <button onclick="run()">Run</button>
             </div> 
