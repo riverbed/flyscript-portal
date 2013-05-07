@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title> {{ report.title }}</title>
+    <title>{% block title %}Portal: {{ report.title }} Report{% endblock %}</title>
     <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
     <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
     <link href="{{ STATIC_URL }}jquery-timepicker/jquery.timepicker.css" rel="stylesheet"/>
@@ -77,7 +77,7 @@
                 <li class="active pull-right">
                     <div><a href="/data/devices" class="btn btn-primary">Edit Devices</a></div>
                 </li>
-                <li> </li>
+                <li class="divider-vertical"></li>
                 <li class="active pull-right">
                     <div><a href="/report/reload" class=" btn">Reload Reports</a></div>
                 </li>
