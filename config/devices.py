@@ -34,14 +34,3 @@ SHARK1 = Device(name="shark1",
 
 SHARK1.save()
 
-
-# Shark capture view setup
-#
-# The configuration files use 'flyscript-portal' as the configured viewname
-# so this step just makes sure the view is active on the Shark
-# If a different view name is desired (perhaps an existing view),
-# change the SHARK_CAPTURE_JOB_NAME below, as well as all of the
-# references in the reports/*.py files.
-#
-SHARK_CAPTURE_JOB_NAME = 'flyscript-portal'
-SHARK_CAPTURE_JOB_SIZE = '10%'                      # absolute bytes or percentages work here

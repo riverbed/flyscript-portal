@@ -5,9 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import time
-import pickle
 import logging
 import threading
 import datetime
@@ -16,15 +14,11 @@ import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 
 from apps.datasource.models import Device, Table
-import apps.datasource.models 
 from apps.datasource.devicemanager import DeviceManager
-from project import settings
 from libs.options import Options
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
-#import mock
-#lock = mock.MagicMock()
 
 def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance

@@ -42,7 +42,7 @@ class Device(models.Model):
     password = models.CharField(max_length=100)
 
     def __unicode__(self):
-        return self.name
+        return '%s (%s:%s)' % (self.name, self.host, self.port)
 
 #
 # Table

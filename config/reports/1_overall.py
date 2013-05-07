@@ -20,6 +20,10 @@ import apps.report.modules.google_maps as google_maps
 PROFILER = Device.objects.get(name="profiler")
 SHARK1 = Device.objects.get(name="shark1")
 
+### Configure Shark View To Use
+SHARK_VIEW_NAME = 'jobs/flyscript-portal'       # Note: must prefix job names with 'jobs/'
+SHARK_VIEW_SIZE = '10%'                         # Default size to use if job does not already exist
+
 #
 # Overall report
 #
@@ -47,7 +51,7 @@ Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
 yui3.TimeSeriesWidget.create(report, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
-t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view='jobs/flyscript-portal',
+t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=10, resolution=1, aggregated=False)
 
 create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time', datatype='time')

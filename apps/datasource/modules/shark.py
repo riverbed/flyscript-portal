@@ -5,9 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import time, datetime
-import pickle
 import logging
 import threading
 
@@ -16,31 +14,26 @@ from rvbd.shark.types import Operation, Value, Key
 from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
-from rvbd.common import timeutils
-
 
 from apps.datasource.models import Column, Device, Table
 from apps.datasource.devicemanager import DeviceManager
-from project import settings
 from libs.options import Options
-from config.devices import SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
 
 def DeviceManager_new(*args, **kwargs):
-    # Used by DeviceManger to create a Profiler instance
-
+    # Used by DeviceManger to create a Shark instance
     shark = Shark(*args, **kwargs)
-    setup_capture_job(shark, SHARK_CAPTURE_JOB_NAME, SHARK_CAPTURE_JOB_SIZE)
     return shark
 
 
 class TableOptions(Options):
-    def __init__(self, view, aggregated=False, *args, **kwargs):
+    def __init__(self, view, view_size=None, aggregated=False, *args, **kwargs):
         super(TableOptions, self).__init__(*args, **kwargs)
         self.view = view
+        self.view_size = view_size or '10%'
         self.aggregated = aggregated
 
 
@@ -54,8 +47,8 @@ class ColumnOptions(Options):
 
 class SharkTable:
     @classmethod
-    def create(cls, name, device, view, duration, aggregated=False, filterexpr=None, resolution=60):
-        options = TableOptions(view, aggregated).encode()
+    def create(cls, name, device, view, view_size, duration, aggregated=False, filterexpr=None, resolution=60):
+        options = TableOptions(view, view_size, aggregated).encode()
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr, options=options, resolution=resolution)
         t.save()
@@ -125,6 +118,7 @@ class TableQuery:
         try:
             with lock:
                 source = path_to_class(shark, options.view)
+                setup_capture_job(shark, options.view.split('/',1)[1], options.view_size)
         except RvbdHTTPException, e:
             source = None
             raise e

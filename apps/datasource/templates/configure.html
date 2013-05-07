@@ -12,16 +12,16 @@
     <div class="container-fluid">
     <h3>Device Definitions</h3>
     <h4>Update IP addresses and Username/Password for each device</h4>
-      <div class="row-fluid">
+      <div class="row">
       {% for form in forms %}
-            <div class="span3">
+            <div class="span4">
                 <form action="" method="POST">
                     <input type="hidden" name="_method" value="PUT">
                     <input type="hidden" name="device_id" value="{{ form.instance.id }}">
                     {% csrf_token %}
                     <table>{{ form.as_table }}</table>
                     <div style="text-align: center">
-                        <input type="submit" value="Update">
+                        <input type="submit" value="Update Device">
                     </div>
                 </form>
             </div>
