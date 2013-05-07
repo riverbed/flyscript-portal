@@ -14,6 +14,7 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
+    (r'^favicon\.ico$', lambda x: HttpResponseRedirect('/static/images/favicon.ico')),
     url(r'^$', lambda x: HttpResponseRedirect('/report')),
     url(r'^report/', include('apps.report.urls')),
     url(r'^data/', include('apps.datasource.urls')),
