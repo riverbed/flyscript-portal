@@ -47,8 +47,12 @@ def import_directory(root):
                     # ignore all that and just raise a RvbdException instead
                     raise RvbdException, RvbdException('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
                 else:
-                    raise type(e), type(e)('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
-
+                    if e.message:
+                        message = e.message
+                    else:
+                        # SyntaxError has different format
+                        message = '%s: (line: %d, offset: %d) text: %s' % (e.msg, e.lineno, e.offset, e.text)
+                    raise type(e), type(e)('From config file "%s": %s' % (name, message)), sys.exc_info()[2]
 
 
 class Command(BaseCommand):

@@ -29,21 +29,9 @@ from rvbd.common import datetime_to_seconds, parse_timedelta
 import logging
 logger = logging.getLogger(__name__)
 
-def root(request):
-    try:
-        reports = Report.objects.all()
-    except:
-        return HttpResponse("No reports defined!")
-
-    return HttpResponseRedirect('/report/%d' % reports[0].id)
-
 
 def reload_config(request):
-    from project import settings
     management.call_command('reload')
-
-    # sets modified time on file so development server will restart
-    #os.utime(os.path.join(settings.PROJECT_ROOT, 'project', 'urls.py'), None)
 
     if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
