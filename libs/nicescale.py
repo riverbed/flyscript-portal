@@ -11,8 +11,8 @@ import math
 class NiceScale:
 
     def __init__(self, minval, maxval, maxticks=10, forcezero=False, zerothresh=0.2):
-        self.minval = minval if type(minval) in (int, float) else 0
-        self.maxval = maxval if type(maxval) in (int, float) else 0
+        self.minval = minval
+        self.maxval = maxval
         self.maxticks = maxticks
         self.zerothresh = zerothresh
         self.forcezero = forcezero
@@ -23,7 +23,9 @@ class NiceScale:
     # minimum and maximum data points on the axis.
     #
     def calculate(self):
-        if self.forcezero or (self.minval > 0) and (self.maxval > 0) and ((float(self.maxval - self.minval) / self.maxval) > self.zerothresh):
+        if (self.forcezero or (self.minval > 0) and 
+                (self.maxval > 0) and 
+                ((float(self.maxval - self.minval) / self.maxval) > self.zerothresh)):
             self.minval = 0
 
         vrange = self.maxval - self.minval
@@ -81,7 +83,11 @@ class NiceScale:
         while x <= self.niceMax:
             a.append("%.4f" % x)
             x += self.tickSpacing
-        print "(%.4f - %.4f @ %d) => %d [%s]" % (self.minval, self.maxval, self.maxticks, self.numTicks, ', '.join(a))
+        print "(%.4f - %.4f @ %d) => %d [%s]" % (self.minval,
+                                                 self.maxval,
+                                                 self.maxticks, 
+                                                 self.numTicks, 
+                                                 ', '.join(a))
 
     
 if __name__ == "__main__":
