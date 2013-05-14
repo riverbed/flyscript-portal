@@ -31,16 +31,6 @@ report = Report(title='Shark DNS', position=6)
 report.save()
 
 
-### DNS Queries Over time
-name = 'DNS Queries Over Time' 
-t = SharkTable.create(name=name, device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                      duration=10, resolution=60, aggregated=False)
-
-create_shark_column(t, 'time', label='Time', iskey=True, extractor='sample_time')
-create_shark_column(t, 'dns_query_count', label='dns count', iskey=False,
-                        extractor='dns.query.count', operation='sum')
-yui3.TimeSeriesWidget.create(report, t, name, width=12)
-
 ### DNS Success/Failure Queries Over time
 name = 'DNS Success and Failure Queries Over Time' 
 t = SharkTable.create(name=name, device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,

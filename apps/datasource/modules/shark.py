@@ -101,6 +101,7 @@ class TableQuery:
 
         shark = DeviceManager.get_device(table.device.id)
 
+        # Create Key/Value Columns
         columns = []
         for tc in table.get_columns():
             tc_options = tc.get_options()
@@ -132,19 +133,16 @@ class TableQuery:
 
             columns.append(c)
 
-        sortcol=None
+        # Identify Sort Column
+        sortidx = None
         if table.sortcol is not None:
-            sortcol=table.sortcol.get_options().extractor
+            sort_name = table.sortcol.get_options().extractor
+            for i, c in enumerate(columns):
+                if c.field == sort_name:
+                    sortidx = i
+                    break
 
-        # get source type from options
-        try:
-            with lock:
-                source = path_to_class(shark, options.view)
-                setup_capture_job(shark, options.view.split('/',1)[1], options.view_size)
-        except RvbdHTTPException, e:
-            source = None
-            raise e
-
+        # Initialize filters
         filters = []
         filterexpr = self.job.combine_filterexprs(joinstr="&")
         if filterexpr:
@@ -155,10 +153,19 @@ class TableQuery:
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
         filters.append(tf)
 
+        # Get source type from options
+        try:
+            with lock:
+                source = path_to_class(shark, options.view)
+                setup_capture_job(shark, options.view.split('/',1)[1], options.view_size)
+        except RvbdHTTPException, e:
+            source = None
+            raise e
+
+        # Setup the view
         if source is not None:
             with lock:
                 view = shark.create_view(source, columns, filters=filters, sync=False)
-                #sort_col=sortcol,
         else:
             # XXX raise other exception
             return None
@@ -176,9 +183,9 @@ class TableQuery:
         # Retrieve the data
         with lock:
             if options.aggregated:
-                self.data = view.get_data(aggregated=options.aggregated)
+                self.data = view.get_data(aggregated=options.aggregated, sortby=sortidx)
             else:
-                self.data = view.get_data(delta=self.delta)
+                self.data = view.get_data(delta=self.delta, sortby=sortidx)
             view.close()
 
         if table.rows > 0:
