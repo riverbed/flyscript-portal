@@ -207,7 +207,7 @@ class TableQuery:
             # upsample results to have uniform time intervals
             df = pd.DataFrame(out, columns=self.column_names)
             df = df.set_index('time').resample('%sS' % self.table.resolution, how='last')
-            out = list(df.fillna(0).itertuples())
+            out = df.reset_index().fillna(0).values
         else:
             for d in self.data:
                 out.extend(x for x in d['vals'])
