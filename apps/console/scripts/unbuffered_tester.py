@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/env python
 
 """
 Simple script to output data in timed chunks
@@ -6,10 +6,9 @@ Simple script to output data in timed chunks
 
 
 import os
-import sys
 import time
 
-filelist = os.listdir('/Users/mgarabedian/flyscript/dashboard/apps/console/scripts')
+filelist = os.listdir(os.getcwd())
 
 line = ', '.join(filelist)
 

@@ -101,6 +101,7 @@ class Results(models.Model):
     """
     utility = models.ForeignKey(Utility)
     run_date = models.DateTimeField(auto_now=True)
+    parameters = models.TextField(max_length=200, blank=True)
     results = models.TextField(editable=False)
 
     objects = ResultsManager()

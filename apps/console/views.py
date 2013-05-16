@@ -123,7 +123,11 @@ def run(request, script_id):
     except:
         raise Http404
 
-    parameter_string = Parameter.objects.get_param_string(utility)
+    last_runs = Results.objects.filter(utility=utility).order_by('-run_date')
+    if last_runs and last_runs[0].parameters:
+        parameter_string = last_runs[0].parameters
+    else:
+        parameter_string = Parameter.objects.get_param_string(utility)
 
     if request.method == 'POST':
         form = UtilityDetailForm(request.POST, instance=utility)
@@ -159,30 +163,38 @@ def execute(utility, form, params_form):
             cmd = '%s %s' % (path, parameters)
             cmd = cmd.split()
         else:
+            parameters = ''
             cmd = path
 
         print 'cmd: %s' % cmd
 
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        line = p.stdout.readline()
-        while line:
-            res.append(line)
-            # force browser buffer to flush with spaces
-            #yield '{} <br> {}'.format(line, ' '*1024)
-            yield '{}'.format(line)
+        env = dict(os.environ)
+        env['PYTHONUNBUFFERED'] = 'True'
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+        try:
             line = p.stdout.readline()
-        p.stdout.close()
+            while line:
+                res.append(line)
+                # force browser buffer to flush with spaces
+                #yield '{} <br> {}'.format(line, ' '*1024)
+                yield '{}'.format(line)
+                line = p.stdout.readline()
+            p.stdout.close()
 
-        errflag = False
-        err = p.stderr.readline()
-        while err:
-            res.append(err)
-            yield '{} <br> {}'.format(err, ' ')
-            errflag = True
+            errflag = False
             err = p.stderr.readline()
-        p.stderr.close()
-
-        Results(utility=utility, results=res).save()
+            while err:
+                res.append(err)
+                yield '{} <br> {}'.format(err, ' ')
+                errflag = True
+                err = p.stderr.readline()
+            p.stderr.close()
+        finally:
+            # if we leave the page this should clean up and kill the process
+            p.stdout.close()
+            p.stderr.close()
+            p.terminate()
+            Results(utility=utility, parameters=parameters, results=res).save()
 
         if errflag:
             # rerun with help command to show additional info
