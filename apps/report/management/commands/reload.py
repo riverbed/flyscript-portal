@@ -50,7 +50,7 @@ def import_directory(root):
                     message = e.message
                 else:
                     # SyntaxError has different format
-                    message = '%s: (file: %s, line: %d, offset: %d)\n%s' % (e.msg, e.filename, e.lineno, e.offset, e.text)
+                    message = '%s: (file: %s, line: %s, offset: %s)\n%s' % (e.msg, e.filename, e.lineno, e.offset, e.text)
                 raise type(e), type(e)('From config file "%s": %s' % (name, message)), sys.exc_info()[2]
 
 
