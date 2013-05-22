@@ -19,8 +19,11 @@ class DeviceManager:
     devices = {}
 
     @classmethod
-    def clear(cls):
-        cls.devices = {}
+    def clear(cls, device_id=None):
+        if device_id and device_id in cls.devices:
+            del cls.devices[device_id]
+        else:
+            cls.devices = {}
 
     @classmethod
     def register(cls, dev_class):

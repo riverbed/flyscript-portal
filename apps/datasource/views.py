@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.http import HttpResponseRedirect
+from django.forms.models import modelformset_factory
 
 from rest_framework import generics
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
@@ -16,6 +17,7 @@ from apps.datasource.serializers import (DeviceSerializer, TableSerializer,
                                          JobListSerializer)
 from apps.datasource.models import Device, Table, Column, Job
 from apps.datasource.forms import DeviceDetailForm
+from apps.datasource.devicemanager import DeviceManager
 
 
 import logging
@@ -57,8 +59,9 @@ class DeviceList(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = Device.objects.all()
         if request.accepted_renderer.format == 'html':
-            forms = [DeviceDetailForm(instance=q) for q in queryset]
-            data = {'devices': queryset, 'forms': forms}
+            DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
+            formset = DeviceFormSet()
+            data = {'formset': formset}
             return Response(data, template_name='configure.html')
 
         serializer = DeviceSerializer(instance=queryset)
@@ -66,12 +69,17 @@ class DeviceList(generics.ListAPIView):
         return Response(data)
 
     def put(self, request, *args, **kwargs):
+        DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
+        formset = DeviceFormSet(request.DATA)
 
-        device = Device.objects.get(pk=int(request.DATA['device_id']))
-        form = DeviceDetailForm(request.DATA, instance=device)
+        if formset.is_valid():
+            print 'valid formset'
+            formset.save()
+            DeviceManager.clear()
+        else:
+            data = {'formset': formset}
+            return Response(data, template_name='configure.html')
 
-        if form.is_valid():
-            form.save()
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 
