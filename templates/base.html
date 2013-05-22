@@ -40,7 +40,7 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Reports <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   {% for d in reports %}
-                  <li><a href="/report/{{ d.id }}">{{ d.title }}</a></li>
+                  <li><a href="/report/{{ d.slug }}">{{ d.title }}</a></li>
                   {% endfor %}
                 </ul>
               </li>
@@ -75,11 +75,17 @@
                   </li>
               {% endif %}
                 <li class="active pull-right">
-                    <div><a href="/data/devices" class="btn btn-primary">Edit Devices</a></div>
-                </li>
-                <li class="divider-vertical"></li>
-                <li class="active pull-right">
-                    <div><a href="/report/reload" class=" btn">Reload Reports</a></div>
+                    <div class="btn-group">
+                        <a class="btn btn-primary" href="#"><i class="icon-edit icon-white"></i> Configure</a>
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/data/devices"><i class="icon-pencil"></i> Edit Devices</a></li>
+                            {% if reports %}
+                                <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
+                            {% endif %}
+                            <li><a href="/report/reload"><i class="icon-retweet"></i> Reload All Reports</a></li>
+                        </ul>
+                    </div>
                 </li>
             </ul>
           </div><!--/.nav-collapse -->

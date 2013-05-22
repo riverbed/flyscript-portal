@@ -142,6 +142,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
     "project.context_processors.django_version",
+    'apps.report.context_processors.report_list_processor',
 )
 
 INSTALLED_APPS = (

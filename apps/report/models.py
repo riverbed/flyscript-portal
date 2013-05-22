@@ -9,6 +9,7 @@
 import sys
 import cgi
 import json
+import inspect
 import logging
 import traceback
 import importlib
@@ -16,6 +17,7 @@ import importlib
 from django.db import models
 from django.http import HttpResponse
 from django.db.models import Max, Sum
+from django.template.defaultfilters import slugify
 
 from model_utils.managers import InheritanceManager
 from jsonfield import JSONField
@@ -38,10 +40,34 @@ class WidgetOptions(Options):
 #
 # Reports and Widgets
 #
+def get_caller_name(match='config.reports'):
+    """ Determine filename of calling function.
+        Used to determine source of Report class definition.
+    """
+    frame = inspect.stack()[1]
+    frm = frame[0]
+    mod = inspect.getmodule(frm)
+    while frm:
+        if mod and mod.__name__.startswith(match):
+            return mod.__name__
+        else:
+            old_frm, frm = frm, frm.f_back
+            mod = inspect.getmodule(frm)
+            del old_frm         # avoid reference cycles and leaks
+    del frm
+    return ''
+
 
 class Report(models.Model):
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
+    sourcefile = models.CharField(max_length=200, default=get_caller_name)
+    slug = models.SlugField()
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.slug = slugify(self.sourcefile.split('.')[-1])
+        super(Report, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.title
@@ -101,6 +127,7 @@ class Widget(models.Model):
         self.row = row
         self.col = col
 
+
 class WidgetJob(models.Model):
 
     widget = models.ForeignKey(Widget)
@@ -145,7 +172,8 @@ class WidgetJob(models.Model):
             return HttpResponse(json.dumps(resp))
         except TypeError:
             from IPython import embed; embed()
-    
+
+
 class Axes:
     def __init__(self, definition):
         self.definition = definition

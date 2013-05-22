@@ -30,8 +30,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def reload_config(request):
-    management.call_command('reload')
+def reload_config(request, report_slug=None):
+    """ Reload all reports or one specific report
+    """
+    if report_slug:
+        report_id = Report.objects.get(slug=report_slug).id
+    else:
+        report_id = None
+    management.call_command('reload', report_id=report_id)
 
     if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
@@ -44,19 +50,19 @@ class ReportView(APIView):
     #
     # Main handler for /report/{id}
     #
-    def get(self, request, report_id=None):
+    def get(self, request, report_slug=None):
         try:
-            reports = Report.objects.all()
-            if report_id is None:
-                report = reports[0]
+            if report_slug is None:
+                reports = Report.objects.order_by('slug')
+                return HttpResponseRedirect('/report/%s' % reports[0].slug)
             else:
-                report = Report.objects.get(pk=int(report_id))
+                report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
         # check the first device in the report and verify it has been
         # setup appropriately
-        widget = Widget.objects.filter(report=report.id)[0]
+        widget = Widget.objects.filter(report=report)[0]
         table = widget.tables.all()[0]
         device = table.device
         if ('host.or.ip' in device.host or device.username == '<username>' or
@@ -67,15 +73,14 @@ class ReportView(APIView):
         t = loader.get_template('report.html')
         c = RequestContext(request,
                            {'report': report,
-                            'reports': reports,
                             'timezones': pytz.common_timezones,
                            });
 
         return HttpResponse(t.render(c))
 
-    def put(self, request, report_id):
+    def put(self, request, report_slug):
         try:
-            report = Report.objects.get(pk=int(report_id))
+            report = Report.objects.get(pk=int(report_slug))
         except:
             raise Http404
 
@@ -103,7 +108,7 @@ class ReportView(APIView):
         for row in rows:
             for w in row:
                 widget_def = { "widgettype": w.widgettype().split("."),
-                               "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
+                               "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
                                "options": json.loads(w.get_uioptions()),
                                "widgetid": w.id,
                                "row": w.row,
@@ -117,10 +122,10 @@ class ReportView(APIView):
 
         return HttpResponse(json.dumps(definition))
 
-def configure(request, report_id, widget_id=None):
+
+def configure(request, report_slug, widget_id=None):
     try:
-        reports = Report.objects.all()
-        report = Report.objects.get(pk=int(report_id))
+        report = Report.objects.get(slug=report_slug)
         if widget_id:
             widget = Widget.objects.get(pk=widget_id)
     except:
@@ -145,19 +150,19 @@ def configure(request, report_id, widget_id=None):
             widget_forms.append((w.id, WidgetDetailForm(instance=w)))
 
         return render_to_response('configure.html',
-                                  {'reports': reports,
-                                   'report': report,
+                                  {'report': report,
                                    'reportForm': report_form,
                                    'widgetForms': widget_forms},
                                   context_instance=RequestContext(request))
+
 
 class WidgetJobsList(APIView):
 
     parser_classes = (JSONParser,)
 
-    def post(self, request, report_id, widget_id, format=None):
+    def post(self, request, report_slug, widget_id, format=None):
         logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
-                     (report_id, widget_id, request.POST))
+                     (report_slug, widget_id, request.POST))
 
         criteria = json.loads(request.POST['criteria'])
 
@@ -180,13 +185,13 @@ class WidgetJobsList(APIView):
         wjob.save()
 
         logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
-                     (str(wjob), report_id, widget_id, job.id, job.handle))
+                     (str(wjob), report_slug, widget_id, job.id, job.handle))
         
-        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_id, widget_id, wjob.id)})
+        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_slug, widget_id, wjob.id)})
     
 class WidgetJobDetail(APIView):
 
-    def get(self, request, report_id, widget_id, job_id, format=None):
+    def get(self, request, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)
         return wjob.response()
         

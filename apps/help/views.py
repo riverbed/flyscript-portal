@@ -27,11 +27,6 @@ logger = logging.getLogger(__name__)
 class ColumnHelper(View):
     
     def get(self, request, device_type):
-        try:
-            reports = Report.objects.all()
-        except:
-            raise Http404
-
         if device_type == 'profiler':
             form = ProfilerInputForm()
         elif device_type == 'shark':
@@ -40,15 +35,10 @@ class ColumnHelper(View):
             raise Http404
 
         return render_to_response('help.html',
-                                  {'reports':reports, 'device': device_type.title(), 'form': form},
+                                  {'device': device_type.title(), 'form': form},
                                   context_instance=RequestContext(request))
 
     def post(self, request, device_type):
-        try:
-            reports = Report.objects.all()
-        except:
-            raise Http404
-
         if device_type == 'profiler':
             form = ProfilerInputForm(request.POST)
         elif device_type == 'shark':
@@ -75,8 +65,7 @@ class ColumnHelper(View):
                 results.sort(key=operator.itemgetter(0))
 
         return render_to_response('help.html',
-                                  {'reports': reports,
-                                   'device': device_type.title(),
+                                  {'device': device_type.title(),
                                    'form': form,
                                    'results': results},
                                   context_instance=RequestContext(request))
