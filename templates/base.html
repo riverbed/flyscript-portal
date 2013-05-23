@@ -57,11 +57,6 @@
                   </ul>
               </li>
 
-              <!--
-              <li class="active">
-                <a href="/report/{{ report.id }}/configure">Configure</a>
-              </li>
-              -->
               {% block extra_nav_left %}
               {% endblock %}
             </ul>
@@ -74,10 +69,11 @@
                       <a href="/console">Console</a>
                   </li>
               {% endif %}
-                <li class="active pull-right">
-                    <div class="btn-group">
-                        <a class="btn btn-primary" href="#"><i class="icon-edit icon-white"></i> Configure</a>
-                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#"><span class="caret"></span></a>
+                <li class="active">
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="icon-edit icon-white"></i> Configure <span class="caret"></span>
+                        </a>
                         <ul class="dropdown-menu">
                             <li><a href="/data/devices"><i class="icon-pencil"></i> Edit Devices</a></li>
                             {% if reports %}
