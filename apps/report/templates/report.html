@@ -67,7 +67,7 @@
           $.ajax({
               dataType:"json",
               type: "PUT",
-              url: "/report/{{ report.id }}/",
+              url: "/report/{{ report.slug }}/",
               data: JSON.stringify({ time: $("#time").val(),
                                      timezone: $("#timezone").val(),
                                      date: $("#date").val(),

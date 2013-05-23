@@ -80,7 +80,7 @@ class ReportView(APIView):
 
     def put(self, request, report_slug):
         try:
-            report = Report.objects.get(pk=int(report_slug))
+            report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
