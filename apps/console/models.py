@@ -23,8 +23,11 @@ class Utility(models.Model):
     path = models.CharField(max_length=200)
     islogfile = models.BooleanField(default=False)
 
+    class Meta:
+        verbose_name_plural = 'utilities'
+
     def __unicode__(self):
-        return '%s %s %s' % (self.name, self.path, self.islogfile)
+        return '%s (path: %s logfile: %s)' % (self.name, self.path, self.islogfile)
 
 
 class ParameterManager(models.Manager):
@@ -105,6 +108,9 @@ class Results(models.Model):
     results = models.TextField(editable=False)
 
     objects = ResultsManager()
+
+    class Meta:
+        verbose_name_plural = 'results'
 
     def __unicode__(self):
         return '%s %s' % (self.utility.name, self.run_date)

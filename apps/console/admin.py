@@ -11,20 +11,24 @@ from apps.console.models import Utility, Results, Parameter, Job
 
 
 class UtilityAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'path', 'islogfile')
+
 admin.site.register(Utility, UtilityAdmin)
 
 
 class ResultsAdmin(admin.ModelAdmin):
     pass
+
 admin.site.register(Results, ResultsAdmin)
 
 
 class ParameterAdmin(admin.ModelAdmin):
     pass
+
 admin.site.register(Parameter, ParameterAdmin)
 
 
 class JobAdmin(admin.ModelAdmin):
     pass
+
 admin.site.register(Job, JobAdmin)
