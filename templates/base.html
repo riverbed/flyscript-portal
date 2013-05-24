@@ -77,7 +77,7 @@
                         <ul class="dropdown-menu">
                             <li><a href="/preferences"><i class="icon-list"></i> Preferences</a></li>
                             <li><a href="/data/devices"><i class="icon-pencil"></i> Edit Devices</a></li>
-                            {% if reports %}
+                            {% if reports and 'report' in request.path %}
                                 <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
                             {% endif %}
                             <li><a href="/report/reload"><i class="icon-retweet"></i> Reload All Reports</a></li>

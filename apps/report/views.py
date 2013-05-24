@@ -117,7 +117,10 @@ class ReportView(APIView):
         d = timezone.localize(dt_naive)
 
         # check for ignore_cache option
-        ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
+        if request.user.is_authenticated():
+            ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
+        else:
+            ignore_cache = params['ignore_cache']
 
         definition = []
 
