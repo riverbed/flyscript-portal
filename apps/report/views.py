@@ -112,13 +112,16 @@ class ReportView(APIView):
 
         params = json.loads(request.raw_post_data)
 
-        timezone = pytz.timezone(params['timezone'])
         # store for future session reports
+        # then create datetime object and convert to given timezone
+        timezone = pytz.timezone(params['timezone'])
         request.session['django_timezone'] = timezone
-        # create datetime object then convert to given timezone
         dt_naive = datetime.datetime.strptime(params['date'] + ' ' + params['time'],
                                               '%m/%d/%Y %I:%M%p')
         d = timezone.localize(dt_naive)
+
+        # check for ignore_cache option
+        ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
 
         definition = []
         for row in rows:
@@ -130,9 +133,10 @@ class ReportView(APIView):
                                "row": w.row,
                                "width": w.width,
                                "height": w.height,
-                               "criteria" : { 'endtime': datetime_to_seconds(d),
-                                              'duration': params['duration'],
-                                              'filterexpr': params['filterexpr']}
+                               "criteria": {'endtime': datetime_to_seconds(d),
+                                            'duration': params['duration'],
+                                            'filterexpr': params['filterexpr'],
+                                            'ignore_cache': ignore_cache}
                                }
                 definition.append(widget_def)
 
@@ -189,13 +193,13 @@ class WidgetJobsList(APIView):
         else:
             duration = parse_timedelta(criteria['duration']).total_seconds()
             
-        criteria = Criteria(endtime=criteria['endtime'],
+        job_criteria = Criteria(endtime=criteria['endtime'],
                             duration=duration,
                             filterexpr=criteria['filterexpr'])
         job = Job(table=widget.table(),
-                  criteria=criteria.__dict__)
+                  criteria=job_criteria.__dict__)
         job.save()
-        job.start()
+        job.start(ignore_cache=criteria['ignore_cache'])
 
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()

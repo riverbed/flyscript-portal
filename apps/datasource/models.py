@@ -246,7 +246,7 @@ class Job(models.Model):
         else:
             return ""
             
-    def start(self):
+    def start(self, ignore_cache=False):
         # First, recompute the criteria times
         criteria = self.get_criteria()
         criteria.compute_times(self.table)
@@ -254,7 +254,7 @@ class Job(models.Model):
         criteria = self.get_criteria()
 
         # See if this job was run before and we have a valid cache file
-        if os.path.exists(self.datafile()):
+        if os.path.exists(self.datafile()) and not ignore_cache:
             logger.debug("Job %s: results from cachefile" % str(self))
             self.status = self.COMPLETE
             self.progress = 100

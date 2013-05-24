@@ -77,7 +77,8 @@
                                      timezone: $("#timezone").val(),
                                      date: $("#date").val(),
                                      duration: $("#duration").val(),
-                                     filterexpr: $("#filterexpr").val()
+                                     filterexpr: $("#filterexpr").val(),
+                                     ignore_cache: $("#ignore_cache").val()
                                    }),
               success: function(data, textStatus) { renderReport(data); },
               error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
@@ -146,8 +147,15 @@
                           <option>1 day</option>
                         </select>
                     </td>
-                    <td></td>
-                    <td></td>
+                    <td>Ignore Cache:</td>
+                    <td>
+                        {% if user.is_authenticated and user.userprofile.ignore_cache %}
+                            <input type="checkbox" id="ignore_cache" checked>
+                        {% else %}
+                            <input type="checkbox" id="ignore_cache">
+                        {% endif %}
+
+                    </td>
                 </tr>
                 <tr>
                     <td>Filter Expression:</td>
