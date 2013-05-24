@@ -5,19 +5,15 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import json
-import traceback
 import datetime
 
 import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
+from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
 from django.core import management
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from rest_framework.renderers import TemplateHTMLRenderer
 
 from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
@@ -124,6 +120,14 @@ class ReportView(APIView):
         ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
 
         definition = []
+
+        # store datetime info about when report is being run
+        # XXX move datetime format to preferences or somesuch
+        now = datetime.datetime.now(timezone)
+
+        definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
+                           'timezone': str(timezone)})
+
         for row in rows:
             for w in row:
                 widget_def = { "widgettype": w.widgettype().split("."),

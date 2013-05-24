@@ -102,8 +102,8 @@
                 {% else %}
                     <small class="text-info pull-right"><a href='/accounts/login?next={{ request.path }}'> [login] </a></small>
                 {% endif %}
-                <br><small class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
-                <br><small class="text-info pull-right">{{ TIME_ZONE }}</small>
+                <br><small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
+                <br><small id="report_timezone" class="text-info pull-right">{{ TIME_ZONE }}</small>
             </div>
         </div>
         {% endblock %}

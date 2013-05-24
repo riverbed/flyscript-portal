@@ -37,6 +37,11 @@
     <script type="text/javascript">
       var global = this;
       function renderReport(widgets) {
+          // pull first element off list which contains information about the report
+          var report_meta = widgets.shift();
+          $('#report_datetime').html(report_meta.datetime);
+          $('#report_timezone').html(report_meta.timezone);
+
           var report=$("#report");
           report.html(widgets);
           var rownum=0;
@@ -59,7 +64,12 @@
               new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.criteria );
           });
       }
-      
+
+      function updateTimeAndRun() {
+          $('#timenow').click();
+          run();
+      }
+
       function run() {
           runRequested = true;
           $("#criteria").collapse('hide');
@@ -115,8 +125,8 @@
                 <tr>
                     <td>End Time:</td>
                     <td>
-                        <input id="date" type="text" class="date"></input> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
-                        <input id="time" type="text" class="time"></input> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
+                        <input id="date" type="text" class="date"> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
+                        <input id="time" type="text" class="time"> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
                     </td>
                     <td>
                         <label for="timezone">Time zone:</label>
@@ -164,8 +174,10 @@
                     <td></td>
                 </tr>
               </table>
-              <button onclick="run()">Run</button>
-            </div> 
+              <p></p>
+              <button class="btn btn-primary" onclick="run()">Run</button>
+              <button class="btn" onclick="updateTimeAndRun()">Update Time & Run</button>
+            </div>
           </div> 
         </div> 
       </div> 
