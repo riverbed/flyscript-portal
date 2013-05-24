@@ -15,8 +15,12 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.shortcuts import render_to_response
 from django.core import management
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from rest_framework.renderers import TemplateHTMLRenderer
 
 from apps.datasource.models import Job, Criteria
+from apps.preferences.models import UserProfile
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
 
@@ -46,7 +50,7 @@ def reload_config(request, report_slug=None):
 
 
 class ReportView(APIView):
-    
+
     #
     # Main handler for /report/{id}
     #
@@ -59,6 +63,18 @@ class ReportView(APIView):
                 report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
+
+        timezone = 'UTC'
+        timezone_changed = False
+        if request.user.is_authenticated():
+            profile = UserProfile.objects.get(user=request.user)
+            timezone = profile.timezone
+            timezone_changed = profile.timezone_changed
+
+        if timezone_changed:
+            timezones = [timezone]
+        else:
+            timezones = pytz.common_timezones
 
         # check the first device in the report and verify it has been
         # setup appropriately
@@ -73,7 +89,8 @@ class ReportView(APIView):
         t = loader.get_template('report.html')
         c = RequestContext(request,
                            {'report': report,
-                            'timezones': pytz.common_timezones,
+                            'timezones': timezones,
+                            'timezone_changed': timezone_changed,
                            });
 
         return HttpResponse(t.render(c))
@@ -188,7 +205,7 @@ class WidgetJobsList(APIView):
                      (str(wjob), report_slug, widget_id, job.id, job.handle))
         
         return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_slug, widget_id, wjob.id)})
-    
+
 class WidgetJobDetail(APIView):
 
     def get(self, request, report_slug, widget_id, job_id, format=None):

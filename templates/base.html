@@ -75,6 +75,7 @@
                             <i class="icon-edit icon-white"></i> Configure <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu">
+                            <li><a href="/preferences"><i class="icon-list"></i> Preferences</a></li>
                             <li><a href="/data/devices"><i class="icon-pencil"></i> Edit Devices</a></li>
                             {% if reports %}
                                 <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
@@ -86,6 +87,26 @@
             </ul>
           </div><!--/.nav-collapse -->
         </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span6">
+          {% block header_row %}{% endblock %}
+        </div>
+        {% block login %}
+        <div class="span6">
+            <div class="pull-right">
+                {% if user.is_authenticated %}
+                    <small class="text-info pull-right">Welcome, {{ user.username }} <a href='/accounts/logout/'> [logout] </a></small>
+                {% else %}
+                    <small class="text-info pull-right"><a href='/accounts/login?next={{ request.path }}'> [login] </a></small>
+                {% endif %}
+                <br><small class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
+                <br><small class="text-info pull-right">{{ TIME_ZONE }}</small>
+            </div>
+        </div>
+        {% endblock %}
       </div>
     </div>
     {% block content %}{% endblock %}

@@ -96,19 +96,10 @@
     </style>
 {% endblock %}
 
+{% block header_row %}<h3>{{ report.title }}</h3>{% endblock %}
+
 {% block content %}
     <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span6">
-          <h3>{{ report.title }}</h3>
-        </div>
-        <div class="span6">
-            <div class="pull-right">
-                {% if user.is_authenticated %}<small class="text-info">Welcome, {{ user.username }}</small><br>{% endif %}
-                <small class="text-info">{% now "jS F Y H:i:s" %}</small>
-            </div>
-        </div>
-      </div>
       <div class="row-fluid">
         <div class="span12 widget-box">
           <div class="widget-title">
@@ -135,6 +126,11 @@
                                 <option value="{{ tz }}"{% if tz == TIME_ZONE %} selected="selected"{% endif %}>{{ tz }}</option>
                             {% endfor %}
                         </select>
+                        {% if user.is_authenticated %}
+                            <span class="text-info"><a href='/preferences/?next={{ request.path }}'>(update timezone)</a></span>
+                        {% else %}
+                            <span class="text-info"><a href='/accounts/login?next={{ request.path }}'>(login to save timezone)</a></span>
+                        {% endif %}
                     </td>
                 </tr>
                 <tr>

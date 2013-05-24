@@ -10,10 +10,13 @@
 
 {% block title %}Portal: Device Configuration{% endblock %}
 
-{% block content %}
-    <div class="container-fluid">
+{% block header_row %}
     <h3>Device Definitions</h3>
     <h4>Update IP addresses and Username/Password for each device</h4>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
       <div class="row">
         <form action="" method="POST">
             <input type="hidden" name="_method" value="PUT">

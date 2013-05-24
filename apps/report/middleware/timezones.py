@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.utils import timezone
+from apps.preferences.models import UserProfile
 
 
 class TimezoneMiddleware(object):
@@ -13,3 +14,6 @@ class TimezoneMiddleware(object):
         tz = request.session.get('django_timezone')
         if tz:
             timezone.activate(tz)
+        elif request.user.is_authenticated():
+            profile = UserProfile.objects.get(user=request.user)
+            timezone.activate(profile.timezone)
