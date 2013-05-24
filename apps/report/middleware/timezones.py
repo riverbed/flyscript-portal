@@ -15,5 +15,4 @@ class TimezoneMiddleware(object):
         if tz:
             timezone.activate(tz)
         elif request.user.is_authenticated():
-            profile = UserProfile.objects.get(user=request.user)
-            timezone.activate(profile.timezone)
+            timezone.activate(request.user.userprofile.timezone)

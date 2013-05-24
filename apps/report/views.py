@@ -20,7 +20,6 @@ from django.utils.decorators import method_decorator
 from rest_framework.renderers import TemplateHTMLRenderer
 
 from apps.datasource.models import Job, Criteria
-from apps.preferences.models import UserProfile
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
 
@@ -67,7 +66,7 @@ class ReportView(APIView):
         timezone = 'UTC'
         timezone_changed = False
         if request.user.is_authenticated():
-            profile = UserProfile.objects.get(user=request.user)
+            profile = request.user.userprofile
             timezone = profile.timezone
             timezone_changed = profile.timezone_changed
 

@@ -26,8 +26,11 @@ TIMEZONE_CHOICES = zip(pytz.common_timezones, pytz.common_timezones)
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
     timezone = models.CharField(max_length=50, default='UTC', choices=TIMEZONE_CHOICES)
-    timezone_changed = models.BooleanField(default=False)
+    ignore_cache = models.BooleanField(default=False, help_text='Force all reports to bypass cache')
     developer = models.BooleanField(default=False, verbose_name='developer mode')
+
+    # hidden field
+    timezone_changed = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.timezone != 'UTC':
