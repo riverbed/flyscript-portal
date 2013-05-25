@@ -16,7 +16,12 @@ from apps.geolocation.geoip import Lookup
 
 class MapWidget:
     @classmethod
-    def create(cls, report, table, title, width=6, height=300):
+    def create(cls, report, table, title, width=6, height=300, column=None):
+        """Class method to create a MapWidget.
+
+        `column` is the data column to graph
+        """
+
         w = Widget(report=report, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
@@ -24,58 +29,72 @@ class MapWidget:
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
 
-        valuecols = [col.name for col in table.get_columns() if col.iskey == False]
-        if len(valuecols) == 0:
-            raise ValueError("Table %s does not have any value columns defined" % str(table))
-
+        column  = column or [col.name for col in table.get_columns() if col.iskey == False][0]
             
         w.options = { 'key' : keycols[0],
-                      'value': valuecols[0] }
+                      'value': column }
         w.save()
         w.tables.add(table)
         
     
     @classmethod
     def process(cls, widget, data):
+        """Class method to generate JSON for the JavaScript-side of the MapWidget
+        from the incoming data.
+        """
         columns = widget.table().get_columns()
 
-        catcol = [c for c in columns if c.name == widget.get_option('key')][0]
-        col = [c for c in columns if c.name == widget.get_option('value')][0]
+        class ColInfo:
+            def __init__(self, col, dataindex):
+                self.col = col
+                self.dataindex = dataindex
 
+        keycol = None
+        valuecol = None
+        for i in range(len(columns)):
+            c = columns[i]
+            if c.name == widget.get_option('key'):
+                keycol = ColInfo(c, i)
+            elif c.name == widget.get_option('value'):
+                valuecol = ColInfo(c, i)
+        
+        # Array of google circle objects for each data row
         circles = []
         if data:
-            valmin = data[0][1]
+            valmin = data[0][valuecol.dataindex]
             valmax = valmin
-
+            
             for reportrow in data:
                 val = reportrow[1]
                 valmin = min(val, valmin)
                 valmax = max(val, valmax)
 
             geolookup = None
-            print "geolookup: %s" % geolookup
 
-
-            if col.datatype == 'bytes':
+            if valuecol.col.datatype == 'bytes':
                 formatter = 'formatBytes'
-            elif col.datatype == 'metric':
+            elif valuecol.col.datatype == 'metric':
                 formatter = 'formatMetric'
             else:
                 formatter = None;
 
             for reportrow in data:
-                key = reportrow[0]
-                val = reportrow[1]
-
+                key = reportrow[keycol.dataindex]
+                val = reportrow[valuecol.dataindex]
+ 
+                # XXXCJ - this is a hack for Profiler based host groups,
+                # need to find a way to generalize this, probably via options
                 if widget.table().options['groupby'] == 'host_group':
                     geo = Location.objects.get(name=key)
                 else:
+                    # Perform geolookup on the key (should be an IP address...)
                     if geolookup == None:
                         geolookup = Lookup.instance()
                     geo = geolookup.lookup(key)
 
                 if geo:
-                    print "geo: %s" % geo
+                    # Found a match, create a circle with the size of the
+                    # circle based on the where val falls in [min,max]
                     circle = {
                         'strokeColor': '#FF0000',
                         'strokeOpacity': 0.8,
@@ -86,7 +105,7 @@ class MapWidget:
                         'size': 15*(val / valmax),
                         'title': geo.name,
                         'value': val,
-                        'units': col.units,
+                        'units': valuecol.col.units,
                         'formatter': formatter
                         };
 
