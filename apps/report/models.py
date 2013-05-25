@@ -127,15 +127,21 @@ class WidgetJob(models.Model):
             else:
                 tabledata = job.data()
 
-            try:
-                data = widget_func(widget, tabledata)
-                resp = job.json(data)
-                logger.debug("WidgetJob %s complete" % str(self))
-            except:
+            if tabledata is None or len(tabledata) == 0:
                 resp = job.json()
                 resp['status'] = Job.ERROR
-                resp['message'] = str(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-                traceback.print_exc()
+                resp['message'] = "No data returned"
+            else:
+                try:
+                    data = widget_func(widget, tabledata)
+                    resp = job.json(data)
+                    logger.debug("WidgetJob %s complete" % str(self))
+                except:
+                    resp = job.json()
+                    resp['status'] = Job.ERROR
+                    ei = sys.exc_info()
+                    resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
+                    traceback.print_exc()
 
             #job.delete()
             self.delete()
