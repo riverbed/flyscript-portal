@@ -6,6 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import math
+import datetime
 
 from rvbd.common import timeutils
 
@@ -15,9 +16,8 @@ from apps.report.models import Axes, Widget
 class TableWidget:
     @classmethod
     def create(cls, report, table, title, width=6, rows=1000, height=300):
-        w = Widget(report=report, title=title, rows=rows, width=width,
-                   module=__name__, uiwidget=cls.__name__,
-                   uioptions={'minHeight' : height})
+        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+                   module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         w.save()
         w.tables.add(table)
@@ -67,9 +67,8 @@ class TableWidget:
 class PieWidget:
     @classmethod
     def create(cls, report, table, title, width=6, rows=10, height=300):
-        w = Widget(report=report, title=title, rows=rows, width=width,
-                   module=__name__, uiwidget=cls.__name__,
-                   uioptions={'minHeight' : height})
+        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+                   module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey == True]
         if len(keycols) == 0:
@@ -130,9 +129,8 @@ class PieWidget:
 class TimeSeriesWidget:
     @classmethod
     def create(cls, report, table, title, width=6, height=300):
-        w = Widget(report=report, title=title, width=width,
-                   module=__name__, uiwidget=cls.__name__,
-                   uioptions={'minHeight' : height})
+        w = Widget(report=report, title=title, width=width, height=height,
+                   module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         timecols = [col.name for col in table.get_columns() if col.name == 'time']
         if len(timecols) == 0:
@@ -260,9 +258,8 @@ class TimeSeriesWidget:
 class BarWidget:
     @classmethod
     def create(cls, report, table, title, width=6, rows=10, height=300):
-        w = Widget(report=report, title=title, rows=rows, width=width,
-                   module=__name__, uiwidget=cls.__name__,
-                   uioptions={'minHeight' : height})
+        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+                   module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey == True]
         if len(keycols) == 0:

@@ -28,7 +28,7 @@ report = Report(title="Response Time Map", position=4)
 report.save()
 
 # Define a map and table, group by location
-table = GroupByTable.create('maploc',  PROFILER, 'host_group', duration=60, filterexpr='host 10.99/16')
+table = GroupByTable.create('maploc2',  PROFILER, 'host_group', duration=60, filterexpr='host 10.99/16')
 
 Column.create(table, 'group_name', iskey=True, label='Group Name')
 Column.create(table, 'response_time', label='Resp Time', datatype='metric')
@@ -41,7 +41,7 @@ Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', u
 Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
 # Create a Map widget
-google_maps.MapWidget.create(report, table, "Response TIme", width=12, height=500)
+google_maps.MapWidget.create(report, table, "Response Time Map", width=12, height=500)
 
 # Create a Table showing the same data as the map
 yui3.TableWidget.create(report, table, "Locations", width=12)
