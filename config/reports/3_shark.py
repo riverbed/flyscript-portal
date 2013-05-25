@@ -89,7 +89,7 @@ yui3.TableWidget.create(report, table, 'Shark 1 Microbursts Bytes Summary', widt
 t = SharkTable.create(name='Traffic by TCP/UDP', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
-create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time (ns)')
+create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, datatype='time', label='Time (ns)')
 create_shark_column(t, 'udp_bytes', extractor='udp.bytes', iskey=False, operation='sum', label='UDP Bytes', default_value=0)
 create_shark_column(t, 'tcp_bytes', extractor='tcp.bytes', iskey=False, operation='sum', label='TCP Bytes', default_value=0)
 yui3.TimeSeriesWidget.create(report, t, 'Traffic By Type (Bytes)', width=12)

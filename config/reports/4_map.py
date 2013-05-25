@@ -40,5 +40,8 @@ Column.create(table, 'peak_bytes', 'Peak Bytes/s', datatype='bytes', units = 'B/
 Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units = 'B/s')
 Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
+# Create a Map widget
 google_maps.MapWidget.create(report, table, "Response TIme", width=12, height=500)
+
+# Create a Table showing the same data as the map
 yui3.TableWidget.create(report, table, "Locations", width=12)
