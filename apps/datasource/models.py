@@ -135,17 +135,21 @@ class Job(models.Model):
 
     table = models.ForeignKey(Table)
     criteria = JSONField(null=True)
+    handle = models.CharField(max_length=100, default="")
 
     NEW = 0
     RUNNING = 1
-    COMPLETE = 2
-    ERROR = 3
+    RUNNING_DEP = 2
+    COMPLETE = 3
+    ERROR = 4
     
-    status = models.IntegerField(default=NEW,
-                                 choices = ((NEW, "New"),
-                                            (RUNNING, "Running"),
-                                            (COMPLETE, "Complete"),
-                                            (ERROR, "Error")))
+    status = models.IntegerField(
+        default=NEW,
+        choices = ((NEW, "New"),
+                   (RUNNING, "Running"),
+                   (RUNNING_DEP, "Running dependent on another job"),
+                   (COMPLETE, "Complete"),
+                   (ERROR, "Error")))
 
     message = models.CharField(max_length=200, default="")
     progress = models.IntegerField(default=-1)
@@ -154,15 +158,36 @@ class Job(models.Model):
     def __unicode__(self):
         return "%s, %s %s%%" % (self.table.name, self.status, self.progress)
 
-    @property
-    def handle(self):
+    def compute_handle(self):
         h = hashlib.md5()
         h.update(str(self.table.id))
         h.update('.'.join([c.name for c in self.table.get_columns()]))
         h.update(json.dumps(self.criteria))
         return h.hexdigest()
     
+    
+    def get_depjob(self):
+        jobs = Job.objects.filter(
+            handle=self.handle,
+            status__in=[self.RUNNING, self.COMPLETE, self.ERROR])
+        if len(jobs) == 0:
+            return None
+        return jobs[0]
+
     def done(self):
+        if self.status == Job.RUNNING_DEP:
+            depjob = self.get_depjob()
+            if not depjob:
+                raise ValueError("Failed to find dependent job")
+            self.progress = depjob.progress
+            self.message = depjob.message
+            self.remaining = depjob.remaining
+            done = depjob.done()
+            if done:
+                self.status = depjob.status
+            self.save()
+            return done
+        
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
@@ -178,8 +203,13 @@ class Job(models.Model):
 
         return reportdata
 
+    def save(self):
+        self.handle = self.compute_handle()
+        super(Job, self).save()
+        
     def savedata(self, data):
-        logger.debug("Job %s (table %s) saving data to datafile %s" % (str(self), str(self.table), self.datafile()))
+        logger.debug("Job %s (table %s) saving data to datafile %s" %
+                     (str(self), str(self.table), self.datafile()))
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()
@@ -187,8 +217,9 @@ class Job(models.Model):
     def pandas_dataframe(self):
         import pandas
 
-        frame = pandas.DataFrame(self.data(),
-                                 columns = [col.name for col in self.table.get_columns()])
+        frame = pandas.DataFrame(
+            self.data(),
+            columns = [col.name for col in self.table.get_columns()])
 
         return frame
         
@@ -247,14 +278,27 @@ class Job(models.Model):
             return ""
             
     def start(self):
-        # First, recompute the criteria times
-        criteria = self.get_criteria()
-        criteria.compute_times(self.table)
-        self.save_criteria(criteria)
-        criteria = self.get_criteria()
+        with lock:
+            # Look for another job running
+            running = self.get_depjob()
+            if running:
+                self.status = self.RUNNING_DEP
+                self.progress = running.progress
+                self.save()
+            else:
+                running = None
+                self.status = self.RUNNING
+                self.progress = 0
+                self.save()
 
+        cache_enabled = False
+        
         # See if this job was run before and we have a valid cache file
-        if os.path.exists(self.datafile()):
+        if running:
+            logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
+                         (str(self), str(running)))
+            
+        elif os.path.exists(self.datafile()) and (cache_enabled):
             logger.debug("Job %s: results from cachefile" % str(self))
             self.status = self.COMPLETE
             self.progress = 100

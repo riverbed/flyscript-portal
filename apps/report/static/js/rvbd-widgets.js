@@ -76,11 +76,11 @@ Widget.prototype.getData = function(criteria) {
 Widget.prototype.processResponse = function(criteria, response, textStatus)
 {
     var self = this;
-    if (response.status == 2) {
+    if (response.status == 3) {
         // COMPLETE
         $('#' + this.divid).hideLoading();
         this.render(response.data);
-    } else if (response.status == 3) {
+    } else if (response.status == 4) {
         // ERROR
         $('#' + this.divid).hideLoading();
         $('#' + this.divid).html("<p>Server error: <pre>" + response.message + "</pre></p>");
