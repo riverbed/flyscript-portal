@@ -120,29 +120,30 @@ class WidgetJob(models.Model):
             resp = job.json()
             self.delete()
         else:
-            i = importlib.import_module(widget.module)
-            widget_func = i.__dict__[widget.uiwidget].process
-            if widget.rows > 0:
-                tabledata = job.data()[:widget.rows]
-            else:
-                tabledata = job.data()
-
-            if tabledata is None or len(tabledata) == 0:
-                resp = job.json()
-                resp['status'] = Job.ERROR
-                resp['message'] = "No data returned"
-            else:
-                try:
+            try:
+                i = importlib.import_module(widget.module)
+                widget_func = i.__dict__[widget.uiwidget].process
+                if widget.rows > 0:
+                    tabledata = job.data()[:widget.rows]
+                else:
+                    tabledata = job.data()
+                    
+                if tabledata is None or len(tabledata) == 0:
+                    resp = job.json()
+                    resp['status'] = Job.ERROR
+                    resp['message'] = "No data returned"
+                else:
                     data = widget_func(widget, tabledata)
                     resp = job.json(data)
                     logger.debug("WidgetJob %s complete" % str(self))
-                except:
-                    resp = job.json()
-                    resp['status'] = Job.ERROR
-                    ei = sys.exc_info()
-                    resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
-                    traceback.print_exc()
-
+            except:
+                resp = job.json()
+                resp['status'] = Job.ERROR
+                ei = sys.exc_info()
+                resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
+                traceback.print_exc()
+            
+            # XXXCJ - should delete the job?  
             #job.delete()
             self.delete()
             
