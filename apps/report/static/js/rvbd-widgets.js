@@ -97,6 +97,11 @@ Widget.prototype.render = function(data)
     $('#' + this.divid).html(data);
 }
 
+Widget.prototype.formatTime = function(t, precision) {
+    var date = new Date(t);
+    return date.toString();
+}
+
 Widget.prototype.formatBytes = function(bytes, precision) {
     if (bytes == 0) return '0';
     var e = parseInt(Math.floor(Math.log(bytes) / Math.log(1000)));

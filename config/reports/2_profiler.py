@@ -42,7 +42,8 @@ Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = 'B/s')
 Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
-yui3.TimeSeriesWidget.create(report, table, "Bandwidth for tcp/80")
+yui3.TimeSeriesWidget.create(report, table, "Bandwidth for tcp/80",
+                             altaxis=['avg_bytes_rtx'])
 
 # Define a TimeSeries showing Avg Bytes/s for tcp/443
 table = TimeSeriesTable.create('ts-tcp443', PROFILER, duration=60,
@@ -53,6 +54,7 @@ Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = 'B/s'
 Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
 yui3.TimeSeriesWidget.create(report, table, "Bandwidth for tcp/443")
+yui3.TableWidget.create(report, table, "Bandwidth Avg Bytes", width=12)
 
 # Define a Pie Chart for locations
 table = GroupByTable.create('location-bytes', PROFILER, 'host_group', duration=60)

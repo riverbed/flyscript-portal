@@ -34,6 +34,8 @@ class TableWidget:
                 column['formatter'] = 'formatBytes'
             elif wc.datatype == 'metric':
                 column['formatter'] = 'formatMetric'
+            elif wc.datatype == 'time':
+                column['formatter'] = 'formatTime'
 
             columns.append(column)
 
@@ -43,11 +45,11 @@ class TableWidget:
             row = {}
             for i in range(0,len(qcols)):
                 if qcols[i] == 'time':
-                    t0 = reportrow[i]
+                    t = reportrow[i]
                     try:
-                        val = timeutils.datetime_to_microseconds(t0) / 1000
+                        val = timeutils.datetime_to_microseconds(t) / 1000
                     except AttributeError:
-                        val = t0 * 1000
+                        val = t * 1000
                 else:
                     val = reportrow[i]
 
@@ -128,87 +130,128 @@ class PieWidget:
 
 class TimeSeriesWidget:
     @classmethod
-    def create(cls, report, table, title, width=6, height=300):
+    def create(cls, report, table, title, width=6, height=300,
+               stacked=False, cols=None, altaxis=None):
         w = Widget(report=report, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
-        timecols = [col.name for col in table.get_columns() if col.name == 'time']
+        timecols = [col.name for col in table.get_columns() if col.datatype == 'time']
         if len(timecols) == 0:
-            raise ValueError("Table %s must have a 'time' column for a timeseries widget" % str(table))
-        cols = [col.name for col in table.get_columns() if col.iskey == False]
-        w.options={'axes': {'0': {'title': 'bytes/s',
-                                  'position': 'left',
-                                  'columns': cols}}
+            raise ValueError("Table %s must have a datatype 'time' column for a timeseries widget" %
+                             str(table))
+        cols = cols or [col.name for col in table.get_columns() if col.datatype != 'time']
+        if altaxis:
+            axes = {'0': {'position': 'left',
+                          'columns': [col for col in cols if col not in altaxis]},
+                    '1': {'position': 'right',
+                          'columns': [col for col in cols if col in altaxis]}
+                    }
+        else:
+            axes = {'0': {'position': 'left',
+                          'columns': cols}}
+
+        w.options={'axes': axes,
+                   'values' : cols,
+                   'stacked' : stacked
                    }
         w.save()
         w.tables.add(table)
 
     @classmethod
     def process(cls, widget, data):
+
+        class ColInfo:
+            def __init__(self, col, dataindex, axis, istime=False):
+                self.col = col
+                self.dataindex = dataindex
+                self.axis = axis
+                self.istime = istime
+
+        t_cols = widget.table().get_columns()
+        colinfo = {}
+        valuecolnames = widget.get_option('values')
+        # Retrieve the desired value columns
+        # ...and the indices for the value values (as the 'data' has *all* columns)
+        for i in range(len(t_cols)):
+            c = t_cols[i]
+            if c.datatype == 'time':
+                colinfo['time'] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
+            elif c.name in valuecolnames:
+                colinfo[c.name] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
+
         series = []
-        qcols = ["time"]
-        qcol_axis = [ -1]
         w_axes = Axes(widget.get_option('axes', None))
 
+        # Create a better time format depending on t0/t1
+        t_dataindex = colinfo['time'].dataindex
+        print ("t_dataindex: %d, len (data[0]) %d" % (t_dataindex, len(data)))
+        t0 = data[0][t_dataindex]
+        t1 = data[-1][t_dataindex]
+        if type(t0) is not datetime.datetime:
+            t0 = datetime.datetime.fromtimestamp(t0)
+            t1 = datetime.datetime.fromtimestamp(t1)
+
+        # Setup the time axis 
         axes = { "time" : { "keys" : ["time"],
                             "position": "bottom",
                             "type": "time",
                             "labelFormat": "%k:%M",
                             "styles" : { "label": { "fontSize": "8pt" }}}}
 
-        for wc in widget.table().get_columns():
-            # XXXCJ should not use name, maybe use datatype?
-            if wc.name == 'time':
-                continue
+        # Setup the other axes, checking the axis for each column
+        for colname in valuecolnames:
+            # Need to interate the valuecolnames array to preserve order
+            ci = colinfo[colname]
 
             series.append({"xKey": "time",
                            "xDisplayName": "Time",
-                           "yKey": wc.name,
-                           "yDisplayName": wc.label,
+                           "yKey": ci.col.name,
+                           "yDisplayName": ci.col.label,
                            "styles": { "line": { "weight" : 1 },
                                        "marker": { "height": 3,
                                                    "width": 3 }}})
-            qcols.append(wc.name)
-            wc_axis = w_axes.getaxis(wc.name)
-            qcol_axis.append(wc_axis)
-            axis_name = 'axis'+str(wc_axis)
+
+            ci.axis = w_axes.getaxis(ci.col.name)
+            axis_name = 'axis'+str(ci.axis)
             if axis_name not in axes:
                 axes[axis_name] = {"type": "numeric",
-                                   "position" : w_axes.position(wc_axis),
+                                   "position" : w_axes.position(ci.axis),
                                    "keys": []
                                    }
 
-            axes[axis_name]['keys'].append(wc.name)
+            axes[axis_name]['keys'].append(ci.col.name)
 
+        # Output row data
         rows = []
 
         # min/max values by axis 0/1
         minval = {}
         maxval = {}
 
-        stacked = False # XXXCJ
+        stacked = widget.get_option('stacked')
+        # Iterate through all rows if input data
         for reportrow in data:
-            t0 = reportrow[0]
+            t = reportrow[t_dataindex]
             try:
-                t = timeutils.datetime_to_microseconds(t0) / 1000
+                t = timeutils.datetime_to_microseconds(t) / 1000
             except AttributeError:
-                t = t0 * 1000
+                t = t * 1000
 
             row = {'time': t}
             rowmin = {}
             rowmax = {}
-            for i in range(1,len(qcols)):
-                a = qcol_axis[i]
-                val = reportrow[i]
-                row[qcols[i]] = val if val != '' else None
+            for ci in colinfo.values():
+                if ci.istime: continue
+                a = ci.axis
+                val = reportrow[ci.dataindex]
+                row[ci.col.name] = val if val != '' else None
+
                 if a not in rowmin:
                     rowmin[a] = val if val != '' else 0
                     rowmax[a] = val if val != '' else 0
                 else:
                     rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a], val)
                     rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a], val)
-
-                i = i + 1
 
             for a in rowmin.keys():
                 minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
@@ -217,12 +260,14 @@ class TimeSeriesWidget:
 
             rows.append(row)
 
-        for wc in widget.table().get_columns():
-            wc_axis = w_axes.getaxis(wc.name)
-            axis_name = 'axis'+str(wc_axis)
+        # Setup the scale values for the axes
+        for ci in colinfo.values():
+            if ci.istime: continue 
+        
+            axis_name = 'axis'+str(ci.axis)
 
             if minval and maxval:
-                n = NiceScale(minval[wc_axis], maxval[wc_axis])
+                n = NiceScale(minval[ci.axis], maxval[ci.axis])
 
                 axes[axis_name]['minimum'] = "%.10f" % n.niceMin
                 axes[axis_name]['maximum'] = "%.10f" % n.niceMax
@@ -235,21 +280,22 @@ class TimeSeriesWidget:
                 axes[axis_name]['tickExponent'] = 1
                 axes[axis_name]['styles'] = { 'majorUnit' : {'count' : 1 } }
 
-            if wc.datatype == 'bytes':
+            if ci.col.datatype == 'bytes':
                 axes[axis_name]['formatter'] = 'formatBytes'
-            elif wc.datatype == 'metric':
+            elif ci.col.datatype == 'metric':
                 axes[axis_name]['formatter'] = 'formatMetric'
 
         data = {
             "chartTitle": widget.title,
-            "type" : "combo", # XXXCJ if stacked else "combo",
+            "type" : "area" if stacked else "combo",
             "stacked" : stacked,
             "dataProvider": rows,
             "seriesCollection" : series,
             "axes": axes,
             "legend" : { "position" : "bottom",
                          "fontSize" : "8pt",
-                         "styles" : { "gap": 0 } }
+                         "styles" : { "gap": 0 } },
+            "interactionType" : "planar" if stacked else "marker"            
             }
 
         return data
