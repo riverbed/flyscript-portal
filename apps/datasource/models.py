@@ -5,7 +5,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-
 import os
 import sys
 import json
@@ -20,11 +19,10 @@ import importlib
 from django.db import models
 from django.db.models import Max
 
-from libs.options import Options
+from rvbd.common.utils import DictObject
+from libs.fields import PickledObjectField
 
 from project import settings
-
-from jsonfield import JSONField
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +56,8 @@ class Table(models.Model):
     rows = models.IntegerField(default=-1)
     datafilter = models.TextField(null=True, blank=True)  # deprecated interface
                                                           # key/value separated by comma
-    options = JSONField()
-
-    def get_options(self):
-        i = importlib.import_module(self.module)
-        cls = i.TableOptions
-        return cls.decode(json.dumps(self.options))
-
+    options = PickledObjectField()
+    
     def __unicode__(self):
         return "%s (id=%s)" % (self.name, str(self.id))
 
@@ -75,9 +68,9 @@ class Column(models.Model):
 
     table = models.ForeignKey(Table)
     name = models.CharField(max_length=30)
-    label = models.CharField(max_length=30)
+    label = models.CharField(max_length=30, null=True)
     position = models.IntegerField()
-    options = JSONField()
+    options = PickledObjectField()
 
     iskey = models.BooleanField(default=False)
     isnumeric = models.BooleanField(default=True)
@@ -87,15 +80,11 @@ class Column(models.Model):
     def __unicode__(self):
         return self.label
 
-    def get_options(self):
-        i = importlib.import_module(self.table.module)
-
-        cls = i.ColumnOptions
-        return cls.decode(json.dumps(self.options))
-
     @classmethod
-    def create(cls, table, name, label=None, datatype='', units='', iskey=False, issortcol=False):
-        c = Column(table=table, name=name, label=label, datatype=datatype, units=units, iskey=iskey)
+    def create(cls, table, name, label=None, datatype='', units='',
+               iskey=False, issortcol=False, options=None):
+        c = Column(table=table, name=name, label=label, datatype=datatype, units=units,
+                   iskey=iskey, options=options)
         posmax = Column.objects.filter(table=table).aggregate(Max('position'))
         c.position = posmax['position__max'] or 1
         c.save()
@@ -104,14 +93,16 @@ class Column(models.Model):
             table.save()
         return c
 
-class Criteria(Options):
-    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, *args, **kwargs):
+class Criteria(DictObject):
+    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
         self.starttime = starttime
         self.endtime = endtime
         self.duration = duration
         self.filterexpr = filterexpr
-
+        if table:
+            self.compute_times(table)
+            
     def compute_times(self, table):
         if self.endtime is None:
             self.endtime = time.time()
@@ -134,7 +125,7 @@ class Criteria(Options):
 class Job(models.Model):
 
     table = models.ForeignKey(Table)
-    criteria = JSONField(null=True)
+    criteria = PickledObjectField(null=True)
     handle = models.CharField(max_length=100, default="")
 
     NEW = 0
@@ -165,11 +156,11 @@ class Job(models.Model):
         h.update(json.dumps(self.criteria))
         return h.hexdigest()
     
-    
     def get_depjob(self):
         jobs = Job.objects.filter(
             handle=self.handle,
             status__in=[self.RUNNING, self.COMPLETE, self.ERROR])
+
         if len(jobs) == 0:
             return None
         return jobs[0]
@@ -249,23 +240,16 @@ class Job(models.Model):
         conn.close()
         
     def json(self, data=None):
+                                      
         return { 'progress': self.progress,
                  'remaining': self.remaining,
                  'status': self.status,
                  'message': self.message,
                  'data': data }
 
-    def get_criteria(self):
-        c = Criteria.decode(json.dumps(self.criteria))
-        return c
-
-    def save_criteria(self, criteria):
-        self.criteria = json.loads(criteria.encode())
-        self.save()
-        
     def combine_filterexprs(self, joinstr="and"):
         exprs = []
-        criteria = self.get_criteria()
+        criteria = self.criteria
         for e in [self.table.filterexpr, criteria.filterexpr]:
             if e != "" and e != None:
                 exprs.append(e)

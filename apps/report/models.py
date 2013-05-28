@@ -13,26 +13,31 @@ import logging
 import traceback
 import importlib
 
+from rvbd.common.jsondict import JsonDict
+
 from django.db import models
 from django.http import HttpResponse
 from django.db.models import Max, Sum
 
 from model_utils.managers import InheritanceManager
-from jsonfield import JSONField
 from apps.datasource.models import Table, Job
-from libs.options import Options
+
+from libs.fields import PickledObjectField
 
 logger = logging.getLogger(__name__)
 
+class WidgetOptions(JsonDict):
+    _default= {'key': None,
+               'value': None,
+               'axes' : None }
 
-class WidgetOptions(Options):
-    def __init__(self, key=None, value=None, axes=None, *args, **kwargs):
-        super(Options, self).__init__(*args, **kwargs)
+class OldWidgetOptions:
+    def __init__(self, key=None, value=None, axes=None):
+        super(Options, self).__init__()
         self.key = key
         self.value = value
         if axes:
             self.axes = Axes(axes)
-
 
 #######################################################################
 #
@@ -55,11 +60,11 @@ class Widget(models.Model):
     width = models.IntegerField(default=1)
     height = models.IntegerField(default=300)
     rows = models.IntegerField(default=-1)
-    options = JSONField()
+    options = PickledObjectField()
 
     module = models.CharField(max_length=100)
     uiwidget = models.CharField(max_length=100)
-    uioptions = JSONField()
+    uioptions = PickledObjectField()
     
     objects = InheritanceManager()
     
@@ -68,18 +73,6 @@ class Widget(models.Model):
 
     def widgettype(self):
         return 'rvbd_%s.%s' % (self.module.split('.')[-1], self.uiwidget)
-
-    def get_uioptions(self):
-        return json.dumps(self.uioptions)
-
-    def get_options(self):
-        return WidgetOptions.decode(json.dumps(self.options))
-
-    def get_option(self, option, default=None):
-        try:
-            return self.options[option]
-        except KeyError:
-            return default
 
     def table(self, i=0):
         return self.tables.all()[i]

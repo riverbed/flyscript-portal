@@ -12,10 +12,10 @@ import datetime
 
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
+from rvbd.common.jsondict import JsonDict
 
 from apps.datasource.models import Device, Table
 from apps.datasource.devicemanager import DeviceManager
-from libs.options import Options
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -24,46 +24,51 @@ def DeviceManager_new(*args, **kwargs):
     # Used by DeviceManger to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
 
+class TableOptions(JsonDict):
+    _default = { 'groupby' : None,
+                 'realm' : None,
+                 'centricity' : None }
+
 class TimeSeriesTable:
     @classmethod
     def create(cls, name, device, duration, interface=False, **kwargs):
-        centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
-                  options={'realm': 'traffic_overall_time_series',
-                           'centricity': centricity,
-                           'groupby': 'time'},
+                  options=TableOptions(groupby='time',
+                                       realm='traffic_overall_time_series',
+                                       centricity='int' if interface else 'hos'),
                   **kwargs)
         t.save()
         return t
         
+
 class GroupByTable:
     @classmethod
     def create(cls, name, device, groupby, duration, filterexpr=None, interface=False, **kwargs):
-        centricity = 'int' if interface else 'hos'
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
-                  options={'centricity': centricity,
-                           'groupby': groupby},
+                  options=TableOptions(groupby=groupby,
+                                       realm='traffic_summary',
+                                       centricity='int' if interface else 'hos'),
                   **kwargs)
         t.save()
         return t
         
-class TableOptions(Options):
-    def __init__(self, groupby, realm=None, centricity=None, *args, **kwargs):
-        super(TableOptions, self).__init__(*args, **kwargs)
-        self.groupby = groupby
-        self.realm = realm
-        self.centricity = centricity
-
 class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
         self.table = table
         self.job = job
+
+    def fake_run(self):
+        import fake_data
+        self.data = fake_data.make_data(self.table)
         
     def run(self):
+        #self.fake_run()
+        #return
+    
         table = self.table
-        options = table.get_options()
+        options = table.options
 
         profiler = DeviceManager.get_device(table.device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
@@ -74,9 +79,7 @@ class TableQuery:
         if table.sortcol is not None:
             sortcol=table.sortcol.name
 
-        realm = options.realm or 'traffic_summary'
-
-        criteria = self.job.get_criteria()
+        criteria = self.job.criteria
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
 
@@ -86,7 +89,7 @@ class TableQuery:
             datafilter = None
 
         with lock:
-            report.run(realm=realm,
+            report.run(realm=options.realm,
                        groupby=profiler.groupbys[options.groupby],
                        centricity=options.centricity,
                        columns=columns,

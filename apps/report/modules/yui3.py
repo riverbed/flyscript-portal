@@ -9,6 +9,7 @@ import math
 import datetime
 
 from rvbd.common import timeutils
+from rvbd.common.jsondict import JsonDict
 
 from libs.nicescale import NiceScale
 from apps.report.models import Axes, Widget
@@ -79,8 +80,8 @@ class PieWidget:
         if table.sortcol is None:
             raise ValueError("Table %s does not have a sort column defined" % str(table))
             
-        w.options = { 'key' : keycols[0],
-                      'value': table.sortcol.name }
+        w.options = JsonDict(key = keycols[0],
+                             value = table.sortcol.name)
         w.save()
         w.tables.add(table)
 
@@ -88,8 +89,8 @@ class PieWidget:
     def process(cls, widget, data):
         columns = widget.table().get_columns()
 
-        catcol = [c for c in columns if c.name == widget.get_option('key')][0]
-        col = [c for c in columns if c.name == widget.get_option('value')][0]
+        catcol = [c for c in columns if c.name == widget.options.key][0]
+        col = [c for c in columns if c.name == widget.options.value][0]
 
         qcols = [catcol.name]
         qcols.append(col.name)
@@ -127,7 +128,6 @@ class PieWidget:
 
         return data
 
-
 class TimeSeriesWidget:
     @classmethod
     def create(cls, report, table, title, width=6, height=300,
@@ -149,11 +149,9 @@ class TimeSeriesWidget:
         else:
             axes = {'0': {'position': 'left',
                           'columns': cols}}
-
-        w.options={'axes': axes,
-                   'values' : cols,
-                   'stacked' : stacked
-                   }
+        w.options=JsonDict(axes=axes,
+                           columns=cols,
+                           stacked=stacked)
         w.save()
         w.tables.add(table)
 
@@ -169,7 +167,7 @@ class TimeSeriesWidget:
 
         t_cols = widget.table().get_columns()
         colinfo = {}
-        valuecolnames = widget.get_option('values')
+        valuecolnames = widget.options.columns
         # Retrieve the desired value columns
         # ...and the indices for the value values (as the 'data' has *all* columns)
         for i in range(len(t_cols)):
@@ -180,7 +178,7 @@ class TimeSeriesWidget:
                 colinfo[c.name] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
 
         series = []
-        w_axes = Axes(widget.get_option('axes', None))
+        w_axes = Axes(widget.options.axes)
 
         # Create a better time format depending on t0/t1
         t_dataindex = colinfo['time'].dataindex
@@ -228,7 +226,7 @@ class TimeSeriesWidget:
         minval = {}
         maxval = {}
 
-        stacked = widget.get_option('stacked')
+        stacked = widget.options.stacked
         # Iterate through all rows if input data
         for reportrow in data:
             t = reportrow[t_dataindex]
@@ -256,7 +254,6 @@ class TimeSeriesWidget:
             for a in rowmin.keys():
                 minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
                 maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a], rowmax[a])
-
 
             rows.append(row)
 
@@ -312,8 +309,9 @@ class BarWidget:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
             
         valuecols = [col.name for col in table.get_columns() if col.iskey == False]
-        w.options = { 'key' : keycols[0],
-                      'values': valuecols }
+        w.options = JsonDict(dict={ 'key' : keycols[0],
+                                    'columns': valuecols,
+                                    'axes': None})
         w.save()
         w.tables.add(table)
 
@@ -321,18 +319,18 @@ class BarWidget:
     def process(cls, widget, data):
         columns = widget.table().get_columns()
 
-        catcol = [c for c in columns if c.name == widget.get_option('key')][0]
-        cols = [c for c in columns if c.name in widget.get_option('values')]
+        catcol = [c for c in columns if c.name == widget.options.key][0]
+        cols = [c for c in columns if c.name in widget.options.columns]
 
-        w_axes = Axes(widget.get_option('axes', None))
+        w_axes = Axes(widget.options.axes)
 
         series = []
         qcols = [catcol.name]
         qcol_axis = [ -1]
         axes = { catcol.name : { "keys" : [catcol.name],
-                                     "position": "bottom",
-                                     "styles" : { "label": { "rotation": -60 }}}}
-
+                                 "position": "bottom",
+                                 "styles" : { "label": { "rotation": -60 }}}}
+        
         for wc in cols:
             series.append({"xKey": catcol.name,
                            "xDisplayName": "Time",

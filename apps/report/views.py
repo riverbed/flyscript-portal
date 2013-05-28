@@ -59,8 +59,8 @@ class ReportView(APIView):
         widget = Widget.objects.filter(report=report.id)[0]
         table = widget.tables.all()[0]
         device = table.device
-        if ('host.or.ip' in device.host or device.username == '<username>' or
-                device.password == '<password>'):
+        if (0 and device and ('host.or.ip' in device.host or device.username == '<username>' or
+                        device.password == '<password>')):
             return HttpResponseRedirect('/data/devices')
 
 
@@ -104,7 +104,7 @@ class ReportView(APIView):
             for w in row:
                 widget_def = { "widgettype": w.widgettype().split("."),
                                "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
-                               "options": json.loads(w.get_uioptions()),
+                               "options": w.uioptions,
                                "widgetid": w.id,
                                "row": w.row,
                                "width": w.width,
@@ -159,20 +159,21 @@ class WidgetJobsList(APIView):
         logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
                      (report_id, widget_id, request.POST))
 
-        criteria = json.loads(request.POST['criteria'])
+        req_criteria = json.loads(request.POST['criteria'])
 
         widget = Widget.objects.get(id=widget_id)
 
-        if criteria['duration'] == 'Default':
+        if req_criteria['duration'] == 'Default':
             duration = None
         else:
-            duration = parse_timedelta(criteria['duration']).total_seconds()
+            duration = parse_timedelta(req_criteria['duration']).total_seconds()
             
-        criteria = Criteria(endtime=criteria['endtime'],
+        criteria = Criteria(endtime=req_criteria['endtime'],
                             duration=duration,
-                            filterexpr=criteria['filterexpr'])
+                            filterexpr=req_criteria['filterexpr'],
+                            table=widget.table())
         job = Job(table=widget.table(),
-                  criteria=criteria.__dict__)
+                  criteria=criteria)
         job.save()
         job.start()
 
@@ -190,5 +191,3 @@ class WidgetJobDetail(APIView):
         wjob = WidgetJob.objects.get(id=job_id)
         return wjob.response()
         
-
-

@@ -5,15 +5,27 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+"""
+This module renders raw data from a data source to be disaplyed
+on a Google Map.
+"""
+
 import pygeoip
 from pygeoip.util import ip2long
 import threading
 import os.path
 
+from rvbd.common.jsondict import JsonDict
+
 from apps.report.models import Widget
 from apps.geolocation.models import Location
 from apps.geolocation.geoip import Lookup
 
+class MapWidgetOptions(JsonDict):
+    _default = { 'key': None,
+                 'value' : None }
+    _required = ['key', 'value']
+        
 class MapWidget:
     @classmethod
     def create(cls, report, table, title, width=6, height=300, column=None):
@@ -31,12 +43,10 @@ class MapWidget:
 
         column  = column or [col.name for col in table.get_columns() if col.iskey == False][0]
             
-        w.options = { 'key' : keycols[0],
-                      'value': column }
+        w.options = MapWidgetOptions(key=keycols[0], value=column)
         w.save()
         w.tables.add(table)
         
-    
     @classmethod
     def process(cls, widget, data):
         """Class method to generate JSON for the JavaScript-side of the MapWidget
@@ -53,19 +63,20 @@ class MapWidget:
         valuecol = None
         for i in range(len(columns)):
             c = columns[i]
-            if c.name == widget.get_option('key'):
+            if c.name == widget.options.key:
                 keycol = ColInfo(c, i)
-            elif c.name == widget.get_option('value'):
+            elif c.name == widget.options.value:
                 valuecol = ColInfo(c, i)
         
         # Array of google circle objects for each data row
         circles = []
+
         if data:
             valmin = data[0][valuecol.dataindex]
             valmax = valmin
             
             for reportrow in data:
-                val = reportrow[1]
+                val = reportrow[valuecol.dataindex]
                 valmin = min(val, valmin)
                 valmax = max(val, valmax)
 
@@ -81,7 +92,7 @@ class MapWidget:
             for reportrow in data:
                 key = reportrow[keycol.dataindex]
                 val = reportrow[valuecol.dataindex]
- 
+
                 # XXXCJ - this is a hack for Profiler based host groups,
                 # need to find a way to generalize this, probably via options
                 if widget.table().options['groupby'] == 'host_group':
