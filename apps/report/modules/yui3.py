@@ -170,8 +170,7 @@ class TimeSeriesWidget:
         valuecolnames = widget.options.columns
         # Retrieve the desired value columns
         # ...and the indices for the value values (as the 'data' has *all* columns)
-        for i in range(len(t_cols)):
-            c = t_cols[i]
+        for i, c in enumerate(t_cols):
             if c.datatype == 'time':
                 colinfo['time'] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
             elif c.name in valuecolnames:
@@ -182,10 +181,10 @@ class TimeSeriesWidget:
 
         # Create a better time format depending on t0/t1
         t_dataindex = colinfo['time'].dataindex
-        print ("t_dataindex: %d, len (data[0]) %d" % (t_dataindex, len(data)))
+        #print ("t_dataindex: %d, data[0]: %s, data[1]: %s" % (t_dataindex, str(data[0]), str(data[1])))
         t0 = data[0][t_dataindex]
         t1 = data[-1][t_dataindex]
-        if type(t0) is not datetime.datetime:
+        if not hasattr(t0, 'utcfromtimestamp'):
             t0 = datetime.datetime.fromtimestamp(t0)
             t1 = datetime.datetime.fromtimestamp(t1)
 
