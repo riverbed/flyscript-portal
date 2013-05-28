@@ -33,14 +33,6 @@ class WidgetOptions(JsonDict):
                'value': None,
                'axes' : None }
 
-class OldWidgetOptions:
-    def __init__(self, key=None, value=None, axes=None):
-        super(Options, self).__init__()
-        self.key = key
-        self.value = value
-        if axes:
-            self.axes = Axes(axes)
-
 #######################################################################
 #
 # Reports and Widgets
