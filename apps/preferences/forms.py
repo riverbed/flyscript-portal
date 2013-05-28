@@ -5,14 +5,17 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-from django.utils import timezone
+from django import forms
+
 from apps.preferences.models import UserProfile
 
 
-class TimezoneMiddleware(object):
-    def process_request(self, request):
-        tz = request.session.get('django_timezone')
-        if tz:
-            timezone.activate(tz)
-        elif request.user.is_authenticated():
-            timezone.activate(request.user.userprofile.timezone)
+class UserProfileForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = UserProfile
+        exclude = ['user', 'timezone_changed']
+
+

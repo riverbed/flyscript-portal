@@ -23,6 +23,9 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+AUTH_PROFILE_MODULE = 'report.UserProfile'
+LOGIN_REDIRECT_URL = '/report'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',      # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
@@ -139,9 +142,11 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.i18n",
     "django.core.context_processors.media",
     "django.core.context_processors.static",
+    "django.core.context_processors.request",
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
     "project.context_processors.django_version",
+    'apps.report.context_processors.report_list_processor',
 )
 
 INSTALLED_APPS = (
@@ -166,6 +171,7 @@ INSTALLED_APPS = (
     'apps.geolocation',
     'apps.console',
     'apps.help',
+    'apps.preferences',
 )
 
 # A sample logging configuration. The only tangible logging

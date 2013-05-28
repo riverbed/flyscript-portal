@@ -5,14 +5,13 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import json
-import traceback
 import datetime
 
 import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
+from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
 from django.core import management
 
@@ -30,8 +29,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def reload_config(request):
-    management.call_command('reload')
+def reload_config(request, report_slug=None):
+    """ Reload all reports or one specific report
+    """
+    if report_slug:
+        report_id = Report.objects.get(slug=report_slug).id
+    else:
+        report_id = None
+    management.call_command('reload', report_id=report_id)
 
     if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
@@ -40,26 +45,38 @@ def reload_config(request):
 
 
 class ReportView(APIView):
-    
+
     #
     # Main handler for /report/{id}
     #
-    def get(self, request, report_id=None):
+    def get(self, request, report_slug=None):
         try:
-            reports = Report.objects.all()
-            if report_id is None:
-                report = reports[0]
+            if report_slug is None:
+                reports = Report.objects.order_by('slug')
+                return HttpResponseRedirect('/report/%s' % reports[0].slug)
             else:
-                report = Report.objects.get(pk=int(report_id))
+                report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
+        timezone = 'UTC'
+        timezone_changed = False
+        if request.user.is_authenticated():
+            profile = request.user.userprofile
+            timezone = profile.timezone
+            timezone_changed = profile.timezone_changed
+
+        if timezone_changed:
+            timezones = [timezone]
+        else:
+            timezones = pytz.common_timezones
+
         # check the first device in the report and verify it has been
         # setup appropriately
-        widget = Widget.objects.filter(report=report.id)[0]
+        widget = Widget.objects.filter(report=report)[0]
         table = widget.tables.all()[0]
         device = table.device
-        if (0 and device and ('host.or.ip' in device.host or device.username == '<username>' or
+        if (device and ('host.or.ip' in device.host or device.username == '<username>' or
                         device.password == '<password>')):
             return HttpResponseRedirect('/data/devices')
 
@@ -67,15 +84,15 @@ class ReportView(APIView):
         t = loader.get_template('report.html')
         c = RequestContext(request,
                            {'report': report,
-                            'reports': reports,
-                            'timezones': pytz.common_timezones,
+                            'timezones': timezones,
+                            'timezone_changed': timezone_changed,
                            });
 
         return HttpResponse(t.render(c))
 
-    def put(self, request, report_id):
+    def put(self, request, report_slug):
         try:
-            report = Report.objects.get(pk=int(report_id))
+            report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
@@ -91,36 +108,51 @@ class ReportView(APIView):
 
         params = json.loads(request.raw_post_data)
 
-        timezone = pytz.timezone(params['timezone'])
         # store for future session reports
+        # then create datetime object and convert to given timezone
+        timezone = pytz.timezone(params['timezone'])
         request.session['django_timezone'] = timezone
-        # create datetime object then convert to given timezone
         dt_naive = datetime.datetime.strptime(params['date'] + ' ' + params['time'],
                                               '%m/%d/%Y %I:%M%p')
         d = timezone.localize(dt_naive)
 
+        # check for ignore_cache option
+        if request.user.is_authenticated():
+            ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
+        else:
+            ignore_cache = params['ignore_cache']
+
         definition = []
+
+        # store datetime info about when report is being run
+        # XXX move datetime format to preferences or somesuch
+        now = datetime.datetime.now(timezone)
+
+        definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
+                           'timezone': str(timezone)})
+
         for row in rows:
             for w in row:
                 widget_def = { "widgettype": w.widgettype().split("."),
-                               "posturl": "/report/%d/widget/%d/jobs/" % (report.id, w.id),
+                               "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
                                "options": w.uioptions,
                                "widgetid": w.id,
                                "row": w.row,
                                "width": w.width,
                                "height": w.height,
-                               "criteria" : { 'endtime': datetime_to_seconds(d),
-                                              'duration': params['duration'],
-                                              'filterexpr': params['filterexpr']}
+                               "criteria": {'endtime': datetime_to_seconds(d),
+                                            'duration': params['duration'],
+                                            'filterexpr': params['filterexpr'],
+                                            'ignore_cache': ignore_cache}
                                }
                 definition.append(widget_def)
 
         return HttpResponse(json.dumps(definition))
 
-def configure(request, report_id, widget_id=None):
+
+def configure(request, report_slug, widget_id=None):
     try:
-        reports = Report.objects.all()
-        report = Report.objects.get(pk=int(report_id))
+        report = Report.objects.get(slug=report_slug)
         if widget_id:
             widget = Widget.objects.get(pk=widget_id)
     except:
@@ -145,19 +177,19 @@ def configure(request, report_id, widget_id=None):
             widget_forms.append((w.id, WidgetDetailForm(instance=w)))
 
         return render_to_response('configure.html',
-                                  {'reports': reports,
-                                   'report': report,
+                                  {'report': report,
                                    'reportForm': report_form,
                                    'widgetForms': widget_forms},
                                   context_instance=RequestContext(request))
+
 
 class WidgetJobsList(APIView):
 
     parser_classes = (JSONParser,)
 
-    def post(self, request, report_id, widget_id, format=None):
+    def post(self, request, report_slug, widget_id, format=None):
         logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
-                     (report_id, widget_id, request.POST))
+                     (report_slug, widget_id, request.POST))
 
         req_criteria = json.loads(request.POST['criteria'])
 
@@ -168,26 +200,26 @@ class WidgetJobsList(APIView):
         else:
             duration = parse_timedelta(req_criteria['duration']).total_seconds()
             
-        criteria = Criteria(endtime=req_criteria['endtime'],
+        job_criteria = Criteria(endtime=req_criteria['endtime'],
                             duration=duration,
                             filterexpr=req_criteria['filterexpr'],
                             table=widget.table())
         job = Job(table=widget.table(),
-                  criteria=criteria)
+                  criteria=job_criteria)
         job.save()
-        job.start()
+        job.start(ignore_cache=req_criteria['ignore_cache'])
 
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()
 
         logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
-                     (str(wjob), report_id, widget_id, job.id, job.handle))
+                     (str(wjob), report_slug, widget_id, job.id, job.handle))
         
-        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_id, widget_id, wjob.id)})
-    
+        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_slug, widget_id, wjob.id)})
+
 class WidgetJobDetail(APIView):
 
-    def get(self, request, report_id, widget_id, job_id, format=None):
+    def get(self, request, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)
         return wjob.response()
         

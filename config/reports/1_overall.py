@@ -51,10 +51,12 @@ Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
 yui3.TimeSeriesWidget.create(report, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
-t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
+t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, 
+                      view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=10, resolution=1, aggregated=False)
 
-create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time', datatype='time')
-create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False, extractor='generic.bytes', operation='sum', datatype='bytes')
+create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
+create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False, 
+                        extractor='generic.bytes', operation='sum', datatype='bytes')
 
 yui3.TimeSeriesWidget.create(report, t, 'Overall Bandwidth (Bytes) at (1-second resolution)', width=6)

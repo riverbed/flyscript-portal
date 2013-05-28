@@ -18,8 +18,10 @@ class DeviceDetailForm(forms.ModelForm):
         # for existing model instances, change name and module fields
         # to read-only, to avoid user from editing those values easily
         super(DeviceDetailForm, self).__init__(*args, **kwargs)
+
         instance = getattr(self, 'instance', None)
         if instance and instance.pk:
             self.fields['name'].widget.attrs['readonly'] = True
             self.fields['module'].widget.attrs['readonly'] = True
+            self.fields['password'].widget.input_type = 'password'
 

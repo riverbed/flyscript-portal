@@ -10,24 +10,29 @@
 
 {% block title %}Portal: Device Configuration{% endblock %}
 
-{% block content %}
-    <div class="container-fluid">
+{% block header_row %}
     <h3>Device Definitions</h3>
     <h4>Update IP addresses and Username/Password for each device</h4>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
       <div class="row">
-      {% for form in forms %}
-            <div class="span4">
-                <form action="" method="POST">
-                    <input type="hidden" name="_method" value="PUT">
-                    <input type="hidden" name="device_id" value="{{ form.instance.id }}">
-                    {% csrf_token %}
-                    <table>{{ form.as_table }}</table>
-                    <div style="text-align: center">
-                        <input type="submit" value="Update Device">
-                    </div>
-                </form>
+        <form action="" method="POST">
+            <input type="hidden" name="_method" value="PUT">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            {% for form in formset %}
+                <div class="span4">
+                    <table>{{ form }}</table>
+                </div>
+            {% endfor %}
+            <div class="span8">
+                <div style="text-align: center">
+                    <input type="submit" value="Save Changes">
+                </div>
             </div>
-      {% endfor %}
+        </form>
       </div>
     </div>
 {% endblock %}

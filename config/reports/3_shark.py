@@ -34,7 +34,7 @@ report.save()
 t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=10, resolution=1, aggregated=False)
 
-create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, label='Time', datatype='time')
+create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
 create_shark_column(t, 'generic_bytes', label='Bytes', iskey=False, extractor='generic.bytes', operation='sum')
 
 yui3.TimeSeriesWidget.create(report, t, 'Overall Bandwidth (Bytes) at (1-second resolution)', width=12)
@@ -56,7 +56,7 @@ yui3.TableWidget.create(report, table, 'Shark 1 Packets', width=12)
 table = SharkTable.create(name='MicroburstsTime', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
-create_shark_column(table, 'time', extractor='generic.absolute_time', iskey=False, label='Time (ns)', datatype='time')
+create_shark_column(table, 'time', extractor='sample_time', iskey=True, label='Time (ns)', datatype='time')
 
 create_shark_column(table, 'max_microburst_1ms_bytes', label='uBurst 1ms',
                     extractor='generic.max_microburst_1ms.bytes', operation='max', datatype='bytes')
@@ -70,7 +70,7 @@ create_shark_column(table, 'max_microburst_100ms_bytes', label='uburst 100ms',
 yui3.TimeSeriesWidget.create(report, table, 'Shark 1 Microbursts Summary Bytes', width=6)
 
 ### Microbursts Table for Shark 1
-table = SharkTable.create(name='MicroburstsTime', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
+table = SharkTable.create(name='MicroburstsTable', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
 create_shark_column(table, 'max_microburst_1ms_bytes', label='uBurst 1ms',
@@ -89,7 +89,7 @@ yui3.TableWidget.create(report, table, 'Shark 1 Microbursts Bytes Summary', widt
 t = SharkTable.create(name='Traffic by TCP/UDP', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
-create_shark_column(t, 'time', extractor='generic.absolute_time', iskey=False, datatype='time', label='Time (ns)')
+create_shark_column(t, 'time', extractor='sample_time', iskey=True, datatype='time', label='Time (ns)')
 create_shark_column(t, 'udp_bytes', extractor='udp.bytes', iskey=False, operation='sum', label='UDP Bytes', default_value=0)
 create_shark_column(t, 'tcp_bytes', extractor='tcp.bytes', iskey=False, operation='sum', label='TCP Bytes', default_value=0)
 yui3.TimeSeriesWidget.create(report, t, 'Traffic By Type (Bytes)', width=12)

@@ -261,7 +261,7 @@ class Job(models.Model):
         else:
             return ""
             
-    def start(self):
+    def start(self, ignore_cache=False):
         with lock:
             # Look for another job running
             running = self.get_depjob()
@@ -275,14 +275,12 @@ class Job(models.Model):
                 self.progress = 0
                 self.save()
 
-        cache_enabled = False
-        
         # See if this job was run before and we have a valid cache file
         if running:
             logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
                          (str(self), str(running)))
             
-        elif os.path.exists(self.datafile()) and (cache_enabled):
+        elif os.path.exists(self.datafile()) and not ignore_cache:
             logger.debug("Job %s: results from cachefile" % str(self))
             self.status = self.COMPLETE
             self.progress = 100

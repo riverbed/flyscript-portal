@@ -32,7 +32,7 @@
     <div class="navbar navbar-inverse ">
       <div class="navbar-inner">
         <div class="container">
-          <a class="brand" href="http://www.riverbed.com"> Riverbed </a>
+          <a class="brand" href="http://www.riverbed.com"><img height="24" width="24" src='{{ STATIC_URL }}images/flyscript.png'/> Riverbed </a>
           <div class="nav-collapse collapse">
             <ul class="nav">
               {% if reports %}
@@ -40,7 +40,7 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Reports <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   {% for d in reports %}
-                  <li><a href="/report/{{ d.id }}">{{ d.title }}</a></li>
+                  <li><a href="/report/{{ d.slug }}">{{ d.title }}</a></li>
                   {% endfor %}
                 </ul>
               </li>
@@ -57,11 +57,6 @@
                   </ul>
               </li>
 
-              <!--
-              <li class="active">
-                <a href="/report/{{ report.id }}/configure">Configure</a>
-              </li>
-              -->
               {% block extra_nav_left %}
               {% endblock %}
             </ul>
@@ -74,16 +69,44 @@
                       <a href="/console">Console</a>
                   </li>
               {% endif %}
-                <li class="active pull-right">
-                    <div><a href="/data/devices" class="btn btn-primary">Edit Devices</a></div>
-                </li>
-                <li class="divider-vertical"></li>
-                <li class="active pull-right">
-                    <div><a href="/report/reload" class=" btn">Reload Reports</a></div>
+                <li class="active">
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="icon-edit icon-white"></i> Configure <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/preferences"><i class="icon-list"></i> Preferences</a></li>
+                            <li><a href="/data/devices"><i class="icon-pencil"></i> Edit Devices</a></li>
+                            {% if reports and 'report' in request.path %}
+                                <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
+                            {% endif %}
+                            <li><a href="/report/reload"><i class="icon-retweet"></i> Reload All Reports</a></li>
+                        </ul>
+                    </div>
                 </li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span6">
+          {% block header_row %}{% endblock %}
+        </div>
+        {% block login %}
+        <div class="span6">
+            <div class="pull-right">
+                {% if user.is_authenticated %}
+                    <small class="text-info pull-right">Welcome, {{ user.username }} <a href='/accounts/logout/'> [logout] </a></small>
+                {% else %}
+                    <small class="text-info pull-right"><a href='/accounts/login?next={{ request.path }}'> [login] </a></small>
+                {% endif %}
+                <br><small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
+                <br><small id="report_timezone" class="text-info pull-right">{{ TIME_ZONE }}</small>
+            </div>
+        </div>
+        {% endblock %}
       </div>
     </div>
     {% block content %}{% endblock %}

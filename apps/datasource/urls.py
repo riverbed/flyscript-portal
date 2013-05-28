@@ -25,10 +25,6 @@ urlpatterns = patterns(
         DeviceList.as_view(),
         name='device-list'),
 
-    url(r'^devices/(?P<pk>[0-9]+)/$',
-        DeviceDetail.as_view(),
-        name='device-detail'),
-
     url(r'^tables/$',
         TableList.as_view(),
         name='table-list'),
