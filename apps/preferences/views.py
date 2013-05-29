@@ -43,6 +43,7 @@ class PreferencesView(APIView):
             form.save()
             profile = UserProfile.objects.get(user=request.user)
             if profile.timezone_changed:
+                request.session['django_timezone'] = profile.timezone
                 timezone.activate(profile.timezone)
 
             try:
