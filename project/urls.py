@@ -38,4 +38,7 @@ urlpatterns = patterns('',
         {'template_name': 'login.html'}),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
         {'next_page': '/accounts/login'}),
+    url(r'^accounts/password_change/$', 'django.contrib.auth.views.password_change',
+        {'post_change_redirect': '/preferences',
+         'template_name': 'password_change_form.html'}),
 )

@@ -122,6 +122,7 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.report.middleware.exceptions.ReloadExceptionHandler',
     'apps.report.middleware.timezones.TimezoneMiddleware',
+    'project.middleware.LoginRequiredMiddleware',
 )
 
 ROOT_URLCONF = 'project.urls'

@@ -32,10 +32,7 @@
     <div class="navbar navbar-inverse ">
       <div class="navbar-inner">
         <div class="container">
-          <div class="brand">
-            <a href="/" alt="Riverbed"><img src='{{ STATIC_URL }}images/riverbed-logo.png'/></a>
-            <a href="http://www.riverbed.com"><img height="24" width="24" src='{{ STATIC_URL }}images/flyscript.png'/></a>
-          </div>
+        <a class="brand" style="vertical-align: bottom;padding-top: 8px" href="/" alt="Riverbed"><img src='{{ STATIC_URL }}images/riverbed-logo.png'/> Portal </a>
           <div class="nav-collapse collapse">
             <ul class="nav">
               {% if reports %}
@@ -101,7 +98,7 @@
         <div class="span6">
             <div class="pull-right">
                 {% if user.is_authenticated %}
-                    <small class="text-info pull-right">Welcome, {{ user.username }} <a href='/accounts/logout/'> [logout] </a></small>
+                    <small class="text-info pull-right">Welcome, <a href="/preferences">{{ user.username }}</a> <a href='/accounts/logout/'> [logout] </a></small>
                 {% else %}
                     <small class="text-info pull-right"><a href='/accounts/login?next={{ request.path }}'> [login] </a></small>
                 {% endif %}
