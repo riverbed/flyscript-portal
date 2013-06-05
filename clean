@@ -7,9 +7,12 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-rm project.db
-rm datacache/*
-rm log*.txt
+if [[ $1 == "--reset" ]]; then
+    rm project.db
+    rm datacache/*
+    rm log*.txt
+fi
+
 python manage.py syncdb --noinput
 python manage.py reload
 
