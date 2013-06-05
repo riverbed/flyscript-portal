@@ -13,6 +13,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.template import RequestContext, loader
 from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
+from django.core.urlresolvers import reverse
 from django.core import management
 
 from apps.datasource.models import Job, Criteria
@@ -41,7 +42,7 @@ def reload_config(request, report_slug=None):
     if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
-        return HttpResponseRedirect('/report')
+        return HttpResponseRedirect(reverse('report-view-root'))
 
 
 class ReportView(APIView):
@@ -53,7 +54,7 @@ class ReportView(APIView):
         try:
             if report_slug is None:
                 reports = Report.objects.order_by('slug')
-                return HttpResponseRedirect('/report/%s' % reports[0].slug)
+                return HttpResponseRedirect(reverse('report-view', args=[reports[0].slug]))
             else:
                 report = Report.objects.get(slug=report_slug)
         except:
@@ -78,7 +79,7 @@ class ReportView(APIView):
         device = table.device
         if (device and ('host.or.ip' in device.host or device.username == '<username>' or
                         device.password == '<password>')):
-            return HttpResponseRedirect('/data/devices')
+            return HttpResponseRedirect(reverse('device-list'))
 
 
         t = loader.get_template('report.html')
@@ -217,7 +218,7 @@ class WidgetJobsList(APIView):
         logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
                      (str(wjob), report_slug, widget_id, job.id, job.handle))
         
-        return Response({"joburl": "/report/%s/widget/%s/jobs/%d/" % (report_slug, widget_id, wjob.id)})
+        return Response({"joburl": reverse('report-job-detail', args=[report_slug, widget_id, wjob.id])})
 
 class WidgetJobDetail(APIView):
 

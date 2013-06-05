@@ -7,6 +7,7 @@
 
 from django.http import HttpResponseRedirect
 from django.forms.models import modelformset_factory
+from django.core.urlresolvers import reverse
 
 from rest_framework import generics
 from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
@@ -21,6 +22,8 @@ from apps.datasource.devicemanager import DeviceManager
 
 
 import logging
+from apps.preferences.models import UserProfile
+
 logger = logging.getLogger(__name__)
 
 class TableList(generics.ListCreateAPIView):
@@ -73,14 +76,21 @@ class DeviceList(generics.ListAPIView):
         formset = DeviceFormSet(request.DATA)
 
         if formset.is_valid():
-            print 'valid formset'
             formset.save()
             DeviceManager.clear()
+            profile = UserProfile.objects.get(user=request.user)
+            if not profile.profile_seen:
+                # only redirect if first login
+                return HttpResponseRedirect(reverse('preferences') + '?next=/report')
+            elif '/devices' not in request.META['HTTP_REFERER']:
+                return HttpResponseRedirect(request.META['HTTP_REFERER'])
+            else:
+                return HttpResponseRedirect(reverse('report-view-root'))
+
         else:
             data = {'formset': formset}
             return Response(data, template_name='configure.html')
 
-        return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 
 class DeviceDetail(generics.RetrieveUpdateDestroyAPIView):

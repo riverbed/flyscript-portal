@@ -29,8 +29,9 @@ class UserProfile(models.Model):
     ignore_cache = models.BooleanField(default=False, help_text='Force all reports to bypass cache')
     developer = models.BooleanField(default=False, verbose_name='developer mode')
 
-    # hidden field
+    # hidden fields
     timezone_changed = models.BooleanField(default=False)
+    profile_seen = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.timezone != 'UTC':

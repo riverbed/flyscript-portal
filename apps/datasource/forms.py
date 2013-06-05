@@ -25,3 +25,20 @@ class DeviceDetailForm(forms.ModelForm):
             self.fields['module'].widget.attrs['readonly'] = True
             self.fields['password'].widget.input_type = 'password'
 
+    def clean_host(self):
+        data = self.cleaned_data['host']
+        if data.startswith('fill.in.'):
+            raise forms.ValidationError('Please update with a valid hostname/ip address.')
+        return data
+
+    def clean_username(self):
+        data = self.cleaned_data['username']
+        if data == '<username>':
+            raise forms.ValidationError('Please enter a valid username.')
+        return data
+
+    def clean_password(self):
+        data = self.cleaned_data['password']
+        if data == '<password>':
+            raise forms.ValidationError('Please enter a valid password.')
+        return data

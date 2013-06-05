@@ -11,5 +11,5 @@ import apps.preferences.views as views
 
 urlpatterns = patterns(
     'apps.report.views',
-    url(r'^$', views.PreferencesView.as_view()),
+    url(r'^$', views.PreferencesView.as_view(), name='preferences'),
 )

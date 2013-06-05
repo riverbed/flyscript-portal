@@ -16,6 +16,6 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        exclude = ['user', 'timezone_changed']
+        exclude = ['user', 'timezone_changed', 'profile_seen']
 
 

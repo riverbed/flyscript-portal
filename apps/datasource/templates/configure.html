@@ -8,23 +8,44 @@
 -->
 {% extends "base.html" %}
 
-{% block title %}Portal: Device Configuration{% endblock %}
+{% block title %}Portal: Edit Devices{% endblock %}
 
 {% block header_row %}
-    <h3>Device Definitions</h3>
+    <h3>Edit Devices</h3>
     <h4>Update IP addresses and Username/Password for each device</h4>
 {% endblock %}
 
 {% block content %}
     <div class="container-fluid">
       <div class="row">
-        <form action="" method="POST">
+        <form class="form-horizontal" action="" method="POST">
             <input type="hidden" name="_method" value="PUT">
             {% csrf_token %}
             {{ formset.management_form }}
             {% for form in formset %}
                 <div class="span4">
-                    <table>{{ form }}</table>
+                    <fieldset>
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+
+                        {% for field in form.visible_fields %}
+                            <div class="control-group">
+                                <div class="control-label">
+                                    {{ field.label_tag }}
+                                </div>
+                                <div class="controls">
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        {% for err in field.errors %}
+                                            <p class="text-error">{{ err }}</p>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                    </fieldset>
                 </div>
             {% endfor %}
             <div class="span8">

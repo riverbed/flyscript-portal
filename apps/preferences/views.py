@@ -8,8 +8,6 @@
 
 import pytz
 from django.http import Http404, HttpResponseRedirect
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
 from django.utils import timezone
 
 from apps.preferences.models import UserProfile
@@ -29,13 +27,14 @@ class PreferencesView(APIView):
     """
     renderer_classes = (TemplateHTMLRenderer, )
 
-    @method_decorator(login_required)
     def get(self, request):
         profile = UserProfile.objects.get(user=request.user)
+        if not profile.profile_seen:
+            profile.profile_seen = True
+            profile.save()
         form = UserProfileForm(instance=profile)
         return Response({'form': form}, template_name='preferences.html')
 
-    @method_decorator(login_required)
     def post(self, request):
         profile = UserProfile.objects.get(user=request.user)
         form = UserProfileForm(request.DATA, instance=profile)
