@@ -15,11 +15,17 @@ import threading
 import time
 import hashlib
 import importlib
+import tokenize
+import pandas
+
+from StringIO import StringIO
 
 from django.db import models
 from django.db.models import Max
 
 from rvbd.common.utils import DictObject
+from rvbd.common.jsondict import JsonDict
+
 from libs.fields import PickledObjectField
 
 from project import settings
@@ -50,19 +56,113 @@ class Table(models.Model):
     module = models.CharField(max_length=200)    # source module name
     device = models.ForeignKey(Device, null=True)
     filterexpr = models.TextField(null=True)
-    duration = models.IntegerField()             # length of query in minutes
+    duration = models.IntegerField(null=True)    # length of query in minutes
     resolution = models.IntegerField(default=60) # resolution of graph in seconds
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
     datafilter = models.TextField(null=True, blank=True)  # deprecated interface
                                                           # key/value separated by comma
+
+    resample = models.BooleanField(default=False)
     options = PickledObjectField()
+    
+    @classmethod
+    def create(self, name, module, **kwargs):
+        t = Table(name=name, module=module, **kwargs)
+        t.save()
+        return t
     
     def __unicode__(self):
         return "%s (id=%s)" % (self.name, str(self.id))
 
-    def get_columns(self):
-        return Column.objects.filter(table=self).order_by('position')
+    def get_columns(self, synthetic=True):
+        if synthetic:
+            return Column.objects.filter(table=self).order_by('position')
+        else:
+            return Column.objects.filter(table=self, synthetic=False).order_by('position')
+
+    def compute_synthetic(self, indata):
+        """
+        Compute the synthetic columns from INDATA, a two-dimensional array
+        of the non-synthetic columns.
+
+        Synthesis occurs as follows:
+
+        1. Compute all synthetic columns where compute.post_resample is False
+
+        2. If the table is a time-based table with a defined resolution, the
+           result is resampled.
+
+        3. Any remaining columns are computed.
+        """
+        df = pandas.DataFrame(
+            indata,
+            columns = [col.name for col in self.get_columns(synthetic=False)]
+            )
+        
+        all_columns = self.get_columns(synthetic=True)
+        all_col_names = [c.name for c in all_columns]
+
+        def compute(df, syns):
+            #logger.debug("Compute: syn = %s" % ([c.name for c in syns]))
+            for syn in syns:
+                if syn.options is None:
+                    continue
+                expr = syn.options.compute.expression
+                g = tokenize.generate_tokens(StringIO(expr).readline)
+                newexpr = ""
+                getvalue = False
+                getclose = False
+                for ttype, tvalue, _, _, _ in g:
+                    if getvalue:
+                        if ttype != tokenize.NAME:
+                            raise ValueError("Invalid token, expected {name}: %s" % tvalue)
+                        elif tvalue not in all_col_names:
+                            raise ValueError("Invalid column name: %s" % tvalue)
+                        newexpr += "df['%s']" % tvalue
+                        getclose = True
+                        getvalue = False
+                    elif getclose:
+                        if ttype != tokenize.OP and tvalue != "}":
+                            raise ValueError("Invalid syntax, expected {name}: %s" % tvalue)
+                        getclose = False
+                    elif ttype == tokenize.OP and tvalue == "{":
+                        getvalue = True
+                    else:
+                        newexpr += tvalue
+
+                df[syn.name] = eval(newexpr)
+
+        # 1. Compute synthetic columns where post_resample is False
+        compute(df, [col for col in all_columns if (col.synthetic and
+                                                    col.options.compute.post_resample is False)])
+
+        # 2. Resample
+        colmap = {}
+        timecol = None
+        for col in all_columns:
+            colmap[col.name] = col
+            if col.datatype == "time":
+                timecol = col.name
+        if timecol and self.resample:
+            how = {}
+            for k in df.keys():
+                if k == timecol:
+                    continue
+                if colmap[k].options is not None:
+                    how[k] = colmap[k].options.resample.operation
+                else:
+                    how[k] = 'sum'
+            indexed = df.set_index(timecol)
+            resampled = indexed.resample('%ss' % self.resolution, how).reset_index()
+            df = resampled
+
+        # 3. Compute remaining synthetic columns (post_resample is True)
+        compute(df, [col for col in all_columns if (col.synthetic and
+                                                    col.options.compute.post_resample is True)])
+
+
+        return df.fillna(0).ix[:,all_col_names].values.tolist()
 
 class Column(models.Model):
 
@@ -74,17 +174,26 @@ class Column(models.Model):
 
     iskey = models.BooleanField(default=False)
     isnumeric = models.BooleanField(default=True)
-    datatype = models.CharField(max_length=50, default='') # metric, bytes, time ->git  XXXCJ make enumeration
+    synthetic = models.BooleanField(default=False)
+
+    # datatype should be an enumeration: metric, bytes, time  XXXCJ make enumeration
+    datatype = models.CharField(max_length=50, default='')
+
     units = models.CharField(max_length=50, default='') 
 
     def __unicode__(self):
         return self.label
 
+    def save(self):
+        if self.label is None:
+            self.label = self.name
+        super(Column, self).save()
+
     @classmethod
     def create(cls, table, name, label=None, datatype='', units='',
-               iskey=False, issortcol=False, options=None):
+               iskey=False, issortcol=False, options=None, **kwargs):
         c = Column(table=table, name=name, label=label, datatype=datatype, units=units,
-                   iskey=iskey, options=options)
+                   iskey=iskey, options=options, **kwargs)
         posmax = Column.objects.filter(table=table).aggregate(Max('position'))
         c.position = posmax['position__max'] or 1
         c.save()
@@ -92,6 +201,11 @@ class Column(models.Model):
             table.sortcol = c
             table.save()
         return c
+
+class ColumnOptions(JsonDict):
+    _default = { 'compute' : { 'expression' : None,
+                               'post_resample' : False },
+                 'resample' : { 'operation' : 'sum' } }
 
 class Criteria(DictObject):
     def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, *args, **kwargs):
@@ -104,6 +218,9 @@ class Criteria(DictObject):
             self.compute_times(table)
             
     def compute_times(self, table):
+        if table.duration is None:
+            return
+        
         if self.endtime is None:
             self.endtime = time.time()
 
@@ -206,8 +323,6 @@ class Job(models.Model):
         f.close()
 
     def pandas_dataframe(self):
-        import pandas
-
         frame = pandas.DataFrame(
             self.data(),
             columns = [col.name for col in self.table.get_columns()])
@@ -311,7 +426,9 @@ class AsyncWorker(threading.Thread):
         try:
             query = self.queryclass(self.job.table, self.job)
             query.run()
-            job.savedata(query.data)
+            fulldata = self.job.table.compute_synthetic(query.data)
+            job.savedata(fulldata)
+            #job.savedata(query.data)
             logger.debug("Saving job %s as COMPLETE" % self.job.handle)
             job.progress = 100
             job.status = job.COMPLETE

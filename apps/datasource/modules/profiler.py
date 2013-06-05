@@ -73,7 +73,7 @@ class TableQuery:
         profiler = DeviceManager.get_device(table.device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
 
-        columns = [col.name for col in table.get_columns()]
+        columns = [col.name for col in table.get_columns(synthetic=False)]
 
         sortcol=None
         if table.sortcol is not None:

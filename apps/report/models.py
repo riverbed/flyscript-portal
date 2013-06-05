@@ -160,6 +160,7 @@ class WidgetJob(models.Model):
             self.delete()
             
         resp['message'] = cgi.escape(resp['message'])
+        #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
         try:
             return HttpResponse(json.dumps(resp))
         except TypeError:

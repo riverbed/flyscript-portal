@@ -18,6 +18,7 @@ from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
+from apps.datasource.models import ColumnOptions as BaseColumnOptions
 
 from apps.datasource.models import Column, Device, Table
 from apps.datasource.devicemanager import DeviceManager
@@ -35,7 +36,7 @@ class TableOptions(JsonDict):
                  'view_size': '10%',
                  'aggregated': False }
 
-class ColumnOptions(JsonDict):
+class ColumnOptions(BaseColumnOptions):
     _default = { 'extractor': None,
                  'operation': None,
                  'default_value': None }
@@ -97,7 +98,7 @@ class TableQuery:
 
         # Create Key/Value Columns
         columns = []
-        for tc in table.get_columns():
+        for tc in table.get_columns(synthetic=False):
             tc_options = tc.options
             if tc.iskey and tc.name == 'time' and tc_options.extractor == 'sample_time':
                 # don't create column for view, we will use the sample time for timeseries
