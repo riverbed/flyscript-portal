@@ -18,14 +18,14 @@ urlpatterns = patterns(
     'apps.report.views',
     url(r'^$', views.ReportView.as_view(), name='report-view-root'),
 
-    url(r'^reload$', 'reload_config'),
+    url(r'^reload$', 'reload_config', name='reload-all'),
 
     url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/$',
         views.ReportView.as_view(), name='report-view'),
 
     #url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/configure$', 'configure'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/reload$', 'reload_config'),
+    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/reload$', 'reload_config', name='reload-report'),
 
     #url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/configure/(?P<widget_id>[0-9]+)$', 'configure'),
 
