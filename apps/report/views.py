@@ -198,7 +198,9 @@ class WidgetJobsList(APIView):
         if req_criteria['duration'] == 'Default':
             duration = None
         else:
-            duration = parse_timedelta(req_criteria['duration']).total_seconds()
+            # py2.6 compatability
+            td = parse_timedelta(req_criteria['duration'])
+            duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
             
         job_criteria = Criteria(endtime=req_criteria['endtime'],
                             duration=duration,
