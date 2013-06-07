@@ -14,7 +14,7 @@ be installed:
 - django-model-utils==1.2.0
 - djangorestframework==2.2.5
 - django-extensions==1.1.1
-- flyscript>=0.53
+- flyscript>=0.56
 - jsonfield==0.9.5
 - numpy>=1.7.0
 - pandas>=0.10.1
@@ -31,6 +31,7 @@ installed/checked by using the included requirements.txt file.  For example:
     $ git clone git@github.com:riverbed/flyscript-portal.git
     $ cd flyscript-portal
     $ pip install -r requirements.txt
+    $ ./clean
 
 Configuration
 -------------
@@ -68,14 +69,15 @@ Initializing the database
 -------------------------
 
 The `clean` script at the root of the project will perform the following:
-- reset the database
+- initialize the database, if it doesn't exist
 - clean out any temporary files (log files, cache files, etc.)
-- create a new database and import configuration from the config directory
+- reload configurations from the config directory
+- setup a default admin user with the login/password combo of 'admin'/'admin'
+  (if the user already exists, the password will be reset to 'admin')
 
-Run this script to reset everything back to ground zero.  This is
-useful if you experience oddities when trying to access pages.  Given
-that all configuration is stored in config files, this operation is safe
-to run at just about any time.
+Run this script to reset everything.  This is useful if you experience oddities
+when trying to access pages.  Given that all configuration is stored in config
+files, this operation is safe to run at just about any time.
 
 Note that the `clean` script is a bash shell script and will work on unix-like
 systems.  If you are running this on Windows, you'll need to manually execute
@@ -84,6 +86,12 @@ each command.
 On unix-like systems:
 
     $ ./clean
+
+To force the database to its original state, and really reset everything to ground-zero,
+pass the '--reset' command to the script as follows:
+
+    $ ./clean --reset
+
 
 Starting the server
 -------------------
@@ -102,6 +110,14 @@ This project utilizes file storage caching of the data results, and these files 
 stored in the `datacache` directory.  Eventually these files will be automatically
 cleaned, but in the interim, there are no ill effects if they are manually deleted
 periodically to reclaim storage space.
+
+Changing the admin password
+---------------------------
+
+After logging into the server for the first time, there will be an option under the
+upper-right `Configure` button called `Preferences`.  From there, follow the link
+titled `Change User Password` and a typical password change page will be shown.
+
 
 Mapping locations for public IP address
 ---------------------------------------
