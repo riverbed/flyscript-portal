@@ -30,6 +30,10 @@ def import_directory(root, report_name=None, reload_devices=False, ignore_list=N
 
     rootpath = os.path.basename(root)
     for path, dirs, files in os.walk(root):
+        for i, d in enumerate(dirs):
+            if d in ignore_list:
+                dirs.pop(i)
+
         for f in files:
             if f in ignore_list or not f.endswith('.py') or '__init__' in f:
                 continue
