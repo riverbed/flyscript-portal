@@ -19,14 +19,19 @@ from apps.report.models import Report
 
 from project import settings
 
+# list of files/directories to ignore
+IGNORE_FILES = ['helpers']
 
-def import_directory(root, report_name=None, reload_devices=False):
+def import_directory(root, report_name=None, reload_devices=False, ignore_list=None):
     """ Recursively imports all python files in a directory
     """
+    if ignore_list is None:
+        ignore_list = IGNORE_FILES
+
     rootpath = os.path.basename(root)
     for path, dirs, files in os.walk(root):
         for f in files:
-            if not f.endswith('.py') or '__init__' in f:
+            if f in ignore_list or not f.endswith('.py') or '__init__' in f:
                 continue
 
             if not reload_devices and f == 'devices.py':
