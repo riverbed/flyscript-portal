@@ -11,7 +11,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.report.models import Report
 from apps.datasource.models import Table, Column
-from apps.datasource.models import ColumnOptions
 import apps.report.modules.yui3 as yui3
 
 from apps.datasource.modules.tshark import TSharkTable, TableOptions
@@ -49,33 +48,33 @@ Column.create(table, 'pkttime', datatype='time', iskey=True,
 Column.create(table, 'iplen', 
               options=TSharkColumnOptions(field='ip.len', fieldtype='int'))
 Column.create(table, 'iplen-bits', synthetic=True,
-              options=ColumnOptions(compute__expression = '8*{iplen}',
-                                     resample__operation = 'sum'))
+              compute_expression = '8*{iplen}',
+              resample_operation = 'sum')
+
 Column.create(table, 'max-iplen', synthetic=True,
-              options=ColumnOptions(compute__expression = '{iplen}',
-                                     resample__operation = 'max'))
+              compute_expression = '{iplen}',
+              resample_operation = 'max')
 Column.create(table, 'min-iplen', synthetic=True,
-              options=ColumnOptions(compute__expression = '{iplen}',
-                                     resample__operation = 'min'))
+              compute_expression = '{iplen}',
+              resample_operation = 'min')
 Column.create(table, 'limit_100', synthetic=True,
-              options=ColumnOptions(compute__expression = '100',
-                                     resample__operation = 'min'))
+              compute_expression = '100',
+              resample_operation = 'min')
 
 # Compute 95th percentile
 Column.create(table, 'iplen_95', synthetic=True, label="95%",
-              options=ColumnOptions(compute__expression = '{iplen}.quantile(0.95)',
-                                    compute__post_resample = True))
+              compute_expression = '{iplen}.quantile(0.95)',
+              compute_post_resample = True)
 
 # Compute 80th percentile
 Column.create(table, 'iplen_80', synthetic=True, label="80%",
-              options=ColumnOptions(compute__expression = '{iplen}.quantile(0.80)',
-                                    compute__post_resample = True))
+              compute_expression = '{iplen}.quantile(0.80)',
+              compute_post_resample = True)
 
 # Compute rolling average (EWMA algo)
 Column.create(table, 'iplen_ewma', synthetic=True, label="Moving Avg",
-              options=ColumnOptions(compute__expression = 'pandas.stats.moments.ewma({iplen}, span=20)',
-                                    compute__post_resample = True,
-                                    resample__operation = 'sum'))
+              compute_expression = 'pandas.stats.moments.ewma({iplen}, span=20)',
+              compute_post_resample = True)
 
 yui3.TimeSeriesWidget.create(report, table, "IP Bytes over Time", width=12, height=400,
                              cols = ['iplen', 'iplen_95', 'iplen_80', 'iplen_ewma'])

@@ -83,6 +83,7 @@ class TableQuery:
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
 
+        logger.info("Running report for timeframe %s" % str(tf))
         if table.datafilter:
             datafilter = table.datafilter.split(',')
         else:
@@ -119,5 +120,6 @@ class TableQuery:
         if table.rows > 0:
             self.data = self.data[:table.rows]
 
+        logger.info ("job %s return %s rows" % (self.job, len(self.data)))
         return True
 

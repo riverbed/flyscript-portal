@@ -37,7 +37,8 @@ class TableWidget:
                 column['formatter'] = 'formatMetric'
             elif wc.datatype == 'time':
                 column['formatter'] = 'formatTime'
-
+            elif wc.datatype == 'html':
+                column['allowHTML'] = True
             columns.append(column)
 
         rows = []

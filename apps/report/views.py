@@ -203,13 +203,14 @@ class WidgetJobsList(APIView):
             duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
             
         job_criteria = Criteria(endtime=req_criteria['endtime'],
-                            duration=duration,
-                            filterexpr=req_criteria['filterexpr'],
-                            table=widget.table())
+                                duration=duration,
+                                filterexpr=req_criteria['filterexpr'],
+                                table=widget.table(),
+                                ignore_cache=req_criteria['ignore_cache'])
         job = Job(table=widget.table(),
                   criteria=job_criteria)
         job.save()
-        job.start(ignore_cache=req_criteria['ignore_cache'])
+        job.start()
 
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()

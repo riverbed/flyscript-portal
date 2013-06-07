@@ -18,7 +18,6 @@ from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
-from apps.datasource.models import ColumnOptions as BaseColumnOptions
 
 from apps.datasource.models import Column, Device, Table
 from apps.datasource.devicemanager import DeviceManager
@@ -36,7 +35,7 @@ class TableOptions(JsonDict):
                  'view_size': '10%',
                  'aggregated': False }
 
-class ColumnOptions(BaseColumnOptions):
+class ColumnOptions(JsonDict):
     _default = { 'extractor': None,
                  'operation': None,
                  'default_value': None }

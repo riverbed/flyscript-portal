@@ -14,7 +14,7 @@ import optparse
 from django.core.management.base import BaseCommand, CommandError
 from django.core import management
 from django.db.models import get_app, get_models
-from apps.datasource.models import Column, Job, Device
+from apps.datasource.models import Table, Column, Job, Device
 
 from project import settings
 from apps.report.models import Report, Widget, WidgetJob
@@ -72,13 +72,22 @@ class Command(BaseCommand):
             # remove Report and its Widgets, Jobs, WidgetJobs, Tables and Columns
             rid = options['report_id']
 
+            def del_table(table):
+                for column in Column.objects.filter(table=table.id):
+                    column.delete()
+                for job in Job.objects.filter(table=table.id):
+                    job.delete()
+
+                if (table.options is not None) and ('tables' in table.options):
+                    for (name, tid) in table.options.tables.items():
+                        for deptable in Table.objects.filter(id=int(tid)):
+                            del_table(deptable)
+
+                table.delete()
+                
             for widget in Widget.objects.filter(report=rid):
                 for table in widget.tables.all():
-                    for column in Column.objects.filter(table=table.id):
-                        column.delete()
-                    for job in Job.objects.filter(table=table.id):
-                        job.delete()
-                    table.delete()
+                    del_table(table)
                 for wjob in WidgetJob.objects.filter(widget=widget):
                     wjob.delete()
                 widget.delete()

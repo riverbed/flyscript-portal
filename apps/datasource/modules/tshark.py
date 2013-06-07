@@ -22,7 +22,6 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 
 from apps.datasource.models import Column, Device, Table
-from apps.datasource.models import ColumnOptions as BaseColumnOptions
 from apps.datasource.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
@@ -31,12 +30,11 @@ lock = threading.Lock()
 class TableOptions(JsonDict):
     _default = {'pcapfile': None}
     
-class ColumnOptions(BaseColumnOptions):
+class ColumnOptions(JsonDict):
     _default = {'field': None,
                 'fieldtype': 'string', # float, int, time
                 'operation': 'sum'}
     _required = ['field']
-    
 
 class TSharkTable:
     @classmethod

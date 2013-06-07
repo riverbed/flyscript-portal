@@ -88,13 +88,16 @@ class Table(models.Model):
 
         Synthesis occurs as follows:
 
-        1. Compute all synthetic columns where compute.post_resample is False
+        1. Compute all synthetic columns where compute_post_resample is False
 
         2. If the table is a time-based table with a defined resolution, the
            result is resampled.
 
         3. Any remaining columns are computed.
         """
+        if len(indata) == 0:
+            return []
+        
         df = pandas.DataFrame(
             indata,
             columns = [col.name for col in self.get_columns(synthetic=False)]
@@ -103,12 +106,10 @@ class Table(models.Model):
         all_columns = self.get_columns(synthetic=True)
         all_col_names = [c.name for c in all_columns]
 
-        def compute(df, syns):
-            #logger.debug("Compute: syn = %s" % ([c.name for c in syns]))
-            for syn in syns:
-                if syn.options is None:
-                    continue
-                expr = syn.options.compute.expression
+        def compute(df, syncols):
+            #logger.debug("Compute: syncol = %s" % ([c.name for c in syncols]))
+            for syncol in syncols:
+                expr = syncol.compute_expression
                 g = tokenize.generate_tokens(StringIO(expr).readline)
                 newexpr = ""
                 getvalue = False
@@ -131,11 +132,11 @@ class Table(models.Model):
                     else:
                         newexpr += tvalue
 
-                df[syn.name] = eval(newexpr)
+                df[syncol.name] = eval(newexpr)
 
         # 1. Compute synthetic columns where post_resample is False
         compute(df, [col for col in all_columns if (col.synthetic and
-                                                    col.options.compute.post_resample is False)])
+                                                    col.compute_post_resample is False)])
 
         # 2. Resample
         colmap = {}
@@ -149,20 +150,19 @@ class Table(models.Model):
             for k in df.keys():
                 if k == timecol:
                     continue
-                if colmap[k].options is not None:
-                    how[k] = colmap[k].options.resample.operation
-                else:
-                    how[k] = 'sum'
+                how[k] = colmap[k].resample.operation
+
             indexed = df.set_index(timecol)
             resampled = indexed.resample('%ss' % self.resolution, how).reset_index()
             df = resampled
 
         # 3. Compute remaining synthetic columns (post_resample is True)
         compute(df, [col for col in all_columns if (col.synthetic and
-                                                    col.options.compute.post_resample is True)])
+                                                    col.compute_post_resample is True)])
 
 
-        return df.fillna(0).ix[:,all_col_names].values.tolist()
+        # Replace NaN with None
+        return df.where(pandas.notnull(df), None).ix[:,all_col_names].values.tolist()
 
 class Column(models.Model):
 
@@ -174,8 +174,12 @@ class Column(models.Model):
 
     iskey = models.BooleanField(default=False)
     isnumeric = models.BooleanField(default=True)
-    synthetic = models.BooleanField(default=False)
 
+    synthetic = models.BooleanField(default=False)
+    compute_post_resample = models.BooleanField(default=False)
+    compute_expression = models.CharField(max_length=300)
+    resample_operation = models.CharField(max_length=300, default='sum')
+    
     # datatype should be an enumeration: metric, bytes, time  XXXCJ make enumeration
     datatype = models.CharField(max_length=50, default='')
 
@@ -202,21 +206,31 @@ class Column(models.Model):
             table.save()
         return c
 
-class ColumnOptions(JsonDict):
-    _default = { 'compute' : { 'expression' : None,
-                               'post_resample' : False },
-                 'resample' : { 'operation' : 'sum' } }
-
 class Criteria(DictObject):
-    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, *args, **kwargs):
+    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
         self.starttime = starttime
         self.endtime = endtime
         self.duration = duration
         self.filterexpr = filterexpr
+        self.ignore_cache = ignore_cache
+
+        self.orig_starttime = starttime
+        self.orig_endtime = endtime
+        self.orig_duration = duration
+        
         if table:
             self.compute_times(table)
             
+
+    def build_for_table(self, table):
+        return Criteria(starttime=self.orig_starttime,
+                        endtime=self.orig_endtime,
+                        duration=self.orig_duration,
+                        filterexpr=self.filterexpr,
+                        ignore_cache=self.ignore_cache,
+                        table=table)
+                        
     def compute_times(self, table):
         if table.duration is None:
             return
@@ -264,7 +278,7 @@ class Job(models.Model):
     remaining = models.IntegerField(default=-1)
 
     def __unicode__(self):
-        return "%s, %s %s%%" % (self.table.name, self.status, self.progress)
+        return "<%s, table %s, pct %s%%>" % (self.table.name, self.status, self.progress)
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -295,7 +309,8 @@ class Job(models.Model):
                 self.status = depjob.status
             self.save()
             return done
-        
+
+        logger.debug("%s.done: %s" % (str(self), self.status))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
@@ -321,9 +336,16 @@ class Job(models.Model):
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()
+        logger.debug("Job %s (table %s) data saved" %
+                     (str(self), str(self.table)))
 
     def pandas_dataframe(self):
-        frame = pandas.DataFrame(
+        data = self.data()
+        if len(data) == 0:
+            # Empty dataframe
+            frame = None
+        else:
+            frame = pandas.DataFrame(
             self.data(),
             columns = [col.name for col in self.table.get_columns()])
 
@@ -365,7 +387,7 @@ class Job(models.Model):
     def combine_filterexprs(self, joinstr="and"):
         exprs = []
         criteria = self.criteria
-        for e in [self.table.filterexpr, criteria.filterexpr]:
+        for e in [self.table.filterexpr, criteria.filterexpr if criteria else None]:
             if e != "" and e != None:
                 exprs.append(e)
 
@@ -376,18 +398,20 @@ class Job(models.Model):
         else:
             return ""
             
-    def start(self, ignore_cache=False):
+    def start(self):
+        ignore_cache = self.criteria.ignore_cache
+        
         with lock:
             # Look for another job running
             running = self.get_depjob()
-            if running:
-                self.status = self.RUNNING_DEP
-                self.progress = running.progress
-                self.save()
-            else:
+            if not running or (ignore_cache and running.status == self.COMPLETE):
                 running = None
                 self.status = self.RUNNING
                 self.progress = 0
+                self.save()
+            else:
+                self.status = self.RUNNING_DEP
+                self.progress = running.progress
                 self.save()
 
         # See if this job was run before and we have a valid cache file
