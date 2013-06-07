@@ -72,14 +72,13 @@ class ReportView(APIView):
         else:
             timezones = pytz.common_timezones
 
-        # check the first device in the report and verify it has been
-        # setup appropriately
-        widget = Widget.objects.filter(report=report)[0]
-        table = widget.tables.all()[0]
-        device = table.device
-        if (device and ('host.or.ip' in device.host or device.username == '<username>' or
-                        device.password == '<password>')):
-            return HttpResponseRedirect(reverse('device-list'))
+        # check the devices in the report and verify all have been updated
+        for widget in Widget.objects.filter(report=report):
+            for table in widget.tables.all():
+                device = table.device
+                if (device and ('host.or.ip' in device.host or device.username == '<username>' or
+                                device.password == '<password>')):
+                    return HttpResponseRedirect(reverse('device-list'))
 
 
         t = loader.get_template('report.html')
