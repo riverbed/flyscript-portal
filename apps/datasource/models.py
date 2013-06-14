@@ -150,7 +150,7 @@ class Table(models.Model):
             for k in df.keys():
                 if k == timecol:
                     continue
-                how[k] = colmap[k].resample.operation
+                how[k] = colmap[k].resample_operation
 
             indexed = df.set_index(timecol)
             resampled = indexed.resample('%ss' % self.resolution, how).reset_index()
