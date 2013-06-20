@@ -345,9 +345,8 @@ class Job(models.Model):
             # Empty dataframe
             frame = None
         else:
-            frame = pandas.DataFrame(
-            self.data(),
-            columns = [col.name for col in self.table.get_columns()])
+            frame = pandas.DataFrame(self.data(),
+                                     columns=[col.name for col in self.table.get_columns()])
 
         return frame
         
