@@ -45,6 +45,9 @@ class Device(models.Model):
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
 
+    # only enabled devices will require field validation
+    enabled = models.BooleanField(default=True)
+
     def __unicode__(self):
         return '%s (%s:%s)' % (self.name, self.host, self.port)
 
@@ -417,7 +420,19 @@ class Job(models.Model):
         if running:
             logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
                          (str(self), str(running)))
-            
+
+        elif not self.table.device.enabled:
+            # User has disabled the device so lets wrap up here
+
+            # would be better if we could mark COMPLETE vs ERROR, but then follow-up
+            # processing would occur which we want to avoid.  This short-circuits the
+            # process to return the message in the Widget window immediately.
+            logger.debug("Job %s: Device disabled, bypassing job" % str(self))
+            self.status = self.ERROR
+            self.message = 'Device %s disabled.\nSee Configure->Edit Devices page to enable.' % self.table.device.name
+            self.progress = 100
+            self.save()
+
         elif os.path.exists(self.datafile()) and not ignore_cache:
             logger.debug("Job %s: results from cachefile" % str(self))
             self.status = self.COMPLETE

@@ -28,6 +28,7 @@ from libs.fields import PickledObjectField
 
 logger = logging.getLogger(__name__)
 
+
 class WidgetOptions(JsonDict):
     _default= {'key': None,
                'value': None,
@@ -68,6 +69,7 @@ class Report(models.Model):
 
     def __unicode__(self):
         return self.title
+
 
 class Widget(models.Model):
     tables = models.ManyToManyField(Table)

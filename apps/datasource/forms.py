@@ -25,20 +25,26 @@ class DeviceDetailForm(forms.ModelForm):
             self.fields['module'].widget.attrs['readonly'] = True
             self.fields['password'].widget.input_type = 'password'
 
-    def clean_host(self):
-        data = self.cleaned_data['host']
-        if data.startswith('fill.in.'):
-            raise forms.ValidationError('Please update with a valid hostname/ip address.')
-        return data
+    def clean(self):
+        # field validation only really matters if the device was enabled
+        cleaned_data = super(DeviceDetailForm, self).clean()
+        enabled = cleaned_data.get('enabled')
 
-    def clean_username(self):
-        data = self.cleaned_data['username']
-        if data == '<username>':
-            raise forms.ValidationError('Please enter a valid username.')
-        return data
+        if enabled:
+            if cleaned_data.get('host').startswith('fill.in.'):
+                msg = u'Please update with a valid hostname/ip address.'
+                self._errors['host'] = self.error_class([msg])
+                del cleaned_data['host']
 
-    def clean_password(self):
-        data = self.cleaned_data['password']
-        if data == '<password>':
-            raise forms.ValidationError('Please enter a valid password.')
-        return data
+            if cleaned_data.get('username') == '<username>':
+                msg = u'Please enter a valid username.'
+                self._errors['username'] = self.error_class([msg])
+                del cleaned_data['username']
+
+            if cleaned_data.get('password') == '<password>':
+                msg = u'Please enter a valid password.'
+                self._errors['password'] = self.error_class([msg])
+                del cleaned_data['password']
+
+        return cleaned_data
+

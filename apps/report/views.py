@@ -76,10 +76,10 @@ class ReportView(APIView):
         for widget in Widget.objects.filter(report=report):
             for table in widget.tables.all():
                 device = table.device
-                if (device and ('host.or.ip' in device.host or device.username == '<username>' or
-                                device.password == '<password>')):
+                if (device.enabled and ('host.or.ip' in device.host or
+                                        device.username == '<username>' or
+                                        device.password == '<password>')):
                     return HttpResponseRedirect(reverse('device-list'))
-
 
         t = loader.get_template('report.html')
         c = RequestContext(request,
