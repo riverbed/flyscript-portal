@@ -32,6 +32,7 @@ class TableOptions(JsonDict):
 class TimeSeriesTable:
     @classmethod
     def create(cls, name, device, duration, interface=False, **kwargs):
+        logger.debug('Creating Profiler TimeSeries table %s (%d)' % (name, duration))
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   options=TableOptions(groupby='time',
                                        realm='traffic_overall_time_series',
@@ -44,6 +45,8 @@ class TimeSeriesTable:
 class GroupByTable:
     @classmethod
     def create(cls, name, device, groupby, duration, filterexpr=None, interface=False, **kwargs):
+        logger.debug('Creating Profiler GroupBy table %s (%s, %d, %s)' % (name, groupby,
+                                                                          duration, filterexpr))
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
                   options=TableOptions(groupby=groupby,
@@ -83,7 +86,8 @@ class TableQuery:
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
 
-        logger.info("Running report for timeframe %s" % str(tf))
+        logger.info("Running Profiler table %d report for timeframe %s" % (table.id,
+                                                                           str(tf)))
         if table.datafilter:
             datafilter = table.datafilter.split(',')
         else:
@@ -120,6 +124,6 @@ class TableQuery:
         if table.rows > 0:
             self.data = self.data[:table.rows]
 
-        logger.info ("job %s return %s rows" % (self.job, len(self.data)))
+        logger.info ("Report %s returned %s rows" % (self.job, len(self.data)))
         return True
 

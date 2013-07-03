@@ -190,7 +190,7 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(process)d %(thread)d %(module)s %(message)s'
+            'format': '%(asctime)s [%(levelname)-5s] %(thread)d %(name)s:%(lineno)s - %(message)s'
         },
         'standard': {
             'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
@@ -208,7 +208,7 @@ LOGGING = {
         'logfile': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'formatter': 'standard',
+            'formatter': 'verbose',
             'filename': os.path.join(PROJECT_ROOT, 'log.txt')
         },
         'backend-log': {

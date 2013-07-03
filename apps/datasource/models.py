@@ -76,7 +76,7 @@ class Table(models.Model):
         return t
     
     def __unicode__(self):
-        return "%s (id=%s)" % (self.name, str(self.id))
+        return "<Table %s (id=%s)>" % (self.name, str(self.id))
 
     def get_columns(self, synthetic=True):
         if synthetic:
@@ -210,7 +210,8 @@ class Column(models.Model):
         return c
 
 class Criteria(DictObject):
-    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
+    def __init__(self, starttime=None, endtime=None, duration=None, 
+                 filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
         self.starttime = starttime
         self.endtime = endtime
@@ -281,7 +282,9 @@ class Job(models.Model):
     remaining = models.IntegerField(default=-1)
 
     def __unicode__(self):
-        return "<%s, table %s, pct %s%%>" % (self.table.name, self.status, self.progress)
+        return "<Job %d, table %d (%s), %s/%s%%>" % (self.id, self.table.id,
+                                                      self.table.name, 
+                                                      self.status, self.progress)
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -313,7 +316,7 @@ class Job(models.Model):
             self.save()
             return done
 
-        logger.debug("%s.done: %s" % (str(self), self.status))
+        logger.debug("%s status: %s" % (str(self), self.status))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
@@ -334,13 +337,12 @@ class Job(models.Model):
         super(Job, self).save()
         
     def savedata(self, data):
-        logger.debug("Job %s (table %s) saving data to datafile %s" %
-                     (str(self), str(self.table), self.datafile()))
+        logger.debug("%s saving data to datafile %s" %
+                     (str(self), self.datafile()))
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()
-        logger.debug("Job %s (table %s) data saved" %
-                     (str(self), str(self.table)))
+        logger.debug("%s data saved" % (str(self)))
 
     def pandas_dataframe(self):
         data = self.data()
@@ -429,7 +431,9 @@ class Job(models.Model):
             # process to return the message in the Widget window immediately.
             logger.debug("Job %s: Device disabled, bypassing job" % str(self))
             self.status = self.ERROR
-            self.message = 'Device %s disabled.\nSee Configure->Edit Devices page to enable.' % self.table.device.name
+            self.message = ('Device %s disabled.\n'
+                            'See Configure->Edit Devices page to enable.'
+                            % self.table.device.name)
             self.progress = 100
             self.save()
 

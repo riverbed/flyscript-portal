@@ -35,8 +35,11 @@ def reload_config(request, report_slug=None):
     """
     if report_slug:
         report_id = Report.objects.get(slug=report_slug).id
+        logger.debug("Reloading %s report" % report_slug)
     else:
         report_id = None
+        logger.debug("Reloading all reports")
+
     management.call_command('reload', report_id=report_id)
 
     if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
@@ -96,6 +99,9 @@ class ReportView(APIView):
         except:
             raise Http404
 
+        logger.debug("Received PUT for report %s, with data: %s" %
+                     (report_slug, request.raw_post_data))
+
         lastrow = -1
         i = -1
         rows = []
@@ -147,6 +153,9 @@ class ReportView(APIView):
                                }
                 definition.append(widget_def)
 
+        logger.debug("Sending widget definitions for report %s: %s" %
+                     (report_slug, definition))
+
         return HttpResponse(json.dumps(definition))
 
 
@@ -188,7 +197,7 @@ class WidgetJobsList(APIView):
     parser_classes = (JSONParser,)
 
     def post(self, request, report_slug, widget_id, format=None):
-        logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
+        logger.debug("Received POST for report %s, widget %s: %s" %
                      (report_slug, widget_id, request.POST))
 
         req_criteria = json.loads(request.POST['criteria'])
@@ -198,7 +207,7 @@ class WidgetJobsList(APIView):
         if req_criteria['duration'] == 'Default':
             duration = None
         else:
-            # py2.6 compatability
+            # py2.6 compatibility
             td = parse_timedelta(req_criteria['duration'])
             duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
             
@@ -215,8 +224,8 @@ class WidgetJobsList(APIView):
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()
 
-        logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
-                     (str(wjob), report_slug, widget_id, job.id, job.handle))
+        logger.debug("Created WidgetJob %s for report %s (handle %s)" %
+                     (str(wjob), report_slug, job.handle))
         
         return Response({"joburl": reverse('report-job-detail', args=[report_slug, widget_id, wjob.id])})
 
