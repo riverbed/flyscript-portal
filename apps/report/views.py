@@ -122,7 +122,7 @@ class ReportView(APIView):
 
         if params['debug'] is True:
             logger.debug("Debugging report and rotating logs now ...")
-            management.call_command('clean')
+            management.call_command('rotate_logs')
 
         # this debug statement makes more sense above the json parsing
         # but if we are in debug-mode then it will get lost when the logs
