@@ -423,7 +423,7 @@ class Job(models.Model):
             logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
                          (str(self), str(running)))
 
-        elif not self.table.device.enabled:
+        elif self.table.device and not self.table.device.enabled:
             # User has disabled the device so lets wrap up here
 
             # would be better if we could mark COMPLETE vs ERROR, but then follow-up
