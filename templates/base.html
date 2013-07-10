@@ -78,6 +78,7 @@
                         <ul class="dropdown-menu">
                             <li><a href="{% url 'preferences' %}"><i class="icon-list"></i> Preferences</a></li>
                             <li><a href="{% url 'device-list' %}"><i class="icon-pencil"></i> Edit Devices</a></li>
+                            <li class="divider"></li>
                             {% if reports and 'report' in request.path %}
                                 <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
                             {% endif %}

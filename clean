@@ -10,7 +10,8 @@
 if [[ $1 == "--reset" ]]; then
     rm project.db
     rm datacache/*
-    rm log*.txt
+    rm log*.txt*
+    rm debug-*.zip
 elif [[ $1 == "--deploy" ]]; then
     python manage.py collectstatic --noinput
 fi

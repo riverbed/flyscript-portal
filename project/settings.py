@@ -207,13 +207,17 @@ LOGGING = {
             },
         'logfile': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024*1024*5,            # 5 MB
+            'backupCount': 1,
             'formatter': 'verbose',
             'filename': os.path.join(PROJECT_ROOT, 'log.txt')
         },
         'backend-log': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024*1024*5,            # 5 MB
+            'backupCount': 1,
             'formatter': 'standard',
             'filename': os.path.join(PROJECT_ROOT, 'log-db.txt')
         },

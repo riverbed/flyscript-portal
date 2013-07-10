@@ -5,6 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
 import json
 import datetime
 
@@ -14,11 +15,13 @@ from django.template import RequestContext, loader
 from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
+from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
 from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
+from apps.report.utils import create_debug_zipfile
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -42,10 +45,25 @@ def reload_config(request, report_slug=None):
 
     management.call_command('reload', report_id=report_id)
 
-    if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
+    if ('HTTP_REFERER' in request.META and 
+        'reload' not in request.META['HTTP_REFERER']):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
         return HttpResponseRedirect(reverse('report-view-root'))
+
+
+def download_debug(request):
+    """ Create zipfile and send it back to client
+    """
+    # XXX when we implement RBAC this method needs to be ADMIN-level only
+
+    zipfile = create_debug_zipfile()
+    wrapper = FileWrapper(file(zipfile))
+    response = HttpResponse(wrapper, content_type='application/zip')
+    zipname = os.path.basename(zipfile)
+    response['Content-Disposition'] = 'attachment; filename=%s' % zipname
+    response['Content-Length'] = os.stat(zipfile).st_size
+    return response
 
 
 class ReportView(APIView):
@@ -57,7 +75,8 @@ class ReportView(APIView):
         try:
             if report_slug is None:
                 reports = Report.objects.order_by('slug')
-                return HttpResponseRedirect(reverse('report-view', args=[reports[0].slug]))
+                return HttpResponseRedirect(reverse('report-view', 
+                                                    args=[reports[0].slug]))
             else:
                 report = Report.objects.get(slug=report_slug)
         except:
@@ -99,8 +118,18 @@ class ReportView(APIView):
         except:
             raise Http404
 
-        logger.debug("Received PUT for report %s, with data: %s" %
+        params = json.loads(request.raw_post_data)
+
+        if params['debug'] is True:
+            logger.debug("Debugging report and rotating logs now ...")
+            management.call_command('clean')
+
+        # this debug statement makes more sense above the json parsing
+        # but if we are in debug-mode then it will get lost when the logs
+        # are rotated
+        logger.debug("Received PUT for report %s, with raw data: %s" %
                      (report_slug, request.raw_post_data))
+        logger.debug("Parsed PUT parameters: %s" % params)
 
         lastrow = -1
         i = -1
@@ -111,8 +140,6 @@ class ReportView(APIView):
                 lastrow = w.row
                 rows.append([])
             rows[i].append(Widget.objects.get_subclass(id=w.id))
-
-        params = json.loads(request.raw_post_data)
 
         # store for future session reports
         # then create datetime object and convert to given timezone
@@ -135,7 +162,8 @@ class ReportView(APIView):
         now = datetime.datetime.now(timezone)
 
         definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
-                           'timezone': str(timezone)})
+                           'timezone': str(timezone),
+                           'debug': params['debug']})
 
         for row in rows:
             for w in row:

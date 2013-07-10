@@ -80,10 +80,12 @@ Widget.prototype.processResponse = function(criteria, response, textStatus)
         // COMPLETE
         $('#' + this.divid).hideLoading();
         this.render(response.data);
+        rvbd_status[self.posturl] = 'complete';
     } else if (response.status == 4) {
         // ERROR
         $('#' + this.divid).hideLoading();
         $('#' + this.divid).html("<p>Server error: <pre>" + response.message + "</pre></p>");
+        rvbd_status[self.posturl] = 'error';
     } else {
         if (response.progress > 0) {
             $('#' + this.divid).setLoading(response.progress);

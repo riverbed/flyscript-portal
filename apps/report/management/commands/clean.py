@@ -9,6 +9,7 @@
 
 import os
 import sys
+import logging
 import optparse
 
 from django.core.management.base import BaseCommand, CommandError
@@ -53,12 +54,15 @@ class Command(BaseCommand):
                 except OSError:
                     pass
 
-        # empty the existing logs
-        for k, v in settings.LOGGING['handlers'].iteritems():
-            try:
-                open(v['filename'], 'w').close()
-            except KeyError:
-                pass
+        db_logger = logging.getLogger('django.db.backends')
+        db_logger.info('rolling db log')
+        db_logger.handlers[0].doRollover()
+
+        # there seems to be a hierarchy so we need to call
+        # the module parent logger to get to the actual logHandler
+        logger = logging.getLogger(__name__)
+        logger.info('rolling default log')
+        logger.parent.handlers[0].doRollover()
 
         # reset database
         if options['applications']:
