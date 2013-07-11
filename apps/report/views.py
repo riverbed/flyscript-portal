@@ -5,6 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
 import json
 import datetime
 
@@ -14,11 +15,13 @@ from django.template import RequestContext, loader
 from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
+from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
 from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm
+from apps.report.utils import create_debug_zipfile
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -35,14 +38,32 @@ def reload_config(request, report_slug=None):
     """
     if report_slug:
         report_id = Report.objects.get(slug=report_slug).id
+        logger.debug("Reloading %s report" % report_slug)
     else:
         report_id = None
+        logger.debug("Reloading all reports")
+
     management.call_command('reload', report_id=report_id)
 
-    if 'HTTP_REFERER' in request.META and 'reload' not in request.META['HTTP_REFERER']:
+    if ('HTTP_REFERER' in request.META and 
+        'reload' not in request.META['HTTP_REFERER']):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
         return HttpResponseRedirect(reverse('report-view-root'))
+
+
+def download_debug(request):
+    """ Create zipfile and send it back to client
+    """
+    # XXX when we implement RBAC this method needs to be ADMIN-level only
+
+    zipfile = create_debug_zipfile()
+    wrapper = FileWrapper(file(zipfile))
+    response = HttpResponse(wrapper, content_type='application/zip')
+    zipname = os.path.basename(zipfile)
+    response['Content-Disposition'] = 'attachment; filename=%s' % zipname
+    response['Content-Length'] = os.stat(zipfile).st_size
+    return response
 
 
 class ReportView(APIView):
@@ -54,11 +75,14 @@ class ReportView(APIView):
         try:
             if report_slug is None:
                 reports = Report.objects.order_by('slug')
-                return HttpResponseRedirect(reverse('report-view', args=[reports[0].slug]))
+                return HttpResponseRedirect(reverse('report-view', 
+                                                    args=[reports[0].slug]))
             else:
                 report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
+
+        logging.debug('Received request for report page: %s' % report_slug)
 
         timezone = 'UTC'
         timezone_changed = False
@@ -76,10 +100,10 @@ class ReportView(APIView):
         for widget in Widget.objects.filter(report=report):
             for table in widget.tables.all():
                 device = table.device
-                if (device and ('host.or.ip' in device.host or device.username == '<username>' or
-                                device.password == '<password>')):
+                if device and (device.enabled and ('host.or.ip' in device.host or
+                                                   device.username == '<username>' or
+                                                   device.password == '<password>')):
                     return HttpResponseRedirect(reverse('device-list'))
-
 
         t = loader.get_template('report.html')
         c = RequestContext(request,
@@ -96,6 +120,19 @@ class ReportView(APIView):
         except:
             raise Http404
 
+        params = json.loads(request.body)
+
+        if params['debug'] is True:
+            logger.debug("Debugging report and rotating logs now ...")
+            management.call_command('rotate_logs')
+
+        # this debug statement makes more sense above the json parsing
+        # but if we are in debug-mode then it will get lost when the logs
+        # are rotated
+        logger.debug("Received PUT for report %s, with raw data: %s" %
+                     (report_slug, request.body))
+        logger.debug("Parsed PUT parameters: %s" % params)
+
         lastrow = -1
         i = -1
         rows = []
@@ -105,8 +142,6 @@ class ReportView(APIView):
                 lastrow = w.row
                 rows.append([])
             rows[i].append(Widget.objects.get_subclass(id=w.id))
-
-        params = json.loads(request.raw_post_data)
 
         # store for future session reports
         # then create datetime object and convert to given timezone
@@ -129,7 +164,8 @@ class ReportView(APIView):
         now = datetime.datetime.now(timezone)
 
         definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
-                           'timezone': str(timezone)})
+                           'timezone': str(timezone),
+                           'debug': params['debug']})
 
         for row in rows:
             for w in row:
@@ -146,6 +182,9 @@ class ReportView(APIView):
                                             'ignore_cache': ignore_cache}
                                }
                 definition.append(widget_def)
+
+        logger.debug("Sending widget definitions for report %s: %s" %
+                     (report_slug, definition))
 
         return HttpResponse(json.dumps(definition))
 
@@ -188,7 +227,7 @@ class WidgetJobsList(APIView):
     parser_classes = (JSONParser,)
 
     def post(self, request, report_slug, widget_id, format=None):
-        logger.debug("WidgetJobList(report %s, widget %s) POST: %s" %
+        logger.debug("Received POST for report %s, widget %s: %s" %
                      (report_slug, widget_id, request.POST))
 
         req_criteria = json.loads(request.POST['criteria'])
@@ -198,7 +237,7 @@ class WidgetJobsList(APIView):
         if req_criteria['duration'] == 'Default':
             duration = None
         else:
-            # py2.6 compatability
+            # py2.6 compatibility
             td = parse_timedelta(req_criteria['duration'])
             duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
             
@@ -215,8 +254,8 @@ class WidgetJobsList(APIView):
         wjob = WidgetJob(widget=widget, job=job)
         wjob.save()
 
-        logger.debug("Created WidgetJob %s: report %s, widget %s, job %s (handle %s)" %
-                     (str(wjob), report_slug, widget_id, job.id, job.handle))
+        logger.debug("Created WidgetJob %s for report %s (handle %s)" %
+                     (str(wjob), report_slug, job.handle))
         
         return Response({"joburl": reverse('report-job-detail', args=[report_slug, widget_id, wjob.id])})
 

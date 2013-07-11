@@ -45,6 +45,9 @@ class Device(models.Model):
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=100)
 
+    # only enabled devices will require field validation
+    enabled = models.BooleanField(default=True)
+
     def __unicode__(self):
         return '%s (%s:%s)' % (self.name, self.host, self.port)
 
@@ -73,7 +76,7 @@ class Table(models.Model):
         return t
     
     def __unicode__(self):
-        return "%s (id=%s)" % (self.name, str(self.id))
+        return "<Table %s (id=%s)>" % (self.name, str(self.id))
 
     def get_columns(self, synthetic=True):
         if synthetic:
@@ -207,7 +210,8 @@ class Column(models.Model):
         return c
 
 class Criteria(DictObject):
-    def __init__(self, starttime=None, endtime=None, duration=None, filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
+    def __init__(self, starttime=None, endtime=None, duration=None, 
+                 filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
         super(Criteria, self).__init__(*args, **kwargs)
         self.starttime = starttime
         self.endtime = endtime
@@ -222,8 +226,18 @@ class Criteria(DictObject):
         if table:
             self.compute_times(table)
             
+    def print_details(self):
+        """ Return instance variables as nicely formatted string
+        """
+        msg = 'starttime: %s, endtime: %s, duration: %s, ' % (str(self.starttime), 
+                                                              str(self.endtime), 
+                                                              str(self.duration))
+        msg += 'filterexpr: %s, ignore_cache: %s' % (str(self.filterexpr),
+                                                     str(self.ignore_cache))
+        return msg
 
     def build_for_table(self, table):
+        # used by Analysis datasource module
         return Criteria(starttime=self.orig_starttime,
                         endtime=self.orig_endtime,
                         duration=self.orig_duration,
@@ -278,7 +292,9 @@ class Job(models.Model):
     remaining = models.IntegerField(default=-1)
 
     def __unicode__(self):
-        return "<%s, table %s, pct %s%%>" % (self.table.name, self.status, self.progress)
+        return "<Job %d, table %d (%s), %s/%s%%>" % (self.id, self.table.id,
+                                                      self.table.name, 
+                                                      self.status, self.progress)
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -310,7 +326,7 @@ class Job(models.Model):
             self.save()
             return done
 
-        logger.debug("%s.done: %s" % (str(self), self.status))
+        logger.debug("%s status: %s" % (str(self), self.status))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def datafile(self):
@@ -326,18 +342,21 @@ class Job(models.Model):
 
         return reportdata
 
+    def delete(self):
+        logging.debug('Deleting Job: %s' % str(self))
+        super(Job, self).delete()
+
     def save(self):
         self.handle = self.compute_handle()
         super(Job, self).save()
         
     def savedata(self, data):
-        logger.debug("Job %s (table %s) saving data to datafile %s" %
-                     (str(self), str(self.table), self.datafile()))
+        logger.debug("%s saving data to datafile %s" %
+                     (str(self), self.datafile()))
         f = open(self.datafile(), "w")
         pickle.dump(data, f)
         f.close()
-        logger.debug("Job %s (table %s) data saved" %
-                     (str(self), str(self.table)))
+        logger.debug("%s data saved" % (str(self)))
 
     def pandas_dataframe(self):
         data = self.data()
@@ -345,9 +364,8 @@ class Job(models.Model):
             # Empty dataframe
             frame = None
         else:
-            frame = pandas.DataFrame(
-            self.data(),
-            columns = [col.name for col in self.table.get_columns()])
+            frame = pandas.DataFrame(self.data(),
+                                     columns=[col.name for col in self.table.get_columns()])
 
         return frame
         
@@ -418,7 +436,21 @@ class Job(models.Model):
         if running:
             logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
                          (str(self), str(running)))
-            
+
+        elif self.table.device and not self.table.device.enabled:
+            # User has disabled the device so lets wrap up here
+
+            # would be better if we could mark COMPLETE vs ERROR, but then follow-up
+            # processing would occur which we want to avoid.  This short-circuits the
+            # process to return the message in the Widget window immediately.
+            logger.debug("Job %s: Device disabled, bypassing job" % str(self))
+            self.status = self.ERROR
+            self.message = ('Device %s disabled.\n'
+                            'See Configure->Edit Devices page to enable.'
+                            % self.table.device.name)
+            self.progress = 100
+            self.save()
+
         elif os.path.exists(self.datafile()) and not ignore_cache:
             logger.debug("Job %s: results from cachefile" % str(self))
             self.status = self.COMPLETE
@@ -452,7 +484,7 @@ class AsyncWorker(threading.Thread):
             query.run()
             fulldata = self.job.table.compute_synthetic(query.data)
             job.savedata(fulldata)
-            #job.savedata(query.data)
+
             logger.debug("Saving job %s as COMPLETE" % self.job.handle)
             job.progress = 100
             job.status = job.COMPLETE

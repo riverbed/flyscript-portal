@@ -5,14 +5,8 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
-import json
 import time
-import pickle
 import logging
-import threading
-import pandas
-from random import randint
 
 from rvbd.common.jsondict import JsonDict
 from apps.datasource.models import Column, Job, Table
@@ -138,6 +132,5 @@ class TableQuery:
             logger.debug("Table[%s]" % name)
 
         df = options.func(self.table, dfs)
-        self.data = df.ix[:,[col.name for col in self.table.get_columns()]].values
+        self.data = df.ix[:,[col.name for col in self.table.get_columns(synthetic=False)]].values
         return True
-    

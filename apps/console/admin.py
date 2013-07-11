@@ -7,7 +7,7 @@
 
 from django.contrib import admin
 
-from apps.console.models import Utility, Results, Parameter, Job
+from apps.console.models import Utility, Results, Parameter, ConsoleJob
 
 
 class UtilityAdmin(admin.ModelAdmin):
@@ -28,7 +28,7 @@ class ParameterAdmin(admin.ModelAdmin):
 admin.site.register(Parameter, ParameterAdmin)
 
 
-class JobAdmin(admin.ModelAdmin):
+class ConsoleJobAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(Job, JobAdmin)
+admin.site.register(ConsoleJob, ConsoleJobAdmin)

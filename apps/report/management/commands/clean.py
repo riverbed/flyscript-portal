@@ -9,6 +9,7 @@
 
 import os
 import sys
+import logging
 import optparse
 
 from django.core.management.base import BaseCommand, CommandError
@@ -53,12 +54,8 @@ class Command(BaseCommand):
                 except OSError:
                     pass
 
-        # empty the existing logs
-        for k, v in settings.LOGGING['handlers'].iteritems():
-            try:
-                open(v['filename'], 'w').close()
-            except KeyError:
-                pass
+        # rotate the logs once
+        management.call_command('rotate_logs')
 
         # reset database
         if options['applications']:

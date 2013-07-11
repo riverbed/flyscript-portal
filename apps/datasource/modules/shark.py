@@ -44,6 +44,7 @@ class SharkTable:
     @classmethod
     def create(cls, name, device, view, view_size, duration,
                aggregated=False, filterexpr=None, resolution=60, sortcol=None):
+        logger.debug('Creating Shark table %s (%s, %d)' % (name, view, duration))
         options = TableOptions(view=view,
                                view_size=view_size,
                                aggregated=aggregated)
@@ -94,6 +95,8 @@ class TableQuery:
         options = table.options
 
         shark = DeviceManager.get_device(table.device.id)
+
+        logger.debug("Creating columns for Shark table %d" % table.id)
 
         # Create Key/Value Columns
         columns = []
@@ -147,6 +150,8 @@ class TableQuery:
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
         filters.append(tf)
 
+        logger.info("Setting shark table %d timeframe to %s" %(table.id,  str(tf)))
+
         # Get source type from options
         try:
             with lock:
@@ -165,7 +170,7 @@ class TableQuery:
             return None
 
         done = False
-        logger.info("Waiting for report to complete")
+        logger.debug("Waiting for shark table %d to complete" % table.id)
         while not done:
             time.sleep(0.5)
             with lock:
@@ -186,6 +191,8 @@ class TableQuery:
             self.data = self.data[:table.rows]
 
         self.parse_data()
+
+        logger.info("Shark Report %s returned %s rows" % (self.job, len(self.data)))
 
         return True
 

@@ -7,6 +7,7 @@
     <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
     <script type="text/javascript">
       var runRequested = false;
+      var debugFlag = false;
       $(document).ready( function() {
           //run();
           $('#date').datepicker({
@@ -37,11 +38,17 @@
 
     <script type="text/javascript">
       var global = this;
+      var rvbd_status = {};
+      var rvbd_debug = false;
       function renderReport(widgets) {
+          // reset the status
+          global.rvbd_status = {};
+
           // pull first element off list which contains information about the report
           var report_meta = widgets.shift();
           $('#report_datetime').html(report_meta.datetime);
           $('#report_timezone').html(report_meta.timezone);
+          rvbd_debug = report_meta.debug;
 
           var report=$("#report");
           report.html(widgets);
@@ -63,7 +70,27 @@
               var opts = w.options || {};
               opts.height = w.height;
               new global[w.widgettype[0]][w.widgettype[1]] ( w.posturl, wid, opts, w.criteria );
+              rvbd_status[w.posturl] = 'running';
           });
+
+          // wait a short period before checking widget status
+          setTimeout(monitorWidgetStatus, 100);
+      }
+
+      function monitorWidgetStatus() {
+          // keep checking while at least one widget is running
+          for (var key in global.rvbd_status) {
+              if (global.rvbd_status[key] == 'running') {
+                  setTimeout(monitorWidgetStatus, 500);
+                  return;
+              };
+          };
+          // all statuses are not 'running', trigger the zipfile download
+          if (global.rvbd_debug == true) {
+              alert('Complete - you will now be prompted to download a zipfile ' +
+                    'containing the server logs.');
+              window.location = "{% url 'apps.report.views.download_debug' %}";
+          };
       }
 
       function updateTimeAndRun() {
@@ -74,6 +101,11 @@
       function run() {
           runRequested = true;
           $("#criteria").collapse('hide');
+      }
+
+      function runDebug() {
+          debugFlag = true;
+          run();
       }
 
       function dorun() {
@@ -89,11 +121,13 @@
                                      date: $("#date").val(),
                                      duration: $("#duration").val(),
                                      filterexpr: $("#filterexpr").val(),
-                                     ignore_cache: $("#ignore_cache").val()
+                                     ignore_cache: $("#ignore_cache").val(),
+                                     debug: debugFlag,
                                    }),
               success: function(data, textStatus) { renderReport(data); },
               error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
           });
+          debugFlag = false;
       }
     </script>
     <style>
@@ -176,8 +210,18 @@
                 </tr>
               </table>
               <p></p>
-              <button class="btn btn-primary" onclick="run()">Run</button>
-              <button class="btn" onclick="updateTimeAndRun()">Update Time & Run</button>
+              <div class="btn-group dropup">
+                  <button class="btn btn-primary" onclick="run()">Run</button>
+                  <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                      <li><a href="#" onclick="runDebug()"> Debug This Report </a></li>
+                      <li><a href="#" onclick="updateTimeAndRun()"> Update Time & Run </a></li>
+                      <li class="divider"></li>
+                      <li><a href="#" onclick="run()"> Run Report </a></li>
+                  </ul>
+              </div>
             </div>
           </div> 
         </div> 

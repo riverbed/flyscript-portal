@@ -11,7 +11,7 @@ import subprocess
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 
-from django.template import RequestContext, loader
+from django.template import RequestContext
 from django.shortcuts import render_to_response
 
 try:
@@ -21,7 +21,7 @@ except ImportError:
     # even be visible - this will silence code error checkers though
     from django.http import HttpResponse as StreamingHttpResponse
 
-from apps.console.models import Utility, Results, Parameter, Job
+from apps.console.models import Utility, Results, Parameter, ConsoleJob
 from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringForm,
                                 ParameterDetailForm, get_utility_formset)
 
@@ -231,8 +231,6 @@ def execute(utility, form, params_form):
                     f.seek(where)
                 else:
                     yield line
-
-
 
 
 def status(request, script_id):
