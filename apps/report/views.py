@@ -82,6 +82,8 @@ class ReportView(APIView):
         except:
             raise Http404
 
+        logging.debug('Received request for report page: %s' % report_slug)
+
         timezone = 'UTC'
         timezone_changed = False
         if request.user.is_authenticated():

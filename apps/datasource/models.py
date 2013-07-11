@@ -226,8 +226,18 @@ class Criteria(DictObject):
         if table:
             self.compute_times(table)
             
+    def print_details(self):
+        """ Return instance variables as nicely formatted string
+        """
+        msg = 'starttime: %s, endtime: %s, duration: %s, ' % (str(self.starttime), 
+                                                              str(self.endtime), 
+                                                              str(self.duration))
+        msg += 'filterexpr: %s, ignore_cache: %s' % (str(self.filterexpr),
+                                                     str(self.ignore_cache))
+        return msg
 
     def build_for_table(self, table):
+        # used by Analysis datasource module
         return Criteria(starttime=self.orig_starttime,
                         endtime=self.orig_endtime,
                         duration=self.orig_duration,
@@ -474,7 +484,7 @@ class AsyncWorker(threading.Thread):
             query.run()
             fulldata = self.job.table.compute_synthetic(query.data)
             job.savedata(fulldata)
-            #job.savedata(query.data)
+
             logger.debug("Saving job %s as COMPLETE" % self.job.handle)
             job.progress = 100
             job.status = job.COMPLETE
