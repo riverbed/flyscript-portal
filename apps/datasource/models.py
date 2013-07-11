@@ -332,6 +332,10 @@ class Job(models.Model):
 
         return reportdata
 
+    def delete(self):
+        logging.debug('Deleting Job: %s' % str(self))
+        super(Job, self).delete()
+
     def save(self):
         self.handle = self.compute_handle()
         super(Job, self).save()
