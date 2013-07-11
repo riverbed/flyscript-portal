@@ -118,7 +118,7 @@ class ReportView(APIView):
         except:
             raise Http404
 
-        params = json.loads(request.raw_post_data)
+        params = json.loads(request.body)
 
         if params['debug'] is True:
             logger.debug("Debugging report and rotating logs now ...")
@@ -128,7 +128,7 @@ class ReportView(APIView):
         # but if we are in debug-mode then it will get lost when the logs
         # are rotated
         logger.debug("Received PUT for report %s, with raw data: %s" %
-                     (report_slug, request.raw_post_data))
+                     (report_slug, request.body))
         logger.debug("Parsed PUT parameters: %s" % params)
 
         lastrow = -1
