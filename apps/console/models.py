@@ -5,16 +5,13 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-import sys
 import datetime
 
 from django.db import models
 
-from apps.datasource.models import Device
-from apps.datasource.devicemanager import DeviceManager
-
 import logging
 logger = logging.getLogger(__name__)
+
 
 class Utility(models.Model):
     """ Base class for tools and scripts installed locally
@@ -120,7 +117,7 @@ class Results(models.Model):
         Results.objects.clean_results()
 
 
-class Job(models.Model):
+class ConsoleJob(models.Model):
     """ Running Utility information
     """
     handle = models.CharField(max_length=100)
@@ -144,4 +141,4 @@ class Job(models.Model):
         return "%s, %s %s%%" % (self.handle, self.status, self.progress)
 
     def done(self):
-        return self.status == Job.COMPLETE or self.status == Job.ERROR
+        return self.status == ConsoleJob.COMPLETE or self.status == ConsoleJob.ERROR

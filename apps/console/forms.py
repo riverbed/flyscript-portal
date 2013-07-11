@@ -8,7 +8,7 @@
 from django import forms
 from django.forms.models import inlineformset_factory
 
-from apps.console.models import Utility, Results, Parameter, Job
+from apps.console.models import Utility, Parameter
 
 
 class ExecuteForm(forms.ModelForm):
@@ -39,9 +39,8 @@ class ParameterDetailForm(forms.ModelForm):
 
 class ParameterStringForm(forms.Form):
     parameter_string = forms.CharField(max_length=200,
-                                       widget=forms.TextInput(attrs={'class':'parameter-form'}),
+                                       widget=forms.TextInput(attrs={'class': 'parameter-form'}),
                                        )
-
 
 
 def get_utility_formset(extra=1):
