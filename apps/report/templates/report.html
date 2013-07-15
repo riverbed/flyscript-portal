@@ -228,7 +228,9 @@
                     <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu">
-                      <li><a href="#" onclick="runDebug()"> Debug This Report </a></li>
+                      {% if developer %}
+                          <li><a href="#" onclick="runDebug()"> Debug This Report </a></li>
+                      {% endif %}
                       <li><a href="#" onclick="updateTimeAndRun()"> Update Time & Run </a></li>
                       <li class="divider"></li>
                       <li><a href="#" onclick="run()"> Run Report </a></li>

@@ -86,10 +86,12 @@ class ReportView(APIView):
 
         timezone = 'UTC'
         timezone_changed = False
+        developer = False
         if request.user.is_authenticated():
             profile = request.user.userprofile
             timezone = profile.timezone
             timezone_changed = profile.timezone_changed
+            developer = profile.developer
 
         if timezone_changed:
             timezones = [timezone]
@@ -110,7 +112,8 @@ class ReportView(APIView):
                            {'report': report,
                             'timezones': timezones,
                             'timezone_changed': timezone_changed,
-                           });
+                            'developer': developer,
+                           })
 
         return HttpResponse(t.render(c))
 
