@@ -5,6 +5,8 @@
 
 {% block header %}
     <link href="{{ STATIC_URL }}css/report.css" rel="stylesheet"/>
+    <!-- <script type="text/javascript" src="{{ STATIC_URL }}jquery.form.js"></script> -->
+    <script src="http://malsup.github.com/jquery.form.js"></script>
     <script type="text/javascript">
       var runRequested = false;
       var debugFlag = false;
@@ -32,6 +34,12 @@
                   xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
               }
           });
+          
+          $('form#criteriaform').submit(function() {
+              run();
+              return false;
+          });
+
         });
 
     </script>
@@ -112,20 +120,14 @@
           if (!runRequested)
               return;
           runRequested = false;
-          $.ajax({
+          $("#debug").val(debugFlag);
+          $('form#criteriaform').ajaxSubmit({
               dataType:"json",
-              type: "PUT",
+              type: "post",
               url: "/report/{{ report.slug }}/",
-              data: JSON.stringify({ time: $("#time").val(),
-                                     timezone: $("#timezone").val(),
-                                     date: $("#date").val(),
-                                     duration: $("#duration").val(),
-                                     filterexpr: $("#filterexpr").val(),
-                                     ignore_cache: $("#ignore_cache").val(),
-                                     debug: debugFlag,
-                                   }),
               success: function(data, textStatus) { renderReport(data); },
-              error: function(jqXHR, textStatus, errorThrown) { alert("an error occurred: " + textStatus + " : " + errorThrown); }
+              error: function(jqXHR, textStatus, errorThrown) { 
+                  alert("an error occurred: " + textStatus + " : " + errorThrown); }
           });
           debugFlag = false;
       }
@@ -155,13 +157,14 @@
           </div>
           <div class="collapse in" id="criteria">
             <div class="widget-content">
-              {% csrf_token %}
+              <form action="/report/{{ report.slug }}/" method="post" id="criteriaform" enctype="multipart/form-data">{% csrf_token %}
+              <input type="hidden" id="debug" name="debug" value="">
               <table>
                 <tr>
                     <td>End Time:</td>
                     <td>
-                        <input id="date" type="text" class="date"> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
-                        <input id="time" type="text" class="time"> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
+                        <input id="date" type="text" class="date" name="date"> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
+                        <input id="time" type="text" class="time" name="time"> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
                     </td>
                     <td>
                         <label for="timezone">Time zone:</label>
@@ -182,7 +185,7 @@
                 <tr>
                     <td>Duration:</td>
                     <td>
-                        <select id="duration" class="selectpicker duration">
+                        <select id="duration" class="selectpicker duration" name="duration">
                           <option>Default</option>
                           <option>15 min</option>
                           <option>1 hour</option>
@@ -195,20 +198,29 @@
                     <td>Ignore Cache:</td>
                     <td>
                         {% if user.is_authenticated and user.userprofile.ignore_cache %}
-                            <input type="checkbox" id="ignore_cache" checked>
+                            <input type="checkbox" id="ignore_cache" name="ignore_cache" checked>
                         {% else %}
-                            <input type="checkbox" id="ignore_cache">
+                            <input type="checkbox" id="ignore_cache" name="ignore_cache">
                         {% endif %}
 
                     </td>
                 </tr>
                 <tr>
                     <td>Filter Expression:</td>
-                    <td><input id="filterexpr"></input></td>
+                    <td><input id="filterexpr" name="filterexpr"></input></td>
                     <td></td>
                     <td></td>
                 </tr>
+<!--
+                <tr>
+                    <td>PCAP File:</td>
+                    <td><input name="pcap" type="file"></input></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+-->
               </table>
+              </form>
               <p></p>
               <div class="btn-group dropup">
                   <button class="btn btn-primary" onclick="run()">Run</button>

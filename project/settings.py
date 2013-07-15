@@ -16,7 +16,6 @@ PORTAL_ROOT = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.dirname(PORTAL_ROOT)
 DATA_CACHE = os.path.join(PROJECT_ROOT, 'datacache')
 
-
 ADMINS = (
 # ('Your Name', 'your_email@example.com'),
 )
@@ -62,7 +61,7 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'datacache')
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.

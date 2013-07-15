@@ -114,24 +114,21 @@ class ReportView(APIView):
 
         return HttpResponse(t.render(c))
 
-    def put(self, request, report_slug):
+    def post(self, request, report_slug):
         try:
             report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
-        params = json.loads(request.body)
-
-        if params['debug'] is True:
+        params = request.POST 
+        params['debug'] = (params['debug'] == 'true')
+        
+        if params['debug']:
             logger.debug("Debugging report and rotating logs now ...")
             management.call_command('rotate_logs')
 
-        # this debug statement makes more sense above the json parsing
-        # but if we are in debug-mode then it will get lost when the logs
-        # are rotated
-        logger.debug("Received PUT for report %s, with raw data: %s" %
-                     (report_slug, request.body))
-        logger.debug("Parsed PUT parameters: %s" % params)
+        logger.debug("Received POST for report %s, with params: %s" %
+                     (report_slug, params))
 
         lastrow = -1
         i = -1
@@ -143,6 +140,12 @@ class ReportView(APIView):
                 rows.append([])
             rows[i].append(Widget.objects.get_subclass(id=w.id))
 
+        # File upload debug
+        # print "---------- files:"
+        # for n,f in request.FILES.iteritems():
+        #     print "f %s: %s (%s)" % (str(f), f.name, f.size)
+        # print "---------- end files"
+            
         # store for future session reports
         # then create datetime object and convert to given timezone
         timezone = pytz.timezone(params['timezone'])
@@ -153,9 +156,10 @@ class ReportView(APIView):
 
         # check for ignore_cache option
         if request.user.is_authenticated():
-            ignore_cache = request.user.userprofile.ignore_cache or params['ignore_cache']
+            ignore_cache = (request.user.userprofile.ignore_cache or
+                            'ignore_cache' in params)
         else:
-            ignore_cache = params['ignore_cache']
+            ignore_cache = 'ignore_cache' in params
 
         definition = []
 
@@ -187,8 +191,7 @@ class ReportView(APIView):
                      (report_slug, definition))
 
         return HttpResponse(json.dumps(definition))
-
-
+        
 def configure(request, report_slug, widget_id=None):
     try:
         report = Report.objects.get(slug=report_slug)
