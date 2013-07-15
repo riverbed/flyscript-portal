@@ -8,10 +8,12 @@
 
 
 import os
+import sys
 import glob
 import zipfile
-import datetime
-import subprocess
+import platform
+import pkg_resources
+from datetime import datetime
 
 import pytz
 from django.contrib.auth.models import User
@@ -27,8 +29,55 @@ logger = logging.getLogger(__name__)
 def debug_fileinfo(fname):
     st = os.stat(fname)
     logging.debug('%15s: mtime - %s, ctime - %s' % (os.path.basename(fname),
-                                                    datetime.datetime.fromtimestamp(st.st_mtime),
-                                                    datetime.datetime.fromtimestamp(st.st_ctime)))
+                                                    datetime.fromtimestamp(st.st_mtime),
+                                                    datetime.fromtimestamp(st.st_ctime)))
+
+
+def system_info():
+    """ Local version of the flyscript_about.py script
+    """
+    output = []
+    try:
+        dist = pkg_resources.get_distribution("flyscript")
+        output.append("Package 'flyscript' version %s installed" % dist.version)
+    except pkg_resources.DistributionNotFound:
+        output.append("Package not found: 'flyscript'")
+        output.append("Check the installation")
+        
+    import rvbd
+    import pkgutil
+
+    pkgpath = os.path.dirname(rvbd.__file__)
+
+    output.append("")
+    output.append("Path to source:\n  %s" % pkgpath)
+    output.append("")
+    output.append("Modules provided:")
+    for (loader, name, ispkg) in pkgutil.walk_packages([pkgpath]):
+        output.append("  rvbd.%s" % name)
+
+    output.append("")
+    output.append("Python information:")
+    output.append('Version      : %s' % str(platform.python_version()))
+    output.append('Version tuple: %s' % str(platform.python_version_tuple()))
+    output.append('Compiler     : %s' % str(platform.python_compiler()))
+    output.append('Build        : %s' % str(platform.python_build()))
+    output.append('Architecture : %s' % str(platform.architecture()))
+
+    output.append("")
+    output.append("Platform information:")
+    output.append(platform.platform())
+    output.append('system   : %s' % str(platform.system()))
+    output.append('node     : %s' % str(platform.node()))
+    output.append('release  : %s' % str(platform.release()))
+    output.append('version  : %s' % str(platform.version()))
+    output.append('machine  : %s' % str(platform.machine()))
+    output.append('processor: %s' % str(platform.processor()))
+
+    output.append("")
+    output.append("Python path:")
+    output.append('\n'.join(sys.path))
+    return output
 
 
 def create_debug_zipfile(no_summary=False):
@@ -56,7 +105,7 @@ def create_debug_zipfile(no_summary=False):
             compression = zipfile.ZIP_STORED
 
         # setup the name, correct timezone, and open the zipfile
-        now = datetime_to_seconds(datetime.datetime.now(tz))
+        now = datetime_to_seconds(datetime.now(tz))
         archive_name = os.path.join(settings.PROJECT_ROOT, 'debug-%d.zip' % now)
 
         myzip = zipfile.ZipFile(archive_name, 'w', compression=compression)
@@ -72,13 +121,9 @@ def create_debug_zipfile(no_summary=False):
 
             if not no_summary:
                 logging.debug('running about script')
-                p = subprocess.Popen('flyscript_about.py', stdout=subprocess.PIPE, 
-                                                           stderr=subprocess.PIPE)
-                response = '\n'.join([p.stdout.read(), p.stderr.read()])
+                response = '\n'.join(system_info())
                 logging.debug('zipping about script')
                 myzip.writestr('system_summary.txt', response)
-                p.stdout.close()
-                p.stderr.close()
         finally:
             myzip.close()
 
@@ -87,6 +132,3 @@ def create_debug_zipfile(no_summary=False):
         os.environ['TZ'] = current_tz
 
     return archive_name
-
-
-
