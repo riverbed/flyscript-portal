@@ -166,23 +166,6 @@
                         <input id="date" type="text" class="date" name="date"> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
                         <input id="time" type="text" class="time" name="time"> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
                     </td>
-                    <td>
-                        <label for="timezone">Time zone:</label>
-                    </td>
-                    <td>
-                        <select id="timezone" name="timezone">
-                            {% for tz in timezones %}
-                                <option value="{{ tz }}"{% if tz == TIME_ZONE %} selected="selected"{% endif %}>{{ tz }}</option>
-                            {% endfor %}
-                        </select>
-                        {% if user.is_authenticated %}
-                            <span class="text-info"><a href='/preferences/?next={{ request.path }}'>(update timezone)</a></span>
-                        {% else %}
-                            <span class="text-info"><a href='/accounts/login?next={{ request.path }}'>(login to save timezone)</a></span>
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
                     <td>Duration:</td>
                     <td>
                         <select id="duration" class="selectpicker duration" name="duration">
@@ -195,6 +178,10 @@
                           <option>1 day</option>
                         </select>
                     </td>
+                <tr>
+                    <td>Filter Expression:</td>
+                    <td><input id="filterexpr" name="filterexpr"></input></td>
+                    <td></td>
                     <td>Ignore Cache:</td>
                     <td>
                         {% if user.is_authenticated and user.userprofile.ignore_cache %}
@@ -204,12 +191,6 @@
                         {% endif %}
 
                     </td>
-                </tr>
-                <tr>
-                    <td>Filter Expression:</td>
-                    <td><input id="filterexpr" name="filterexpr"></input></td>
-                    <td></td>
-                    <td></td>
                 </tr>
 <!--
                 <tr>

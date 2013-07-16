@@ -67,10 +67,9 @@ def download_debug(request):
 
 
 class ReportView(APIView):
+    """ Main handler for /report/{id}
+    """
 
-    #
-    # Main handler for /report/{id}
-    #
     def get(self, request, report_slug=None):
         try:
             if report_slug is None:
@@ -84,20 +83,6 @@ class ReportView(APIView):
 
         logging.debug('Received request for report page: %s' % report_slug)
 
-        timezone = 'UTC'
-        timezone_changed = False
-        developer = False
-        if request.user.is_authenticated():
-            profile = request.user.userprofile
-            timezone = profile.timezone
-            timezone_changed = profile.timezone_changed
-            developer = profile.developer
-
-        if timezone_changed:
-            timezones = [timezone]
-        else:
-            timezones = pytz.common_timezones
-
         # check the devices in the report and verify all have been updated
         for widget in Widget.objects.filter(report=report):
             for table in widget.tables.all():
@@ -107,15 +92,10 @@ class ReportView(APIView):
                                                    device.password == '<password>')):
                     return HttpResponseRedirect(reverse('device-list'))
 
-        t = loader.get_template('report.html')
-        c = RequestContext(request,
-                           {'report': report,
-                            'timezones': timezones,
-                            'timezone_changed': timezone_changed,
-                            'developer': developer,
-                           })
-
-        return HttpResponse(t.render(c))
+        return render_to_response('report.html',
+                                  {'report': report,
+                                   'developer': request.user.userprofile.developer},
+                                  context_instance=RequestContext(request))
 
     def post(self, request, report_slug):
         try:
@@ -133,61 +113,52 @@ class ReportView(APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, params))
 
-        lastrow = -1
-        i = -1
-        rows = []
-        for w in Widget.objects.filter(report=report).order_by('row','col'):
-            if w.row != lastrow:
-                i = i+1
-                lastrow = w.row
-                rows.append([])
-            rows[i].append(Widget.objects.get_subclass(id=w.id))
-
         # File upload debug
-        # print "---------- files:"
-        # for n,f in request.FILES.iteritems():
-        #     print "f %s: %s (%s)" % (str(f), f.name, f.size)
-        # print "---------- end files"
-            
-        # store for future session reports
-        # then create datetime object and convert to given timezone
-        timezone = pytz.timezone(params['timezone'])
-        request.session['django_timezone'] = timezone
+        if request.FILES:
+            for n, f in request.FILES.iteritems():
+                logger.debug("f %s: %s (%s)" % (str(f), f.name, f.size))
+
+        # parse time and localize to user profile timezone
+        profile = request.user.userprofile
+        timezone = pytz.timezone(profile.timezone)
         dt_naive = datetime.datetime.strptime(params['date'] + ' ' + params['time'],
                                               '%m/%d/%Y %I:%M%p')
-        d = timezone.localize(dt_naive)
+        local_time = timezone.localize(dt_naive)
 
-        # check for ignore_cache option
-        if request.user.is_authenticated():
-            ignore_cache = (request.user.userprofile.ignore_cache or
-                            'ignore_cache' in params)
-        else:
-            ignore_cache = 'ignore_cache' in params
-
+        # setup definitions for each Widget
         definition = []
 
         # store datetime info about when report is being run
         # XXX move datetime format to preferences or somesuch
         now = datetime.datetime.now(timezone)
-
         definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
                            'timezone': str(timezone),
                            'debug': params['debug']})
 
+        # create matrix of Widgets
+        lastrow = -1
+        rows = []
+        for w in Widget.objects.filter(report=report).order_by('row', 'col'):
+            if w.row != lastrow:
+                lastrow = w.row
+                rows.append([])
+            rows[-1].append(Widget.objects.get_subclass(id=w.id))
+
+        # populate definitions
         for row in rows:
             for w in row:
-                widget_def = { "widgettype": w.widgettype().split("."),
-                               "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
-                               "options": w.uioptions,
-                               "widgetid": w.id,
-                               "row": w.row,
-                               "width": w.width,
-                               "height": w.height,
-                               "criteria": {'endtime': datetime_to_seconds(d),
-                                            'duration': params['duration'],
-                                            'filterexpr': params['filterexpr'],
-                                            'ignore_cache': ignore_cache}
-                               }
+                widget_def = {"widgettype": w.widgettype().split("."),
+                              "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
+                              "options": w.uioptions,
+                              "widgetid": w.id,
+                              "row": w.row,
+                              "width": w.width,
+                              "height": w.height,
+                              "criteria": {'endtime': datetime_to_seconds(local_time),
+                                           'duration': params['duration'],
+                                           'filterexpr': params['filterexpr'],
+                                           'ignore_cache': 'ignore_cache' in params}
+                              }
                 definition.append(widget_def)
 
         logger.debug("Sending widget definitions for report %s: %s" %
@@ -195,6 +166,7 @@ class ReportView(APIView):
 
         return HttpResponse(json.dumps(definition))
         
+
 def configure(request, report_slug, widget_id=None):
     try:
         report = Report.objects.get(slug=report_slug)
@@ -218,7 +190,7 @@ def configure(request, report_slug, widget_id=None):
         report_form = ReportDetailForm(instance=report)
 
         widget_forms = []
-        for w in Widget.objects.filter(report=report).order_by('row','col'):
+        for w in Widget.objects.filter(report=report).order_by('row', 'col'):
             widget_forms.append((w.id, WidgetDetailForm(instance=w)))
 
         return render_to_response('configure.html',
@@ -263,11 +235,12 @@ class WidgetJobsList(APIView):
         logger.debug("Created WidgetJob %s for report %s (handle %s)" %
                      (str(wjob), report_slug, job.handle))
         
-        return Response({"joburl": reverse('report-job-detail', args=[report_slug, widget_id, wjob.id])})
+        return Response({"joburl": reverse('report-job-detail',
+                                           args=[report_slug, widget_id, wjob.id])})
+
 
 class WidgetJobDetail(APIView):
 
     def get(self, request, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)
         return wjob.response()
-        

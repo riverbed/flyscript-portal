@@ -165,10 +165,8 @@ class WidgetJob(models.Model):
             
         resp['message'] = cgi.escape(resp['message'])
         #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
-        try:
-            return HttpResponse(json.dumps(resp))
-        except TypeError:
-            from IPython import embed; embed()
+
+        return HttpResponse(json.dumps(resp))
 
 
 class Axes:
