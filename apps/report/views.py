@@ -20,7 +20,7 @@ from django.core import management
 
 from apps.datasource.models import Job, Criteria
 from apps.report.models import Report, Widget, WidgetJob
-from apps.report.forms import ReportDetailForm, WidgetDetailForm
+from apps.report.forms import ReportDetailForm, WidgetDetailForm, ReportCriteriaForm
 from apps.report.utils import create_debug_zipfile
 
 from rest_framework.views import APIView
@@ -45,7 +45,7 @@ def reload_config(request, report_slug=None):
 
     management.call_command('reload', report_id=report_id)
 
-    if ('HTTP_REFERER' in request.META and 
+    if ('HTTP_REFERER' in request.META and
         'reload' not in request.META['HTTP_REFERER']):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
     else:
@@ -74,7 +74,7 @@ class ReportView(APIView):
         try:
             if report_slug is None:
                 reports = Report.objects.order_by('slug')
-                return HttpResponseRedirect(reverse('report-view', 
+                return HttpResponseRedirect(reverse('report-view',
                                                     args=[reports[0].slug]))
             else:
                 report = Report.objects.get(slug=report_slug)
@@ -83,18 +83,13 @@ class ReportView(APIView):
 
         logging.debug('Received request for report page: %s' % report_slug)
 
-        # check the devices in the report and verify all have been updated
-        for widget in Widget.objects.filter(report=report):
-            for table in widget.tables.all():
-                device = table.device
-                if device and (device.enabled and ('host.or.ip' in device.host or
-                                                   device.username == '<username>' or
-                                                   device.password == '<password>')):
-                    return HttpResponseRedirect(reverse('device-list'))
+        # factory this to make it extensible
+        form = ReportCriteriaForm(initial={'ignore_cache': request.user.userprofile.ignore_cache})
 
         return render_to_response('report.html',
                                   {'report': report,
-                                   'developer': request.user.userprofile.developer},
+                                   'developer': request.user.userprofile.developer,
+                                   'criteria': form},
                                   context_instance=RequestContext(request))
 
     def post(self, request, report_slug):
@@ -103,69 +98,74 @@ class ReportView(APIView):
         except:
             raise Http404
 
-        params = request.POST 
-        params['debug'] = (params['debug'] == 'true')
-        
-        if params['debug']:
-            logger.debug("Debugging report and rotating logs now ...")
-            management.call_command('rotate_logs')
-
         logger.debug("Received POST for report %s, with params: %s" %
-                     (report_slug, params))
+                     (report_slug, request.POST))
 
-        # File upload debug
-        if request.FILES:
-            for n, f in request.FILES.iteritems():
-                logger.debug("f %s: %s (%s)" % (str(f), f.name, f.size))
+        form = ReportCriteriaForm(request.POST)
+        if form.is_valid():
 
-        # parse time and localize to user profile timezone
-        profile = request.user.userprofile
-        timezone = pytz.timezone(profile.timezone)
-        dt_naive = datetime.datetime.strptime(params['date'] + ' ' + params['time'],
-                                              '%m/%d/%Y %I:%M%p')
-        local_time = timezone.localize(dt_naive)
+            formdata = form.cleaned_data
 
-        # setup definitions for each Widget
-        definition = []
+            if formdata['debug']:
+                logger.debug("Debugging report and rotating logs now ...")
+                management.call_command('rotate_logs')
 
-        # store datetime info about when report is being run
-        # XXX move datetime format to preferences or somesuch
-        now = datetime.datetime.now(timezone)
-        definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
-                           'timezone': str(timezone),
-                           'debug': params['debug']})
+            logger.debug("Report %s validated form: %s" %
+                         (report_slug, formdata))
 
-        # create matrix of Widgets
-        lastrow = -1
-        rows = []
-        for w in Widget.objects.filter(report=report).order_by('row', 'col'):
-            if w.row != lastrow:
-                lastrow = w.row
-                rows.append([])
-            rows[-1].append(Widget.objects.get_subclass(id=w.id))
+            # File upload debug
+#            if request.FILES:
+#                for n, f in request.FILES.iteritems():
+#                    logger.debug("f %s: %s (%s)" % (str(f), f.name, f.size))
 
-        # populate definitions
-        for row in rows:
-            for w in row:
-                widget_def = {"widgettype": w.widgettype().split("."),
-                              "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
-                              "options": w.uioptions,
-                              "widgetid": w.id,
-                              "row": w.row,
-                              "width": w.width,
-                              "height": w.height,
-                              "criteria": {'endtime': datetime_to_seconds(local_time),
-                                           'duration': params['duration'],
-                                           'filterexpr': params['filterexpr'],
-                                           'ignore_cache': 'ignore_cache' in params}
-                              }
-                definition.append(widget_def)
+            # parse time and localize to user profile timezone
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
 
-        logger.debug("Sending widget definitions for report %s: %s" %
-                     (report_slug, definition))
+            # setup definitions for each Widget
+            definition = []
 
-        return HttpResponse(json.dumps(definition))
-        
+            # store datetime info about when report is being run
+            # XXX move datetime format to preferences or somesuch
+            now = datetime.datetime.now(timezone)
+            definition.append({'datetime': str(date(now, 'jS F Y H:i:s')),
+                               'timezone': str(timezone),
+                               'debug': formdata['debug']})
+
+            # create matrix of Widgets
+            lastrow = -1
+            rows = []
+            for w in Widget.objects.filter(report=report).order_by('row', 'col'):
+                if w.row != lastrow:
+                    lastrow = w.row
+                    rows.append([])
+                rows[-1].append(Widget.objects.get_subclass(id=w.id))
+
+            # populate definitions
+            for row in rows:
+                for w in row:
+                    widget_def = {"widgettype": w.widgettype().split("."),
+                                  "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
+                                  "options": w.uioptions,
+                                  "widgetid": w.id,
+                                  "row": w.row,
+                                  "width": w.width,
+                                  "height": w.height,
+                                  "criteria": {'endtime': datetime_to_seconds(formdata['endtime']),
+                                               'duration': formdata['duration'],
+                                               'filterexpr': formdata['filterexpr'],
+                                               'ignore_cache': formdata['ignore_cache']}
+                                  }
+                    definition.append(widget_def)
+
+            logger.debug("Sending widget definitions for report %s: %s" %
+                         (report_slug, definition))
+
+            return HttpResponse(json.dumps(definition))
+        else:
+            # return form with errors attached in a HTTP 200 Error response
+            return HttpResponse(str(form), status=400)
+
 
 def configure(request, report_slug, widget_id=None):
     try:
@@ -218,7 +218,7 @@ class WidgetJobsList(APIView):
             # py2.6 compatibility
             td = parse_timedelta(req_criteria['duration'])
             duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
-            
+
         job_criteria = Criteria(endtime=req_criteria['endtime'],
                                 duration=duration,
                                 filterexpr=req_criteria['filterexpr'],
@@ -234,7 +234,7 @@ class WidgetJobsList(APIView):
 
         logger.debug("Created WidgetJob %s for report %s (handle %s)" %
                      (str(wjob), report_slug, job.handle))
-        
+
         return Response({"joburl": reverse('report-job-detail',
                                            args=[report_slug, widget_id, wjob.id])})
 

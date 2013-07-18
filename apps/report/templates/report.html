@@ -12,22 +12,23 @@
       var debugFlag = false;
       $(document).ready( function() {
           //run();
-          $('#date').datepicker({
+          $('#id_endtime_0').datepicker({
              format: 'mm/dd/YY',
              defaultDate: +2, 
              autoclose: true
           });
-          $('#date').datepicker('setDate', new Date());
-          $('#datenow').click(function() { $('#date').datepicker('setDate', new Date()); });
-          $('#time').timepicker({ 
+          $('#id_endtime_0').datepicker('setDate', new Date());
+          $('#datenow').click(function() { $('#id_endtime_0').datepicker('setDate', new Date()); });
+          $('#id_endtime_1').timepicker({ 
              step: 15, 
-             scrollDefaultNow:true
+             scrollDefaultNow:true,
+             timeFormat:'g:i a'
           });
           $('#timenow').click(function() { 
-             $('#time').timepicker('setTime', new Date()); 
-             $('#date').datepicker('setDate', new Date()); 
+             $('#id_endtime_1').timepicker('setTime', new Date()); 
+             $('#id_endtime_0').datepicker('setDate', new Date()); 
           });
-          $('#time').timepicker('setTime', new Date());
+          $('#id_endtime_1').timepicker('setTime', new Date());
           $("#criteria").on('hidden', function() { dorun() });
           $.ajaxSetup({
               beforeSend: function(xhr) {
@@ -120,14 +121,25 @@
           if (!runRequested)
               return;
           runRequested = false;
-          $("#debug").val(debugFlag);
-          $('form#criteriaform').ajaxSubmit({
+          $("#id_debug").val(debugFlag ? "on" : "");
+          form = $('form#criteriaform');
+          form.ajaxSubmit({
               dataType:"json",
               type: "post",
-              url: "/report/{{ report.slug }}/",
-              success: function(data, textStatus) { renderReport(data); },
+              url: form.attr('action'),
+              success: function(data, textStatus) { 
+                   renderReport(data);
+              },
               error: function(jqXHR, textStatus, errorThrown) { 
-                  alert("an error occurred: " + textStatus + " : " + errorThrown); }
+                  // we receive a 400 error on form validation problems
+                  if (jqXHR.status == 400) {
+                      $("#criteria").collapse('show');
+                      form.html(jqXHR.responseText);
+                  }
+                  if (jqXHR.status == 500) {
+                      alert("an error occurred: " + textStatus + " : " + errorThrown);
+                  }
+              }
           });
           debugFlag = false;
       }
@@ -157,50 +169,12 @@
           </div>
           <div class="collapse in" id="criteria">
             <div class="widget-content">
-              <form action="/report/{{ report.slug }}/" method="post" id="criteriaform" enctype="multipart/form-data">{% csrf_token %}
-              <input type="hidden" id="debug" name="debug" value="">
-              <table>
-                <tr>
-                    <td>End Time:</td>
-                    <td>
-                        <input id="date" type="text" class="date" name="date"> <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
-                        <input id="time" type="text" class="time" name="time"> <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
-                    </td>
-                    <td>Duration:</td>
-                    <td>
-                        <select id="duration" class="selectpicker duration" name="duration">
-                          <option>Default</option>
-                          <option>15 min</option>
-                          <option>1 hour</option>
-                          <option>2 hours</option>
-                          <option>4 hours</option>
-                          <option>12 hours</option>
-                          <option>1 day</option>
-                        </select>
-                    </td>
-                <tr>
-                    <td>Filter Expression:</td>
-                    <td><input id="filterexpr" name="filterexpr"></input></td>
-                    <td></td>
-                    <td>Ignore Cache:</td>
-                    <td>
-                        {% if user.is_authenticated and user.userprofile.ignore_cache %}
-                            <input type="checkbox" id="ignore_cache" name="ignore_cache" checked>
-                        {% else %}
-                            <input type="checkbox" id="ignore_cache" name="ignore_cache">
-                        {% endif %}
-
-                    </td>
-                </tr>
-<!--
-                <tr>
-                    <td>PCAP File:</td>
-                    <td><input name="pcap" type="file"></input></td>
-                    <td></td>
-                    <td></td>
-                </tr>
--->
-              </table>
+                <form action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
+                        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
+                  {% csrf_token %}
+                  <table>
+                      {{ criteria.as_table }}
+                  </table>
               </form>
               <p></p>
               <div class="btn-group dropup">
