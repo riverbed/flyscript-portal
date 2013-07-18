@@ -7,7 +7,6 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import sys
 import time
 import datetime
 import optparse
@@ -24,6 +23,7 @@ from apps.report.models import Report
 # for this script, so ignore them all
 import warnings
 warnings.filterwarnings("ignore")
+
 
 class Command(BaseCommand):
     args = None

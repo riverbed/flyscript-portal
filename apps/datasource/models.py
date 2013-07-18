@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
 
+
 #
 # Device
 #
@@ -51,16 +52,17 @@ class Device(models.Model):
     def __unicode__(self):
         return '%s (%s:%s)' % (self.name, self.host, self.port)
 
+
 #
 # Table
 #
 class Table(models.Model):
     name = models.CharField(max_length=200)
-    module = models.CharField(max_length=200)    # source module name
+    module = models.CharField(max_length=200)             # source module name
     device = models.ForeignKey(Device, null=True)
     filterexpr = models.TextField(null=True)
-    duration = models.IntegerField(null=True)    # length of query in minutes
-    resolution = models.IntegerField(default=60) # resolution of graph in seconds
+    duration = models.IntegerField(null=True)             # length of query in minutes
+    resolution = models.IntegerField(default=60)          # resolution of graph in seconds
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
     datafilter = models.TextField(null=True, blank=True)  # deprecated interface
@@ -70,7 +72,7 @@ class Table(models.Model):
     options = PickledObjectField()
     
     @classmethod
-    def create(self, name, module, **kwargs):
+    def create(cls, name, module, **kwargs):
         t = Table(name=name, module=module, **kwargs)
         t.save()
         return t
@@ -101,10 +103,8 @@ class Table(models.Model):
         if len(indata) == 0:
             return []
         
-        df = pandas.DataFrame(
-            indata,
-            columns = [col.name for col in self.get_columns(synthetic=False)]
-            )
+        df = pandas.DataFrame(indata,
+                              columns=[col.name for col in self.get_columns(synthetic=False)])
         
         all_columns = self.get_columns(synthetic=True)
         all_col_names = [c.name for c in all_columns]
@@ -163,9 +163,9 @@ class Table(models.Model):
         compute(df, [col for col in all_columns if (col.synthetic and
                                                     col.compute_post_resample is True)])
 
-
         # Replace NaN with None
-        return df.where(pandas.notnull(df), None).ix[:,all_col_names].values.tolist()
+        return df.where(pandas.notnull(df), None).ix[:, all_col_names].values.tolist()
+
 
 class Column(models.Model):
 
@@ -191,7 +191,7 @@ class Column(models.Model):
     def __unicode__(self):
         return self.label
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if self.label is None:
             self.label = self.name
         super(Column, self).save()
@@ -209,6 +209,7 @@ class Column(models.Model):
             table.save()
         return c
 
+
 class Criteria(DictObject):
     def __init__(self, starttime=None, endtime=None, duration=None, 
                  filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
@@ -219,9 +220,9 @@ class Criteria(DictObject):
         self.filterexpr = filterexpr
         self.ignore_cache = ignore_cache
 
-        self.orig_starttime = starttime
-        self.orig_endtime = endtime
-        self.orig_duration = duration
+        self._orig_starttime = starttime
+        self._orig_endtime = endtime
+        self._orig_duration = duration
         
         if table:
             self.compute_times(table)
@@ -238,9 +239,9 @@ class Criteria(DictObject):
 
     def build_for_table(self, table):
         # used by Analysis datasource module
-        return Criteria(starttime=self.orig_starttime,
-                        endtime=self.orig_endtime,
-                        duration=self.orig_duration,
+        return Criteria(starttime=self._orig_starttime,
+                        endtime=self._orig_endtime,
+                        duration=self._orig_duration,
                         filterexpr=self.filterexpr,
                         ignore_cache=self.ignore_cache,
                         table=table)
@@ -281,11 +282,11 @@ class Job(models.Model):
     
     status = models.IntegerField(
         default=NEW,
-        choices = ((NEW, "New"),
-                   (RUNNING, "Running"),
-                   (RUNNING_DEP, "Running dependent on another job"),
-                   (COMPLETE, "Complete"),
-                   (ERROR, "Error")))
+        choices=((NEW, "New"),
+                 (RUNNING, "Running"),
+                 (RUNNING_DEP, "Running dependent on another job"),
+                 (COMPLETE, "Complete"),
+                 (ERROR, "Error")))
 
     message = models.CharField(max_length=200, default="")
     progress = models.IntegerField(default=-1)
@@ -293,8 +294,8 @@ class Job(models.Model):
 
     def __unicode__(self):
         return "<Job %d, table %d (%s), %s/%s%%>" % (self.id, self.table.id,
-                                                      self.table.name, 
-                                                      self.status, self.progress)
+                                                     self.table.name,
+                                                     self.status, self.progress)
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -396,17 +397,17 @@ class Job(models.Model):
         
     def json(self, data=None):
                                       
-        return { 'progress': self.progress,
-                 'remaining': self.remaining,
-                 'status': self.status,
-                 'message': self.message,
-                 'data': data }
+        return {'progress': self.progress,
+                'remaining': self.remaining,
+                'status': self.status,
+                'message': self.message,
+                'data': data}
 
     def combine_filterexprs(self, joinstr="and"):
         exprs = []
         criteria = self.criteria
         for e in [self.table.filterexpr, criteria.filterexpr if criteria else None]:
-            if e != "" and e != None:
+            if e != "" and e is not None:
                 exprs.append(e)
 
         if len(exprs) > 1:
@@ -466,6 +467,7 @@ class Job(models.Model):
             # Create an asynchronous worker to do the work
             worker = AsyncWorker(self, queryclass)
             worker.start()
+
 
 #
 # AsyncWorker
