@@ -18,7 +18,7 @@ from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
-from apps.datasource.models import Job, Criteria
+from apps.datasource.models import Job, Criteria, Device
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm, ReportCriteriaForm
 from apps.report.utils import create_debug_zipfile
@@ -66,6 +66,10 @@ def download_debug(request):
     return response
 
 
+# token to play with different form types
+# currently valid: 'inline' or 'horizontal'
+FORMSTYLE = 'horizontal'
+
 class ReportView(APIView):
     """ Main handler for /report/{id}
     """
@@ -83,12 +87,20 @@ class ReportView(APIView):
 
         logging.debug('Received request for report page: %s' % report_slug)
 
+        # search across all enabled devices
+        for device in Device.objects.all():
+            if (device.enabled and ('host.or.ip' in device.host or
+                                    device.username == '<username>' or
+                                    device.password == '<password>')):
+                return HttpResponseRedirect(reverse('device-list'))
+
         # factory this to make it extensible
         form = ReportCriteriaForm(initial={'ignore_cache': request.user.userprofile.ignore_cache})
 
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': request.user.userprofile.developer,
+                                   'formstyle': FORMSTYLE,
                                    'criteria': form},
                                   context_instance=RequestContext(request))
 
@@ -151,10 +163,7 @@ class ReportView(APIView):
                                   "row": w.row,
                                   "width": w.width,
                                   "height": w.height,
-                                  "criteria": {'endtime': datetime_to_seconds(formdata['endtime']),
-                                               'duration': formdata['duration'],
-                                               'filterexpr': formdata['filterexpr'],
-                                               'ignore_cache': formdata['ignore_cache']}
+                                  "criteria": form.criteria()
                                   }
                     definition.append(widget_def)
 

@@ -169,13 +169,56 @@
           </div>
           <div class="collapse in" id="criteria">
             <div class="widget-content">
-                <form action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
+{% if formstyle == "inline" %}
+                <form class="form-inline" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
-                  {% csrf_token %}
-                  <table>
-                      {{ criteria.as_table }}
-                  </table>
+                    {% csrf_token %}
+                    {% if criteria.errors %}
+                        <p class="text-error">Please correct the errors below.</p>
+                    {% endif %}
+
+                    {% for field in criteria.visible_fields %}
+                        {{ field.label_tag }}: {{ field }}
+                        {% if field.errors %}
+                            {% for err in field.errors %}
+                                <p class="text-error">{{ err }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for hidden in form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
+                </form>
+{% elif formstyle == "horizontal" %}
+                <form class="form-horizontal" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
+                        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
+                    {% csrf_token %}
+                    <fieldset>
+                        {% if criteria.errors %}
+                            <p class="text-error">Please correct the errors below.</p>
+                        {% endif %}
+
+                        {% for field in criteria.visible_fields %}
+                            <div class="control-group">
+                                <div class="control-label">
+                                    {{ field.label_tag }} 
+                                </div>
+                                <div class="controls">
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        {% for err in field.errors %}
+                                            <p class="text-error">{{ err }}</p>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+                    </fieldset>
               </form>
+{% endif %}
               <p></p>
               <div class="btn-group dropup">
                   <button class="btn btn-primary" onclick="run()">Run</button>
