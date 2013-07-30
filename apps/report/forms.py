@@ -15,7 +15,11 @@ from rvbd.common import datetime_to_seconds
 from apps.report.models import Report, Widget
 from apps.datasource.models import Criteria
 
-DURATIONS = ('Default', '15 min', '1 hour', '2 hours', '4 hours', '12 hours', '1 day')
+import logging
+logger = logging.getLogger(__name__)
+
+DURATIONS = ('Default', '15 min', '1 hour', 
+             '2 hours', '4 hours', '12 hours', '1 day')
 
 
 class ReportDetailForm(forms.ModelForm):
@@ -94,6 +98,22 @@ class ReportCriteriaForm(forms.Form):
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
+    def __init__(self, *args, **kwargs):
+        """ Handle arbitrary number of additional fields in `extra` keyword
+
+            `extra` if included, is a list of TableCriteria objects
+        """
+        extra = kwargs.pop('extra')
+        super(ReportCriteriaForm, self).__init__(*args, **kwargs)
+
+        if extra:
+            logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
+            for i, field in enumerate(extra):
+                field_id = 'criteria_%s' % field.id
+                eval_field = '%s(label="%s")' % (field.field_type, field.label) 
+                self.fields[field_id] = eval(eval_field)
+                self.initial[field_id] = field.initial
+
     def criteria(self):
         """ Return certain field values as a dict for simple json parsing
         """
@@ -106,56 +126,33 @@ class ReportCriteriaForm(forms.Form):
         return result
 
 
+def create_report_criteria_form(*args, **kwargs):
+    """ Factory function to create dynamic Report forms
 
+        Included `report` kwargs will be assessed for
+        any linked TableCriteria objects and passed to
+        the initialization method for a ReportCriteriaForm.
 
-#
-### XXX Placeholder class and factory functions - not used yet
-class TableCriteriaForm(ReportCriteriaForm):
-    """ Adds additional fields to Report Criteria Form
+        If the report has no associated TableCriteria, nothing
+        special will occur, and a nominal form will be returned.
+        
+        Only objects which have no "parents" will be included,
+        "parent" objects will later provide the form values
+        to all children criteria during processing.
     """
-    pass
+    report = kwargs.pop('report')
 
+    # use SortedDict to limit to unique criteria objects only
+    extra = SortedDict()
+    for c in report.criteria.all():
+        if not c.parent:
+            extra[c.id] = c
+    for widget in Widget.objects.filter(report=report):
+        for table in widget.tables.all():
+            for tc in table.criteria.all():
+                if not tc.parent:
+                    extra[tc.id] = tc
 
-def criteria_form_factory(base_form=None, extra_fields=None):
-    """ Return a CriteriaForm class with fields for each of the 
-        baseline keys (except hidden keys) and any extra fields as 
-        requested
-
-        `base_form` - new class will extend fields defined in this base class
-        `extra_fields` - list of (field_name, form_field_class) tuples
-    """
-    fields = SortedDict()
-
-    # create new objects based on base_forms field classes
-    if base_form:
-        for k, v in base_form.fields:
-            fields[k] = v.__class__()
-
-    if extra_fields:
-        for field_name, field_class in extra_fields:
-            fields[field_name] = field_class()
-
-    return type('CriteriaForm', (forms.BaseForm,), {'base_fields': fields})
-
-
-def report_criteria_form_factory(extra_fields=None):
-    """ Return CriteriaForm with default set of report criteria
-    """
-    # start with base set of fields
-    fields = [('endtime', forms.TimeField),
-              ('duration', forms.CharField(max_length=10)),
-              ('filterexpr', forms.CharField(max_length=100)),
-              ('ignore_cache', forms.BooleanField())]
-    return criteria_form_factory(base_form=None, extra_fields=fields)
-
-
-def table_criteria_form_factory(fieldlist=None):
-    """ Using list of tuples in fieldset, create a form for TableCriteria
-    """
-    if fieldlist is None:
-        # XXX do we raise error instead?
-        return
-
-    return type('TableCriteriaForm', (forms.BaseForm,), {'base_fields': fieldlist})
-
+    kwargs['extra'] = extra.values()
+    return ReportCriteriaForm(*args, **kwargs)
 

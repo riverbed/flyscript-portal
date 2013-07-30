@@ -7,7 +7,6 @@
 
 import os
 import sys
-import json
 import pickle
 import logging
 import traceback
@@ -24,10 +23,8 @@ from django.db import models
 from django.db.models import Max
 
 from rvbd.common.utils import DictObject
-from rvbd.common.jsondict import JsonDict
 
 from libs.fields import PickledObjectField
-
 from project import settings
 
 logger = logging.getLogger(__name__)
@@ -35,10 +32,12 @@ logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
 
-#
-# Device
-#
 class Device(models.Model):
+    """ Records for devices referenced in report configuration pages.
+
+        Actual instantiations of Device objects handled through DeviceManager
+        class in devicemanager.py module.
+    """
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)
     host = models.CharField(max_length=200)
@@ -53,23 +52,89 @@ class Device(models.Model):
         return '%s (%s:%s)' % (self.name, self.host, self.port)
 
 
-#
-# Table
-#
+class TableCriteria(models.Model):
+    """ Criteria model to provide report run-time overrides for key values.
+
+        Primarily used to parameterize reports with values that may change
+        from time to time, such as interfaces, thresholds, QOS types, etc.
+
+        keyword  -- text name of table field or TableOption field
+        template -- python string template to use for replacement, e.g.
+                    "inbound interface {} and qos EF", where the {} would
+                    be replaced with the value provided in the form field
+        label    -- text label shown in the HTML form
+        initial  -- starting or default value to include in the form
+
+        optional:
+        field_type -- text name of form field type, defaults to 
+                      `forms.CharField`.
+        parent     -- reference to another TableCriteria object which
+                      provides values to inherit from.  This allows 
+                      multiple criteria to be enumerated while only
+                      displaying/filling out a single form field.
+                      TableCriteria which have a parent object identified
+                      will not be included in the HTML form output.
+    """
+    keyword = models.CharField(max_length=100)
+    template = models.CharField(max_length=100)
+    label = models.CharField(max_length=100)
+    initial = models.CharField(max_length=100, blank=True, null=True)
+
+    # XXX store as object instead?
+    field_type = models.CharField(max_length=100, default='forms.CharField')
+
+    parent = models.ForeignKey("self", blank=True, null=True, related_name="children")
+
+    # instance placeholder for form return values, not for database storage
+    value = PickledObjectField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        #if not self.field_type:
+        #    self.field_type = 'forms.CharField'
+        super(TableCriteria, self).save(*args, **kwargs)
+
+    @classmethod
+    def get_instance(cls, key, value):
+        """ Return instance given the 'criteria_%d' formatted key
+        """
+        tc = TableCriteria.objects.get(pk=key.split('_')[1])
+        tc.value = value
+        return tc
+
+    @classmethod
+    def get_children(cls, key, value):
+        """ Given a 'criteria_%d' key, return all children objects
+            with value attributes filled in.  Return empty list if no
+            children.
+        """
+        parent = cls.get_instance(key, value)
+        children = parent.children.all()
+        for c in children:
+            c.value = value
+        return children
+
+
 class Table(models.Model):
     name = models.CharField(max_length=200)
-    module = models.CharField(max_length=200)             # source module name
+    module = models.CharField(max_length=200)         # source module name
     device = models.ForeignKey(Device, null=True)
     filterexpr = models.TextField(null=True)
-    duration = models.IntegerField(null=True)             # length of query in minutes
-    resolution = models.IntegerField(default=60)          # resolution of graph in seconds
+    duration = models.IntegerField(null=True)         # length of query, mins
+    resolution = models.IntegerField(default=60)      # query resolution, sec
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
-    datafilter = models.TextField(null=True, blank=True)  # deprecated interface
-                                                          # key/value separated by comma
 
+    # deprecated interface for profiler key/value separated by comma
+    datafilter = models.TextField(null=True, blank=True)  
+
+    # indicator field for analysis/synthetic tables
     resample = models.BooleanField(default=False)
-    options = PickledObjectField()
+
+    # options are typically fixed attributes defined at Table creation
+    options = PickledObjectField()                          
+
+    # criteria are used to override instance values at run time
+    criteria = models.ManyToManyField(TableCriteria, null=True)
     
     @classmethod
     def create(cls, name, module, **kwargs):
@@ -84,27 +149,27 @@ class Table(models.Model):
         if synthetic:
             return Column.objects.filter(table=self).order_by('position')
         else:
-            return Column.objects.filter(table=self, synthetic=False).order_by('position')
+            return Column.objects.filter(table=self,
+                                         synthetic=False).order_by('position')
 
     def compute_synthetic(self, indata):
-        """
-        Compute the synthetic columns from INDATA, a two-dimensional array
-        of the non-synthetic columns.
+        """ Compute the synthetic columns from INDATA, a two-dimensional array
+            of the non-synthetic columns.
 
-        Synthesis occurs as follows:
+            Synthesis occurs as follows:
 
-        1. Compute all synthetic columns where compute_post_resample is False
+            1. Compute all synthetic columns where compute_post_resample is False
 
-        2. If the table is a time-based table with a defined resolution, the
-           result is resampled.
+            2. If the table is a time-based table with a defined resolution, the
+               result is resampled.
 
-        3. Any remaining columns are computed.
+            3. Any remaining columns are computed.
         """
         if len(indata) == 0:
             return []
         
-        df = pandas.DataFrame(indata,
-                              columns=[col.name for col in self.get_columns(synthetic=False)])
+        cols = [col.name for col in self.get_columns(synthetic=False)]
+        df = pandas.DataFrame(indata, columns=cols)
         
         all_columns = self.get_columns(synthetic=True)
         all_col_names = [c.name for c in all_columns]
@@ -258,16 +323,13 @@ class Criteria(DictObject):
 
         if self.starttime is None:
             if self.duration is None:
-                self.duration = table.duration*60
+                self.duration = table.duration * 60
 
             self.starttime = self.endtime - self.duration
 
         self.starttime = self.starttime - self.starttime % table.resolution
             
 
-#
-# Job
-#
 class Job(models.Model):
 
     table = models.ForeignKey(Table)
@@ -301,7 +363,10 @@ class Job(models.Model):
         h = hashlib.md5()
         h.update(str(self.table.id))
         h.update('.'.join([c.name for c in self.table.get_columns()]))
-        h.update(json.dumps(self.criteria))
+        for k, v in self.criteria.iteritems():
+            if not k.startswith('criteria_'):
+                h.update('%s:%s' % (k, v))
+        
         return h.hexdigest()
     
     def get_depjob(self):
@@ -344,12 +409,12 @@ class Job(models.Model):
         return reportdata
 
     def delete(self):
-        logging.debug('Deleting Job: %s' % str(self))
+        logger.debug('Deleting Job: %s' % str(self))
         super(Job, self).delete()
 
-    def save(self):
+    def save(self, *args, **kwargs):
         self.handle = self.compute_handle()
-        super(Job, self).save()
+        super(Job, self).save(*args, **kwargs)
         
     def savedata(self, data):
         logger.debug("%s saving data to datafile %s" %
@@ -469,9 +534,6 @@ class Job(models.Model):
             worker.start()
 
 
-#
-# AsyncWorker
-#
 class AsyncWorker(threading.Thread):
     def __init__(self, job, queryclass):
         threading.Thread.__init__(self)

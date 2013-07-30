@@ -22,7 +22,7 @@ from django.db.models import Max, Sum
 from django.template.defaultfilters import slugify
 
 from model_utils.managers import InheritanceManager
-from apps.datasource.models import Table, Job
+from apps.datasource.models import Table, Job, TableCriteria
 
 from libs.fields import PickledObjectField
 
@@ -30,14 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 class WidgetOptions(JsonDict):
-    _default= {'key': None,
-               'value': None,
-               'axes' : None }
+    _default = {'key': None,
+                'value': None,
+                'axes': None}
 
-#######################################################################
-#
-# Reports and Widgets
-#
+
 def get_caller_name(match='config.reports'):
     """ Determine filename of calling function.
         Used to determine source of Report class definition.
@@ -57,8 +54,11 @@ def get_caller_name(match='config.reports'):
 
 
 class Report(models.Model):
+    """ Defines the collection of Widgets and criteria for a Report view
+    """
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
+    criteria = models.ManyToManyField(TableCriteria, null=True)
     sourcefile = models.CharField(max_length=200, default=get_caller_name)
     slug = models.SlugField()
 
@@ -72,6 +72,8 @@ class Report(models.Model):
 
 
 class Widget(models.Model):
+    """ Defines a UI widget and the source datatables
+    """
     tables = models.ManyToManyField(Table)
     report = models.ForeignKey(Report)
     title = models.CharField(max_length=100)
@@ -116,7 +118,8 @@ class Widget(models.Model):
 
 
 class WidgetJob(models.Model):
-
+    """ Query point for status of Jobs for each Widget.
+    """
     widget = models.ForeignKey(Widget)
     job = models.ForeignKey(Job)
 
@@ -175,7 +178,7 @@ class Axes:
 
     def getaxis(self, colname):
         if self.definition is not None:
-            for n,v in self.definition.items():
+            for n, v in self.definition.items():
                 if ('columns' in v) and (colname in v['columns']):
                     return int(n)
         return 0

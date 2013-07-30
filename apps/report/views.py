@@ -11,23 +11,24 @@ import datetime
 
 import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.template import RequestContext, loader
+from django.template import RequestContext
 from django.template.defaultfilters import date
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
-from apps.datasource.models import Job, Criteria, Device
+from apps.datasource.models import Job, Criteria, Device, TableCriteria
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm, ReportCriteriaForm
+from apps.report.forms import create_report_criteria_form
 from apps.report.utils import create_debug_zipfile
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
-from rvbd.common import datetime_to_seconds, parse_timedelta
+from rvbd.common import parse_timedelta
 
 import logging
 logger = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ def download_debug(request):
 # currently valid: 'inline' or 'horizontal'
 FORMSTYLE = 'horizontal'
 
+
 class ReportView(APIView):
     """ Main handler for /report/{id}
     """
@@ -95,13 +97,14 @@ class ReportView(APIView):
                 return HttpResponseRedirect(reverse('device-list'))
 
         # factory this to make it extensible
-        form = ReportCriteriaForm(initial={'ignore_cache': request.user.userprofile.ignore_cache})
+        form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
+        form = create_report_criteria_form(initial=form_init, report=report)
 
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': request.user.userprofile.developer,
                                    'formstyle': FORMSTYLE,
-                                   'criteria': form},
+                                   'form': form},
                                   context_instance=RequestContext(request))
 
     def post(self, request, report_slug):
@@ -113,7 +116,7 @@ class ReportView(APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = ReportCriteriaForm(request.POST)
+        form = create_report_criteria_form(request.POST, report=report)
         if form.is_valid():
 
             formdata = form.cleaned_data
@@ -176,39 +179,6 @@ class ReportView(APIView):
             return HttpResponse(str(form), status=400)
 
 
-def configure(request, report_slug, widget_id=None):
-    try:
-        report = Report.objects.get(slug=report_slug)
-        if widget_id:
-            widget = Widget.objects.get(pk=widget_id)
-    except:
-        raise Http404
-
-    if request.method == 'POST':
-        if widget_id is None:
-            # updating report name
-            form = ReportDetailForm(request.POST, instance=report)
-            if form.is_valid():
-                form.save()
-        else:
-            form = WidgetDetailForm(request.POST, instance=widget)
-            if form.is_valid():
-                form.save()
-        return HttpResponseRedirect(request.META['HTTP_REFERER'])
-    else:
-        report_form = ReportDetailForm(instance=report)
-
-        widget_forms = []
-        for w in Widget.objects.filter(report=report).order_by('row', 'col'):
-            widget_forms.append((w.id, WidgetDetailForm(instance=w)))
-
-        return render_to_response('configure.html',
-                                  {'report': report,
-                                   'reportForm': report_form,
-                                   'widgetForms': widget_forms},
-                                  context_instance=RequestContext(request))
-
-
 class WidgetJobsList(APIView):
 
     parser_classes = (JSONParser,)
@@ -217,7 +187,23 @@ class WidgetJobsList(APIView):
         logger.debug("Received POST for report %s, widget %s: %s" %
                      (report_slug, widget_id, request.POST))
 
-        req_criteria = json.loads(request.POST['criteria'])
+        try:
+            report = Report.objects.get(slug=report_slug)
+        except:
+            raise Http404
+
+        req_json = json.loads(request.POST['criteria'])
+
+        # XXX fix form validation for endtime values since
+        #     they are now coming in as timestamps instead of 
+        #     the format specified in the SplitDateTimeField
+
+        #criteria_form = create_report_criteria_form(req_json, report=report)
+        #if criteria_form.is_valid():
+            #logger.debug('criteria form passed validation: %s' % criteria_form)
+            #req_criteria = criteria_form.cleaned_data
+            #logger.debug('criteria cleaned data: %s' % req_criteria)
+        req_criteria = req_json
 
         widget = Widget.objects.get(id=widget_id)
 
@@ -226,13 +212,25 @@ class WidgetJobsList(APIView):
         else:
             # py2.6 compatibility
             td = parse_timedelta(req_criteria['duration'])
-            duration = float(td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
+            duration_sec = td.days * 24 * 3600 + td.seconds
+            duration_usec = duration_sec * 10**6 + td.microseconds
+            duration = float(duration_usec) / 10**6
 
         job_criteria = Criteria(endtime=req_criteria['endtime'],
                                 duration=duration,
                                 filterexpr=req_criteria['filterexpr'],
                                 table=widget.table(),
                                 ignore_cache=req_criteria['ignore_cache'])
+
+        # handle table criteria and generate children objects
+        for k, v in req_criteria.iteritems():
+            if k.startswith('criteria_'):
+                tc = TableCriteria.get_instance(k, v) 
+                job_criteria[k] = tc
+                for child in tc.children.all():
+                    child.value = v
+                    job_criteria['criteria_%d' % child.id] = child
+
         job = Job(table=widget.table(),
                   criteria=job_criteria)
         job.save()

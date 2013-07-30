@@ -20,19 +20,24 @@ from apps.datasource.devicemanager import DeviceManager
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
+
 def DeviceManager_new(*args, **kwargs):
-    # Used by DeviceManger to create a Profiler instance
+    # Used by DeviceManager to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
+
 
 class TableOptions(JsonDict):
     _default = { 'groupby' : None,
                  'realm' : None,
                  'centricity' : None }
 
+
 class TimeSeriesTable:
     @classmethod
-    def create(cls, name, device, duration, interface=False, **kwargs):
+    def create(cls, name, device, duration,
+               interface=False, **kwargs):
         logger.debug('Creating Profiler TimeSeries table %s (%d)' % (name, duration))
+
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   options=TableOptions(groupby='time',
                                        realm='traffic_overall_time_series',
@@ -44,9 +49,11 @@ class TimeSeriesTable:
 
 class GroupByTable:
     @classmethod
-    def create(cls, name, device, groupby, duration, filterexpr=None, interface=False, **kwargs):
-        logger.debug('Creating Profiler GroupBy table %s (%s, %d, %s)' % (name, groupby,
-                                                                          duration, filterexpr))
+    def create(cls, name, device, groupby, duration, 
+               filterexpr=None, interface=False, **kwargs):
+        msg = 'Creating Profiler GroupBy table %s (%s, %d, %s)'
+        logger.debug(msg % (name, groupby, duration, filterexpr))
+
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
                   options=TableOptions(groupby=groupby,
@@ -56,6 +63,7 @@ class GroupByTable:
         t.save()
         return t
         
+
 class TableQuery:
     # Used by Table to actually run a query
     def __init__(self, table, job):
@@ -92,6 +100,23 @@ class TableQuery:
             datafilter = table.datafilter.split(',')
         else:
             datafilter = None
+            
+        # process Report/Table Criteria
+        for k, v in criteria.iteritems():
+            if k.startswith('criteria_') and table in v.table_set.all():
+                replacement = v.template.format(v.value)
+
+                if hasattr(table, v.keyword):
+                    logger.debug('In table %s, replacing %s with %s' % 
+                                                (table, v.keyword, replacement))
+                    setattr(table, v.keyword, replacement)
+                elif hasattr(table.options, v.keyword):
+                    logger.debug('In table %s options, replacing %s with %s' % 
+                                                (table, v.keyword, replacement))
+                    setattr(table.options, v.keyword, replacement)
+                else:
+                    msg ='WARNING: keyword %s not found in table %s or its options' 
+                    logger.debug(msg % (v.keyword, table))
 
         with lock:
             report.run(realm=options.realm,

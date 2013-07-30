@@ -173,11 +173,11 @@
                 <form class="form-inline" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
-                    {% if criteria.errors %}
+                    {% if form.errors %}
                         <p class="text-error">Please correct the errors below.</p>
                     {% endif %}
 
-                    {% for field in criteria.visible_fields %}
+                    {% for field in form.visible_fields %}
                         {{ field.label_tag }}: {{ field }}
                         {% if field.errors %}
                             {% for err in field.errors %}
@@ -194,11 +194,11 @@
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
                     <fieldset>
-                        {% if criteria.errors %}
+                        {% if form.errors %}
                             <p class="text-error">Please correct the errors below.</p>
                         {% endif %}
 
-                        {% for field in criteria.visible_fields %}
+                        {% for field in form.visible_fields %}
                             <div class="control-group">
                                 <div class="control-label">
                                     {{ field.label_tag }} 

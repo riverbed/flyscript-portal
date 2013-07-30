@@ -80,6 +80,12 @@ class Command(BaseCommand):
                         for deptable in Table.objects.filter(id=int(tid)):
                             del_table(deptable)
 
+                for criteria in table.criteria.all():
+                    # try to delete only TableCriteria where this
+                    # table was the last reference
+                    if len(criteria.table_set.all()) == 1:
+                        criteria.delete()
+
                 table.delete()
                 
             for widget in Widget.objects.filter(report=rid):
@@ -88,11 +94,14 @@ class Command(BaseCommand):
                 for wjob in WidgetJob.objects.filter(widget=widget):
                     wjob.delete()
                 widget.delete()
-            Report.objects.filter(id=rid).delete()
+
+            report = Report.objects.filter(id=rid)
+            for criteria in report.criteria.all():
+                if len(criteria.report_set.all()) == 1:
+                    criteria.delete()
+
+            report.delete()
 
         if options['clear_devices']:
             # clear references to existing devices
             DeviceManager.clear()
-
-
-

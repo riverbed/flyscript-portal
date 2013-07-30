@@ -91,8 +91,8 @@ class ResultsManager(models.Manager):
         offset = len(results) - number
         if offset > 0:
             to_delete = results[:offset]
-            logging.debug('Deleting the following %d Results:' % offset)
-            logging.debug(to_delete)
+            logger.debug('Deleting the following %d Results:' % offset)
+            logger.debug(to_delete)
             [r.delete() for r in to_delete]
 
 
