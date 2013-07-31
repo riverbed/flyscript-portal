@@ -120,7 +120,7 @@ class ReportCriteriaForm(forms.Form):
 
         if extra:
             logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
-            for i, field in enumerate(extra):
+            for field in extra:
                 field_id = 'criteria_%s' % field.id
                 eval_field = '%s(label="%s")' % (field.field_type, field.label) 
                 self.fields[field_id] = eval(eval_field)

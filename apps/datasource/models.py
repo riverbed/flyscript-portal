@@ -96,8 +96,14 @@ class TableCriteria(models.Model):
     @classmethod
     def get_instance(cls, key, value):
         """ Return instance given the 'criteria_%d' formatted key
+
+            If we have an initial value (e.g. no parent specified)
+            then save value as our new initial value
         """
         tc = TableCriteria.objects.get(pk=key.split('_')[1])
+        if tc.initial and tc.initial != value:
+            tc.initial = value
+            tc.save()
         tc.value = value
         return tc
 
