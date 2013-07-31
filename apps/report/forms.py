@@ -101,9 +101,21 @@ class ReportCriteriaForm(forms.Form):
     def __init__(self, *args, **kwargs):
         """ Handle arbitrary number of additional fields in `extra` keyword
 
-            `extra` if included, is a list of TableCriteria objects
+            Keyword argument options:
+
+            `extra` optional, a list of TableCriteria objects to append to
+                    form listings
+
+            `jsonform` optional, boolean indicating whether input and
+                       validation will be handled via json input to 
+                       toggle form fields appropriately (e.g. 
+                       SplitDateTimeField becomes just IntegerField for
+                       timestamp)
         """
         extra = kwargs.pop('extra')
+        jsonform = False
+        if 'jsonform' in kwargs:
+            jsonform = kwargs.pop('jsonform')
         super(ReportCriteriaForm, self).__init__(*args, **kwargs)
 
         if extra:
@@ -113,6 +125,10 @@ class ReportCriteriaForm(forms.Form):
                 eval_field = '%s(label="%s")' % (field.field_type, field.label) 
                 self.fields[field_id] = eval(eval_field)
                 self.initial[field_id] = field.initial
+
+        if jsonform:
+            # toggle endtime formfield to handle timestamps via IntegerField
+            self.fields['endtime'] = forms.IntegerField()
 
     def criteria(self):
         """ Return certain field values as a dict for simple json parsing

@@ -194,56 +194,55 @@ class WidgetJobsList(APIView):
 
         req_json = json.loads(request.POST['criteria'])
 
-        # XXX fix form validation for endtime values since
-        #     they are now coming in as timestamps instead of 
-        #     the format specified in the SplitDateTimeField
+        criteria_form = create_report_criteria_form(req_json, 
+                                                    report=report,
+                                                    jsonform=True)
+        if criteria_form.is_valid():
+            logger.debug('criteria form passed validation: %s' % criteria_form)
+            req_criteria = criteria_form.cleaned_data
+            logger.debug('criteria cleaned data: %s' % req_criteria)
 
-        #criteria_form = create_report_criteria_form(req_json, report=report)
-        #if criteria_form.is_valid():
-            #logger.debug('criteria form passed validation: %s' % criteria_form)
-            #req_criteria = criteria_form.cleaned_data
-            #logger.debug('criteria cleaned data: %s' % req_criteria)
-        req_criteria = req_json
+            widget = Widget.objects.get(id=widget_id)
 
-        widget = Widget.objects.get(id=widget_id)
+            if req_criteria['duration'] == 'Default':
+                duration = None
+            else:
+                # py2.6 compatibility
+                td = parse_timedelta(req_criteria['duration'])
+                duration_sec = td.days * 24 * 3600 + td.seconds
+                duration_usec = duration_sec * 10**6 + td.microseconds
+                duration = float(duration_usec) / 10**6
 
-        if req_criteria['duration'] == 'Default':
-            duration = None
+            job_criteria = Criteria(endtime=req_criteria['endtime'],
+                                    duration=duration,
+                                    filterexpr=req_criteria['filterexpr'],
+                                    table=widget.table(),
+                                    ignore_cache=req_criteria['ignore_cache'])
+
+            # handle table criteria and generate children objects
+            for k, v in req_criteria.iteritems():
+                if k.startswith('criteria_'):
+                    tc = TableCriteria.get_instance(k, v) 
+                    job_criteria[k] = tc
+                    for child in tc.children.all():
+                        child.value = v
+                        job_criteria['criteria_%d' % child.id] = child
+
+            job = Job(table=widget.table(),
+                      criteria=job_criteria)
+            job.save()
+            job.start()
+
+            wjob = WidgetJob(widget=widget, job=job)
+            wjob.save()
+
+            logger.debug("Created WidgetJob %s for report %s (handle %s)" %
+                         (str(wjob), report_slug, job.handle))
+
+            return Response({"joburl": reverse('report-job-detail',
+                                               args=[report_slug, widget_id, wjob.id])})
         else:
-            # py2.6 compatibility
-            td = parse_timedelta(req_criteria['duration'])
-            duration_sec = td.days * 24 * 3600 + td.seconds
-            duration_usec = duration_sec * 10**6 + td.microseconds
-            duration = float(duration_usec) / 10**6
-
-        job_criteria = Criteria(endtime=req_criteria['endtime'],
-                                duration=duration,
-                                filterexpr=req_criteria['filterexpr'],
-                                table=widget.table(),
-                                ignore_cache=req_criteria['ignore_cache'])
-
-        # handle table criteria and generate children objects
-        for k, v in req_criteria.iteritems():
-            if k.startswith('criteria_'):
-                tc = TableCriteria.get_instance(k, v) 
-                job_criteria[k] = tc
-                for child in tc.children.all():
-                    child.value = v
-                    job_criteria['criteria_%d' % child.id] = child
-
-        job = Job(table=widget.table(),
-                  criteria=job_criteria)
-        job.save()
-        job.start()
-
-        wjob = WidgetJob(widget=widget, job=job)
-        wjob.save()
-
-        logger.debug("Created WidgetJob %s for report %s (handle %s)" %
-                     (str(wjob), report_slug, job.handle))
-
-        return Response({"joburl": reverse('report-job-detail',
-                                           args=[report_slug, widget_id, wjob.id])})
+            from IPython import embed; embed()
 
 
 class WidgetJobDetail(APIView):
