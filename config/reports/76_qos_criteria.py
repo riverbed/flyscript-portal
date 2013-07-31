@@ -14,10 +14,11 @@ from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 
+#### Replace the following value with the WAN interface for this report to monitor
+INTERFACE = '10.99.16.252:2'
+
 #### Load devices that are defined
 PROFILER = Device.objects.get(name="profiler")
-
-INTERFACE = '10.99.16.252:2'
 
 
 report_criteria = TableCriteria(keyword='datafilter',
@@ -46,7 +47,7 @@ table_criteria_outbound.save()
 # Define a Overall TimeSeries showing In/Out Utilization
 table = TimeSeriesTable.create('qos-overall-util', PROFILER, 
                                duration=15*60, resolution=15*60,
-                               interface=True, datafilter='interfaces_a,10.99.16.252:2')
+                               interface=True, datafilter='interfaces_a,%s' % INTERFACE)
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'in_avg_util', 'Avg Inbound Util %', datatype='bytes', units='B/s')
@@ -59,7 +60,7 @@ yui3.TimeSeriesWidget.create(report, table, "Overall Utilization", width=12)
 table = GroupByTable.create('qos-inbound-totals', PROFILER, groupby='qos', 
                             duration=15*60, resolution=15*60,
                             interface=True,
-                            filterexpr='inbound interface 10.99.16.252:2')
+                            filterexpr='inbound interface %s' % INTERFACE)
 table.criteria.add(table_criteria_inbound)
 
 Column.create(table, 'qos', 'QoS', iskey=True)
@@ -71,10 +72,10 @@ Column.create(table, 'peak_util', 'Peak Util', datatype='metric')
 
 yui3.TableWidget.create(report, table, "Inbound Traffic by QoS", width=6)
 
-table = GroupByTable.create('qos-outbound-totals', PROFILER, groupby='qos',
+table = GroupByTable.create('qos-outbound-totals', PROFILER, groupby='qos', 
                             duration=15*60, resolution=15*60,
                             interface=True,
-                            filterexpr='outbound interface 10.99.16.252:2')
+                            filterexpr='outbound interface %s' % INTERFACE)
 table.criteria.add(table_criteria_outbound)
 
 Column.create(table, 'qos', 'QoS', iskey=True)
@@ -92,9 +93,9 @@ yui3.TableWidget.create(report, table, "Outbound Traffic by QoS", width=6)
 QOS = 'EF'
 table = TimeSeriesTable.create('qos-inbound-%s' % QOS.lower(), PROFILER, 
                                duration=15*60, resolution=15*60,
-                               interface=True, 
-                               datafilter='interfaces_a,10.99.16.252:2',
-                               filterexpr='inbound interface 10.99.16.252:2 and qos %s' % QOS)
+                               interface=True,
+                               datafilter='interfaces_a,%s' % INTERFACE,
+                               filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
 
 table_criteria_inbound_qos = TableCriteria(keyword='filterexpr', 
                                            template='inbound interface {} and qos %s' % QOS,
@@ -112,9 +113,9 @@ yui3.TimeSeriesWidget.create(report, table, "%s: Average Inbound Bandwidth" % QO
 QOS = 'EF'
 table = TimeSeriesTable.create('qos-outbound-%s' % QOS.lower(), PROFILER, 
                                duration=15*60, resolution=15*60,
-                               interface=True, 
-                               datafilter='interfaces_a,10.99.16.252:2',
-                               filterexpr='outbound interface 10.99.16.252:2 and qos %s' % QOS)
+                               interface=True,
+                               datafilter='interfaces_a,%s' % INTERFACE,
+                               filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
 
 table_criteria_outbound_qos = TableCriteria(keyword='filterexpr', 
                                             template='outbound interface {} and qos %s' % QOS,
