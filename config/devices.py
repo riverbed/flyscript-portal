@@ -9,7 +9,7 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Device 
+from apps.devices.models import Device
 
 #### Customize devices and authorization here
 

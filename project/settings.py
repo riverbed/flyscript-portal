@@ -167,6 +167,7 @@ INSTALLED_APPS = (
 
     # portal apps
     'apps.datasource',
+    'apps.devices',
     'apps.report',
     'apps.geolocation',
     'apps.console',

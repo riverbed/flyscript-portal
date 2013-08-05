@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core import management
 
 from rvbd.common.exceptions import RvbdHTTPException, RvbdException
-from apps.datasource.models import Device
+from apps.devices.models import Device
 from apps.report.models import Report
 
 from project import settings

@@ -14,22 +14,22 @@ import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Device, Table
-from apps.datasource.devicemanager import DeviceManager
+from apps.datasource.models import Table
+from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
 
-def DeviceManager_new(*args, **kwargs):
+def new_device_instance(*args, **kwargs):
     # Used by DeviceManager to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)
 
 
 class TableOptions(JsonDict):
-    _default = { 'groupby' : None,
-                 'realm' : None,
-                 'centricity' : None }
+    _default = {'groupby': None,
+                'realm': None,
+                'centricity': None}
 
 
 class TimeSeriesTable:
@@ -86,9 +86,9 @@ class TableQuery:
 
         columns = [col.name for col in table.get_columns(synthetic=False)]
 
-        sortcol=None
+        sortcol = None
         if table.sortcol is not None:
-            sortcol=table.sortcol.name
+            sortcol = table.sortcol.name
 
         criteria = self.job.criteria
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
@@ -107,15 +107,17 @@ class TableQuery:
                 replacement = v.template.format(v.value)
 
                 if hasattr(table, v.keyword):
-                    logger.debug('In table %s, replacing %s with %s' % 
-                                                (table, v.keyword, replacement))
+                    logger.debug('In table %s, replacing %s with %s' % (table,
+                                                                        v.keyword,
+                                                                        replacement))
                     setattr(table, v.keyword, replacement)
                 elif hasattr(table.options, v.keyword):
-                    logger.debug('In table %s options, replacing %s with %s' % 
-                                                (table, v.keyword, replacement))
+                    logger.debug('In table %s options, replacing %s with %s' % (table,
+                                                                                v.keyword,
+                                                                                replacement))
                     setattr(table.options, v.keyword, replacement)
                 else:
-                    msg ='WARNING: keyword %s not found in table %s or its options' 
+                    msg = 'WARNING: keyword %s not found in table %s or its options'
                     logger.debug(msg % (v.keyword, table))
 
         with lock:
@@ -124,7 +126,7 @@ class TableQuery:
                        centricity=options.centricity,
                        columns=columns,
                        timefilter=tf, 
-                       trafficexpr = TrafficFilter(self.job.combine_filterexprs()),
+                       trafficexpr=TrafficFilter(self.job.combine_filterexprs()),
                        data_filter=datafilter,
                        resolution="%dmin" % (int(table.resolution / 60)),
                        sort_col=sortcol,
@@ -149,6 +151,5 @@ class TableQuery:
         if table.rows > 0:
             self.data = self.data[:table.rows]
 
-        logger.info ("Report %s returned %s rows" % (self.job, len(self.data)))
+        logger.info("Report %s returned %s rows" % (self.job, len(self.data)))
         return True
-

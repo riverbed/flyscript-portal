@@ -5,24 +5,16 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-from django.http import HttpResponseRedirect
-from django.forms.models import modelformset_factory
-from django.core.urlresolvers import reverse
+import logging
 
 from rest_framework import generics
-from rest_framework.renderers import JSONRenderer, TemplateHTMLRenderer
-from rest_framework.response import Response
 
-from apps.datasource.serializers import (DeviceSerializer, TableSerializer,
-                                         ColumnSerializer, JobSerializer,
+from apps.datasource.serializers import (TableSerializer,
+                                         ColumnSerializer,
+                                         JobSerializer,
                                          JobListSerializer)
-from apps.datasource.models import Device, Table, Column, Job
-from apps.datasource.forms import DeviceDetailForm
-from apps.datasource.devicemanager import DeviceManager
+from apps.datasource.models import Table, Column, Job
 
-
-import logging
-from apps.preferences.models import UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -54,46 +46,4 @@ class JobDetail(generics.RetrieveAPIView):
     serializer_class = JobSerializer
 
 
-class DeviceList(generics.ListAPIView):
-    model = Device
-    serializer_class = DeviceSerializer
-    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
-    def get(self, request, *args, **kwargs):
-        queryset = Device.objects.all()
-        if request.accepted_renderer.format == 'html':
-            DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
-            formset = DeviceFormSet()
-            data = {'formset': formset}
-            return Response(data, template_name='configure.html')
-
-        serializer = DeviceSerializer(instance=queryset)
-        data = serializer.data
-        return Response(data)
-
-    def put(self, request, *args, **kwargs):
-        DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
-        formset = DeviceFormSet(request.DATA)
-
-        if formset.is_valid():
-            formset.save()
-            DeviceManager.clear()
-            profile = UserProfile.objects.get(user=request.user)
-            if not profile.profile_seen:
-                # only redirect if first login
-                return HttpResponseRedirect(reverse('preferences') + '?next=/report')
-            elif '/devices' not in request.META['HTTP_REFERER']:
-                return HttpResponseRedirect(request.META['HTTP_REFERER'])
-            else:
-                return HttpResponseRedirect(reverse('report-view-root'))
-
-        else:
-            data = {'formset': formset}
-            return Response(data, template_name='configure.html')
-
-
-
-class DeviceDetail(generics.RetrieveUpdateDestroyAPIView):
-    model = Device
-    serializer_class = DeviceSerializer
-    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)

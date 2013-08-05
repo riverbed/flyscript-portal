@@ -18,7 +18,8 @@ from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
-from apps.datasource.models import Job, Criteria, Device, TableCriteria
+from apps.datasource.models import Job, Criteria, TableCriteria
+from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import ReportDetailForm, WidgetDetailForm, ReportCriteriaForm
 from apps.report.forms import create_report_criteria_form

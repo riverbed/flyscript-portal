@@ -10,9 +10,12 @@ import logging
 import threading
 
 from rvbd.common import UserAuth
+from apps.devices.models import Device
+
 logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
+
 
 class DeviceManager:
     # map of active devices by datasource_id
@@ -26,18 +29,13 @@ class DeviceManager:
             cls.devices = {}
 
     @classmethod
-    def register(cls, dev_class):
-        cls.device_class[dev_class.__name__] = dev_class
-        
-    @classmethod
     def get_device(cls, device_id):
-        from apps.datasource.models import Device
         ds = Device.objects.get(id=device_id)
 
         with lock:
             if ds.id not in cls.devices:
                 import apps.datasource.modules
-                create_func = apps.datasource.modules.__dict__[ds.module].DeviceManager_new
+                create_func = apps.datasource.modules.__dict__[ds.module].new_device_instance
 
                 logger.debug("Creating new Device: %s(%s:%s)" % (ds.module, ds.host, ds.port))
                 cls.devices[ds.id] = create_func(host=ds.host, port=ds.port,

@@ -15,41 +15,21 @@ import time
 import hashlib
 import importlib
 import tokenize
-import pandas
-
 from StringIO import StringIO
 
+import pandas
 from django.db import models
 from django.db.models import Max
-
 from rvbd.common.utils import DictObject
 
+from apps.devices.models import Device
 from libs.fields import PickledObjectField
 from project import settings
+
 
 logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
-
-
-class Device(models.Model):
-    """ Records for devices referenced in report configuration pages.
-
-        Actual instantiations of Device objects handled through DeviceManager
-        class in devicemanager.py module.
-    """
-    name = models.CharField(max_length=200)
-    module = models.CharField(max_length=200)
-    host = models.CharField(max_length=200)
-    port = models.IntegerField()
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)
-
-    # only enabled devices will require field validation
-    enabled = models.BooleanField(default=True)
-
-    def __unicode__(self):
-        return '%s (%s:%s)' % (self.name, self.host, self.port)
 
 
 class TableCriteria(models.Model):

@@ -9,7 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Device, Column
+from apps.datasource.models import Column
+from apps.devices.models import Device
 from apps.datasource.modules.profiler import TimeSeriesTable, GroupByTable
 from apps.report.models import Report, Table
 import apps.report.modules.google_maps as google_maps

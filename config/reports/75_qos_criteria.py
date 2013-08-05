@@ -9,7 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Device, Column, TableCriteria
+from apps.datasource.models import Column, TableCriteria
+from apps.devices.models import Device
 from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable

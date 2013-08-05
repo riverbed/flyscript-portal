@@ -19,26 +19,30 @@ from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Column, Device, Table
-from apps.datasource.devicemanager import DeviceManager
+from apps.datasource.models import Column, Table
+from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
-def DeviceManager_new(*args, **kwargs):
+
+def new_device_instance(*args, **kwargs):
     # Used by DeviceManger to create a Shark instance
     shark = Shark(*args, **kwargs)
     return shark
 
+
 class TableOptions(JsonDict):
-    _default = { 'view': None,
-                 'view_size': '10%',
-                 'aggregated': False }
+    _default = {'view': None,
+                'view_size': '10%',
+                'aggregated': False}
+
 
 class ColumnOptions(JsonDict):
-    _default = { 'extractor': None,
-                 'operation': None,
-                 'default_value': None }
+    _default = {'extractor': None,
+                'operation': None,
+                'default_value': None}
+
 
 class SharkTable:
     @classmethod
@@ -54,8 +58,9 @@ class SharkTable:
         t.save()
         return t
 
-def create_shark_column(table, name, label=None, datatype='', units='', iskey=False, issortcol=False,
-                        extractor=None, operation=None, default_value=None):
+
+def create_shark_column(table, name, label=None, datatype='', units='', iskey=False,
+                        issortcol=False, extractor=None, operation=None, default_value=None):
     options = ColumnOptions(extractor=extractor,
                             operation=operation,
                             default_value=default_value)
@@ -150,13 +155,13 @@ class TableQuery:
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
         filters.append(tf)
 
-        logger.info("Setting shark table %d timeframe to %s" %(table.id,  str(tf)))
+        logger.info("Setting shark table %d timeframe to %s" % (table.id, str(tf)))
 
         # Get source type from options
         try:
             with lock:
                 source = path_to_class(shark, options.view)
-                setup_capture_job(shark, options.view.split('/',1)[1], options.view_size)
+                setup_capture_job(shark, options.view.split('/', 1)[1], options.view_size)
         except RvbdHTTPException, e:
             source = None
             raise e
@@ -203,7 +208,7 @@ class TableQuery:
         if self.timeseries:
             # use sample times for each row
             for d in self.data:
-                out.extend([d['t']]+x for x in d['vals'])
+                out.extend([d['t']] + x for x in d['vals'])
 
             # upsample results to have uniform time intervals
             if out:
@@ -214,4 +219,3 @@ class TableQuery:
             for d in self.data:
                 out.extend(x for x in d['vals'])
         self.data = out
-

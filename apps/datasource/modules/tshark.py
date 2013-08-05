@@ -5,24 +5,18 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import time, datetime
 import logging
 import threading
 import subprocess
 import shlex
-import binascii
 import re
-import string
-import datetime
-import pandas
-import numpy
 import os
 
-from rvbd.common.exceptions import RvbdHTTPException
+import pandas
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Column, Device, Table
-from apps.datasource.devicemanager import DeviceManager
+from apps.datasource.models import Table
+
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()

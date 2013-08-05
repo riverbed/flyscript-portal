@@ -5,22 +5,16 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
-import json
 import operator
+import logging
 
-from django.http import HttpResponse, Http404
+from django.http import Http404
 from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.views.generic.base import View
 
-from apps.report.models import Report
-from apps.datasource.models import Device
-from apps.datasource.devicemanager import DeviceManager
-
+from apps.devices.devicemanager import DeviceManager
 from apps.help.forms import ProfilerInputForm, SharkInputForm
-
-import logging
 logger = logging.getLogger(__name__)
 
 

@@ -7,7 +7,7 @@
 
 from django import forms
 
-from apps.datasource.models import Device
+from apps.devices.models import Device
 
 
 class DeviceDetailForm(forms.ModelForm):

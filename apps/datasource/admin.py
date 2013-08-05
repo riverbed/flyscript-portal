@@ -6,15 +6,9 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from apps.datasource.models import Device, Table, Column, Job
-
 from django.contrib import admin
 
-
-class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'module', 'host', 'port')
-
-admin.site.register(Device, DeviceAdmin)
+from apps.datasource.models import Table, Column, Job
 
 
 class TableAdmin(admin.ModelAdmin):

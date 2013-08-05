@@ -8,18 +8,17 @@
 
 
 import os
-import sys
-import logging
 import optparse
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core import management
 from django.db.models import get_app, get_models
-from apps.datasource.models import Table, Column, Job, Device
 
 from project import settings
 from apps.report.models import Report, Widget, WidgetJob
-from apps.datasource.devicemanager import DeviceManager
+from apps.devices.devicemanager import DeviceManager
+from apps.datasource.models import Table, Column, Job
+from apps.devices.models import Device
 
 
 class Command(BaseCommand):
