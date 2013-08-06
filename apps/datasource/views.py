@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class TableList(generics.ListCreateAPIView):
     model = Table
     serializer_class = TableSerializer
+    paginate_by = 50
     
 class TableDetail(generics.RetrieveUpdateDestroyAPIView):
     model = Table
@@ -29,7 +30,8 @@ class TableDetail(generics.RetrieveUpdateDestroyAPIView):
 class ColumnList(generics.ListCreateAPIView):
     model = Column
     serializer_class = ColumnSerializer
-        
+    paginate_by = 50
+
 class ColumnDetail(generics.RetrieveUpdateDestroyAPIView):
     model = Column
     serializer_class = ColumnSerializer
@@ -37,6 +39,7 @@ class ColumnDetail(generics.RetrieveUpdateDestroyAPIView):
 class JobList(generics.ListCreateAPIView):
     model = Job
     serializer_class = JobListSerializer
+    paginate_by = 10
 
     def post_save(self, obj, created=False):
         obj.start()
