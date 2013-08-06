@@ -8,26 +8,21 @@
 from django import forms
 
 from apps.devices.models import Device
+from apps.devices.devicemanager import DeviceManager
 
 
-class DeviceDetailForm(forms.ModelForm):
+class DeviceForm(forms.ModelForm):
     class Meta:
         model = Device
 
     def __init__(self, *args, **kwargs):
-        # for existing model instances, change name and module fields
-        # to read-only, to avoid user from editing those values easily
-        super(DeviceDetailForm, self).__init__(*args, **kwargs)
+        super(DeviceForm, self).__init__(*args, **kwargs)
 
-        instance = getattr(self, 'instance', None)
-        if instance and instance.pk:
-            self.fields['name'].widget.attrs['readonly'] = True
-            self.fields['module'].widget.attrs['readonly'] = True
-            self.fields['password'].widget.input_type = 'password'
+        self.fields['password'].widget.input_type = 'password'
 
     def clean(self):
         # field validation only really matters if the device was enabled
-        cleaned_data = super(DeviceDetailForm, self).clean()
+        cleaned_data = super(DeviceForm, self).clean()
         enabled = cleaned_data.get('enabled')
 
         if enabled:
@@ -48,3 +43,28 @@ class DeviceDetailForm(forms.ModelForm):
 
         return cleaned_data
 
+
+class DeviceListForm(DeviceForm):
+    """ Used for displaying existing Devices in a list view
+    """
+    # for existing model instances, change name and module fields
+    # to read-only, to avoid user from editing those values easily
+    def __init__(self, *args, **kwargs):
+        super(DeviceListForm, self).__init__(*args, **kwargs)
+
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            self.fields['name'].widget.attrs['readonly'] = True
+            self.fields['module'].widget.attrs['readonly'] = True
+
+
+class DeviceDetailForm(DeviceForm):
+    """ Used for creating new Devices, or editing existing ones
+    """
+    def __init__(self, *args, **kwargs):
+        super(DeviceDetailForm, self).__init__(*args, **kwargs)
+
+        modules = DeviceManager.list_modules()
+        choices = zip(modules, modules)
+
+        self.fields['module'] = forms.ChoiceField(choices=choices)

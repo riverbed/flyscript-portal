@@ -43,3 +43,13 @@ class DeviceManager:
                                                                ds.password))
         return cls.devices[ds.id]
 
+    @classmethod
+    def list_modules(cls):
+        """ Returns list of modules which have 'new_device_instance' function defined
+        """
+        modules = []
+        import apps.datasource.modules
+        for k, v in apps.datasource.modules.__dict__.iteritems():
+            if hasattr(v, 'new_device_instance'):
+                modules.append(k)
+        return modules

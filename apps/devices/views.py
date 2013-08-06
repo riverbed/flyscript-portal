@@ -7,22 +7,65 @@
 
 from django.core.urlresolvers import reverse
 from django.forms.models import modelformset_factory
-from django.http import HttpResponseRedirect
-from rest_framework import generics
+from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import get_object_or_404
+
+from rest_framework import generics, views
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from rest_framework.response import Response
 
 from apps.devices.devicemanager import DeviceManager
-from apps.devices.forms import DeviceDetailForm
+from apps.devices.forms import DeviceListForm, DeviceDetailForm
 from apps.devices.models import Device
 from apps.devices.serializers import DeviceSerializer
 from apps.preferences.models import UserProfile
 
 
-class DeviceDetail(generics.RetrieveUpdateDestroyAPIView):
+import logging
+logger = logging.getLogger(__name__)
+
+
+class DeviceDetail(views.APIView):
+    """ Display and update user preferences
+    """
     model = Device
     serializer_class = DeviceSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
+
+    def get(self, request, device_id=None):
+        if device_id:
+            device = get_object_or_404(Device, pk=device_id)
+            form = DeviceDetailForm(instance=device)
+        else:
+            form = DeviceDetailForm()
+
+        return Response({'form': form}, template_name='device_detail.html')
+
+    def post(self, request, device_id=None):
+        if device_id:
+            device = get_object_or_404(Device, pk=device_id)
+            form = DeviceDetailForm(request.DATA, instance=device)
+        else:
+            form = DeviceDetailForm(request.DATA)
+
+        if form.is_valid():
+            form.save()
+            return HttpResponseRedirect(reverse('device-list'))
+        else:
+            return Response({'form': form}, template_name='device_detail.html')
+
+    def delete(self, request, device_id):
+        device = get_object_or_404(Device, pk=device_id)
+        device.delete()
+        return HttpResponseRedirect(reverse('device-list'))
+
+
+class DeviceDelete(views.APIView):
+    # XXX remove this once we can RESTify the delete method
+    def get(self, request, device_id):
+        device = get_object_or_404(Device, pk=device_id)
+        device.delete()
+        return HttpResponseRedirect(reverse('device-list'))
 
 
 class DeviceList(generics.ListAPIView):
@@ -33,17 +76,17 @@ class DeviceList(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = Device.objects.all()
         if request.accepted_renderer.format == 'html':
-            DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
+            DeviceFormSet = modelformset_factory(Device, form=DeviceListForm, extra=0)
             formset = DeviceFormSet()
             data = {'formset': formset}
-            return Response(data, template_name='configure.html')
+            return Response(data, template_name='device_list.html')
 
         serializer = DeviceSerializer(instance=queryset)
         data = serializer.data
         return Response(data)
 
     def put(self, request, *args, **kwargs):
-        DeviceFormSet = modelformset_factory(Device, form=DeviceDetailForm, extra=0)
+        DeviceFormSet = modelformset_factory(Device, form=DeviceListForm, extra=0)
         formset = DeviceFormSet(request.DATA)
 
         if formset.is_valid():
@@ -60,4 +103,4 @@ class DeviceList(generics.ListAPIView):
 
         else:
             data = {'formset': formset}
-            return Response(data, template_name='configure.html')
+            return Response(data, template_name='device_list.html')

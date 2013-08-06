@@ -1,0 +1,27 @@
+                <div class="span6">
+                    <fieldset>
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+                        {% for field in form.visible_fields %}
+                            <div class="control-group">
+                                <div class="control-label">
+                                    {{ field.label_tag }}
+                                </div>
+                                <div class="controls">
+                                    {{ field }}
+                                    {% if field.errors %}
+                                        {% for err in field.errors %}
+                                            <p class="text-error">{{ err }}</p>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        {% if form.instance.pk %}
+                            <div style="text-align: center">
+                                <a id="{{ form.instance.pk }}" class="btn btn-small btn-danger delete">Delete?</a>
+                            </div>
+                        {% endif %}
+                    </fieldset>
+                </div>
