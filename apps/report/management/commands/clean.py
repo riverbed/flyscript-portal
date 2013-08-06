@@ -18,7 +18,6 @@ from project import settings
 from apps.report.models import Report, Widget, WidgetJob
 from apps.devices.devicemanager import DeviceManager
 from apps.datasource.models import Table, Column, Job
-from apps.devices.models import Device
 
 
 class Command(BaseCommand):
@@ -44,7 +43,6 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-
         # clear cache files
         for f in os.listdir(settings.DATA_CACHE):
             if f != '.gitignore':
@@ -56,14 +54,13 @@ class Command(BaseCommand):
         # rotate the logs once
         management.call_command('rotate_logs')
 
-        # reset database
+        # reset database, keeping devices
         if options['applications']:
             apps = ['report', 'geolocation', 'datasource', 'console']
             for app in apps:
                 for model in get_models(get_app(app)):
-                    if model != Device:
-                        print 'Deleting objects from %s' % model
-                        model.objects.all().delete()
+                    print 'Deleting objects from %s' % model
+                    model.objects.all().delete()
         elif options['report_id']:
             # remove Report and its Widgets, Jobs, WidgetJobs, Tables and Columns
             rid = options['report_id']
