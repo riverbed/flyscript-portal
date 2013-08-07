@@ -117,7 +117,7 @@ class ReportView(APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = create_report_criteria_form(request.POST, report=report)
+        form = create_report_criteria_form(request.POST, request.FILES, report=report)
         if form.is_valid():
 
             formdata = form.cleaned_data
@@ -129,10 +129,6 @@ class ReportView(APIView):
             logger.debug("Report %s validated form: %s" %
                          (report_slug, formdata))
 
-            # File upload debug
-#            if request.FILES:
-#                for n, f in request.FILES.iteritems():
-#                    logger.debug("f %s: %s (%s)" % (str(f), f.name, f.size))
 
             # parse time and localize to user profile timezone
             profile = request.user.userprofile

@@ -5,6 +5,9 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+import shutil
+import tempfile
+
 from django import forms
 from django.forms import widgets
 from django.utils.datastructures import SortedDict
@@ -122,7 +125,10 @@ class ReportCriteriaForm(forms.Form):
             logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
             for field in extra:
                 field_id = 'criteria_%s' % field.id
-                eval_field = '%s(label="%s")' % (field.field_type, field.label) 
+                if jsonform and 'FileField' in field.field_type:
+                    field.field_type = 'forms.CharField'
+
+                eval_field = '%s(label="%s")' % (field.field_type, field.label)
                 self.fields[field_id] = eval(eval_field)
                 self.initial[field_id] = field.initial
 
@@ -137,6 +143,17 @@ class ReportCriteriaForm(forms.Form):
         for k, v in self.cleaned_data.iteritems():
             if k == 'endtime':
                 result[k] = datetime_to_seconds(v)
+            elif hasattr(v, 'temporary_file_path'):
+                # look for uploaded files, save them off to another
+                # temporary file and return the path for use in JSON
+                # consumers of this file will need to clean them up
+                # TODO this will be replaced by the File Storage App
+                newtemp = tempfile.NamedTemporaryFile(delete=False)
+                v.seek(0)
+                shutil.copyfileobj(v, newtemp)
+                v.close()
+                newtemp.close()
+                result[k] = newtemp.name
             elif k != 'debug':
                 result[k] = v
         return result

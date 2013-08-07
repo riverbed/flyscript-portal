@@ -26,7 +26,7 @@ class TableOptions(JsonDict):
     
 class ColumnOptions(JsonDict):
     _default = {'field': None,
-                'fieldtype': 'string', # float, int, time
+                'fieldtype': 'string',  # float, int, time
                 'operation': 'sum'}
     _required = ['field']
 
@@ -60,16 +60,31 @@ class TableQuery:
     def run(self):
         table = self.table
         columns = table.get_columns(synthetic=False)
-        options = table.options
 
         trafficexpr = self.job.combine_filterexprs()
-        pcapfile = options.pcapfile
-        if pcapfile is None:
-            if trafficexpr:
-                m = re.match("pcap ([^ ]+) *(.*)$", trafficexpr)
-                if m:
-                    pcapfile = m.group(1)
-                    trafficexpr = m.group(2)
+
+        # process Report/Table Criteria
+        #from IPython import embed; embed()
+        for k, v in self.job.criteria.iteritems():
+            if k.startswith('criteria_') and (table in v.table_set.all() or
+                                              v.is_report_criteria(table)):
+                replacement = v.template.format(v.value)
+
+                if hasattr(table, v.keyword):
+                    logger.debug('In table %s, replacing %s with %s' % (table,
+                                                                        v.keyword,
+                                                                        replacement))
+                    setattr(table, v.keyword, replacement)
+                elif hasattr(table.options, v.keyword):
+                    logger.debug('In table %s options, replacing %s with %s' % (table,
+                                                                                v.keyword,
+                                                                                replacement))
+                    setattr(table.options, v.keyword, replacement)
+                else:
+                    msg = 'WARNING: keyword %s not found in table %s or its options'
+                    logger.debug(msg % (v.keyword, table))
+
+        pcapfile = table.options.pcapfile
 
         if not pcapfile:
             raise ValueError("No pcap file specified")
@@ -79,8 +94,8 @@ class TableQuery:
         command = "tshark -r %s -T fields -E occurrence=f -E separator=," % pcapfile
 
         keys = []
-        basecolnames = [] # list of colummns
-        fields = {} # dict by field name of the base (or first) column to use this field
+        basecolnames = []  # list of colummns
+        fields = {}  # dict by field name of the base (or first) column to use this field
         ops = {}
         groupbytime = None
         for tc in columns:
@@ -117,7 +132,6 @@ class TableQuery:
                 continue
             data.append(cols)
 
-    
         df = pandas.DataFrame(data, columns=basecolnames)
         # At this point we have a dataframe with the one column for each
         # unique field (the first column to reference the field)

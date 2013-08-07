@@ -68,10 +68,25 @@ class TableCriteria(models.Model):
     # instance placeholder for form return values, not for database storage
     value = PickledObjectField(null=True, blank=True)
 
+    def __unicode__(self):
+        return "<TableCriteria %s (id=%s)>" % (self.keyword, str(self.id))
+
     def save(self, *args, **kwargs):
         #if not self.field_type:
         #    self.field_type = 'forms.CharField'
         super(TableCriteria, self).save(*args, **kwargs)
+
+    def is_report_criteria(self, table):
+        """ Runs through intersections of widgets to determine if this criteria
+            is applicable to the passed table
+
+            report <--> widgets <--> table
+                |
+                L- TableCriteria
+        """
+        wset = set(table.widget_set.all())
+        rset = set(self.report_set.all())
+        return any(wset.intersection(set(rwset.widget_set.all())) for rwset in rset)
 
     @classmethod
     def get_instance(cls, key, value):
