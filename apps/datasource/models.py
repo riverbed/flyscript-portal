@@ -60,7 +60,7 @@ class TableCriteria(models.Model):
     label = models.CharField(max_length=100)
     initial = models.CharField(max_length=100, blank=True, null=True)
 
-    # XXX store as object instead?
+    # TODO identify means to pass kwargs to this init
     field_type = models.CharField(max_length=100, default='forms.CharField')
 
     parent = models.ForeignKey("self", blank=True, null=True, related_name="children")
@@ -80,9 +80,9 @@ class TableCriteria(models.Model):
         """ Runs through intersections of widgets to determine if this criteria
             is applicable to the passed table
 
-            report <--> widgets <--> table
+            report  <-->  widgets  <-->  table
                 |
-                L- TableCriteria
+                L- TableCriteria (self)
         """
         wset = set(table.widget_set.all())
         rset = set(self.report_set.all())
@@ -152,6 +152,30 @@ class Table(models.Model):
         else:
             return Column.objects.filter(table=self,
                                          synthetic=False).order_by('position')
+
+    def apply_table_criteria(self, criteria):
+        """ Merge updates from dict of passed criteria values
+
+            Changes are only applied to instance, not saved to database
+        """
+        for k, v in criteria.iteritems():
+            if k.startswith('criteria_') and (self in v.table_set.all() or
+                                              v.is_report_criteria(self)):
+                replacement = v.template.format(v.value)
+
+                if hasattr(self, v.keyword):
+                    logger.debug('In table %s, replacing %s with %s' % (self,
+                                                                        v.keyword,
+                                                                        replacement))
+                    setattr(self, v.keyword, replacement)
+                elif hasattr(self.options, v.keyword):
+                    logger.debug('In table %s options, replacing %s with %s' % (self,
+                                                                                v.keyword,
+                                                                                replacement))
+                    setattr(self.options, v.keyword, replacement)
+                else:
+                    msg = 'WARNING: keyword %s not found in table %s or its options'
+                    logger.debug(msg % (v.keyword, self))
 
     def compute_synthetic(self, indata):
         """ Compute the synthetic columns from INDATA, a two-dimensional array

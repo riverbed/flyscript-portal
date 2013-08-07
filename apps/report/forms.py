@@ -116,25 +116,15 @@ class ReportCriteriaForm(forms.Form):
                        timestamp)
         """
         extra = kwargs.pop('extra')
-        jsonform = False
-        if 'jsonform' in kwargs:
-            jsonform = kwargs.pop('jsonform')
         super(ReportCriteriaForm, self).__init__(*args, **kwargs)
 
         if extra:
             logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
             for field in extra:
                 field_id = 'criteria_%s' % field.id
-                if jsonform and 'FileField' in field.field_type:
-                    field.field_type = 'forms.CharField'
-
                 eval_field = '%s(label="%s")' % (field.field_type, field.label)
                 self.fields[field_id] = eval(eval_field)
                 self.initial[field_id] = field.initial
-
-        if jsonform:
-            # toggle endtime formfield to handle timestamps via IntegerField
-            self.fields['endtime'] = forms.IntegerField()
 
     def criteria(self):
         """ Return certain field values as a dict for simple json parsing
@@ -159,6 +149,25 @@ class ReportCriteriaForm(forms.Form):
         return result
 
 
+class ReportCriteriaJSONForm(ReportCriteriaForm):
+    """ Subclass to handle validation of JSON submission of equivalent form
+
+        Since some fields will be returned via JSON in a different manner
+        than the initial form submission, this class modifies the field types
+    """
+    def __init__(self, *args, **kwargs):
+        super(ReportCriteriaJSONForm, self).__init__(*args, **kwargs)
+        
+        for k, v in self.fields.iteritems():
+            if isinstance(v, forms.FileField):
+                # FileFields instead have a pathname to the stored tempfile
+                new_field = forms.CharField(label=v.label, initial=v.initial)
+                self.fields[k] = new_field
+
+        # toggle endtime formfield to handle timestamps via IntegerField
+        self.fields['endtime'] = forms.IntegerField()
+
+
 def create_report_criteria_form(*args, **kwargs):
     """ Factory function to create dynamic Report forms
 
@@ -174,6 +183,7 @@ def create_report_criteria_form(*args, **kwargs):
         to all children criteria during processing.
     """
     report = kwargs.pop('report')
+    jsonform = kwargs.pop('jsonform', False)
 
     # use SortedDict to limit to unique criteria objects only
     extra = SortedDict()
@@ -187,5 +197,7 @@ def create_report_criteria_form(*args, **kwargs):
                     extra[tc.id] = tc
 
     kwargs['extra'] = extra.values()
-    return ReportCriteriaForm(*args, **kwargs)
-
+    if jsonform:
+        return ReportCriteriaJSONForm(*args, **kwargs)
+    else:
+        return ReportCriteriaForm(*args, **kwargs)

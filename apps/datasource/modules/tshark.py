@@ -48,7 +48,7 @@ def toint(x):
         return 0
 
 def totimeint(s):
-    (a,b) = s.split(".")
+    (a, b) = s.split(".")
     return int(a) * 1000000000 + int(b)
 
 class TableQuery:
@@ -65,24 +65,7 @@ class TableQuery:
 
         # process Report/Table Criteria
         #from IPython import embed; embed()
-        for k, v in self.job.criteria.iteritems():
-            if k.startswith('criteria_') and (table in v.table_set.all() or
-                                              v.is_report_criteria(table)):
-                replacement = v.template.format(v.value)
-
-                if hasattr(table, v.keyword):
-                    logger.debug('In table %s, replacing %s with %s' % (table,
-                                                                        v.keyword,
-                                                                        replacement))
-                    setattr(table, v.keyword, replacement)
-                elif hasattr(table.options, v.keyword):
-                    logger.debug('In table %s options, replacing %s with %s' % (table,
-                                                                                v.keyword,
-                                                                                replacement))
-                    setattr(table.options, v.keyword, replacement)
-                else:
-                    msg = 'WARNING: keyword %s not found in table %s or its options'
-                    logger.debug(msg % (v.keyword, table))
+        table.apply_table_criteria(self.job.criteria)
 
         pcapfile = table.options.pcapfile
 
@@ -118,7 +101,9 @@ class TableQuery:
         if trafficexpr:
             command = command + (" -R '%s'" % trafficexpr)
 
-        print "command: %s" % command
+        msg = "tshark command: %s" % command
+        print msg
+        logging.debug(msg)
         proc = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
 
         data = []

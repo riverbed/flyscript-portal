@@ -77,58 +77,40 @@ class TableQuery:
     def run(self):
         #self.fake_run()
         #return
-    
-        table = self.table
-        options = table.options
 
-        profiler = DeviceManager.get_device(table.device.id)
+        profiler = DeviceManager.get_device(self.table.device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
 
-        columns = [col.name for col in table.get_columns(synthetic=False)]
+        columns = [col.name for col in self.table.get_columns(synthetic=False)]
 
         sortcol = None
-        if table.sortcol is not None:
-            sortcol = table.sortcol.name
+        if self.table.sortcol is not None:
+            sortcol = self.table.sortcol.name
 
         criteria = self.job.criteria
         tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
 
-        logger.info("Running Profiler table %d report for timeframe %s" % (table.id,
+        logger.info("Running Profiler table %d report for timeframe %s" % (self.table.id,
                                                                            str(tf)))
-        if table.datafilter:
-            datafilter = table.datafilter.split(',')
+
+        # process Report/Table Criteria
+        self.table.apply_table_criteria(criteria)
+
+        if self.table.datafilter:
+            datafilter = self.table.datafilter.split(',')
         else:
             datafilter = None
-            
-        # process Report/Table Criteria
-        for k, v in criteria.iteritems():
-            if k.startswith('criteria_') and table in v.table_set.all():
-                replacement = v.template.format(v.value)
-
-                if hasattr(table, v.keyword):
-                    logger.debug('In table %s, replacing %s with %s' % (table,
-                                                                        v.keyword,
-                                                                        replacement))
-                    setattr(table, v.keyword, replacement)
-                elif hasattr(table.options, v.keyword):
-                    logger.debug('In table %s options, replacing %s with %s' % (table,
-                                                                                v.keyword,
-                                                                                replacement))
-                    setattr(table.options, v.keyword, replacement)
-                else:
-                    msg = 'WARNING: keyword %s not found in table %s or its options'
-                    logger.debug(msg % (v.keyword, table))
 
         with lock:
-            report.run(realm=options.realm,
-                       groupby=profiler.groupbys[options.groupby],
-                       centricity=options.centricity,
+            report.run(realm=self.table.options.realm,
+                       groupby=profiler.groupbys[self.table.options.groupby],
+                       centricity=self.table.options.centricity,
                        columns=columns,
                        timefilter=tf, 
                        trafficexpr=TrafficFilter(self.job.combine_filterexprs()),
                        data_filter=datafilter,
-                       resolution="%dmin" % (int(table.resolution / 60)),
+                       resolution="%dmin" % (int(self.table.resolution / 60)),
                        sort_col=sortcol,
                        sync=False
                        )
@@ -148,8 +130,8 @@ class TableQuery:
         with lock:
             self.data = report.get_data()
 
-        if table.rows > 0:
-            self.data = self.data[:table.rows]
+        if self.table.rows > 0:
+            self.data = self.data[:self.table.rows]
 
         logger.info("Report %s returned %s rows" % (self.job, len(self.data)))
         return True
