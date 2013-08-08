@@ -91,7 +91,7 @@ class Command(BaseCommand):
                     wjob.delete()
                 widget.delete()
 
-            report = Report.objects.filter(id=rid)
+            report = Report.objects.get(id=rid)
             for criteria in report.criteria.all():
                 if len(criteria.report_set.all()) == 1:
                     criteria.delete()
