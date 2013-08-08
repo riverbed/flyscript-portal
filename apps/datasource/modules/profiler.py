@@ -38,10 +38,12 @@ class TimeSeriesTable:
                interface=False, **kwargs):
         logger.debug('Creating Profiler TimeSeries table %s (%d)' % (name, duration))
 
+        options = TableOptions(groupby='time',
+                               realm='traffic_overall_time_series',
+                               centricity='int' if interface else 'hos'),
+
         t = Table(name=name, module=__name__, device=device, duration=duration,
-                  options=TableOptions(groupby='time',
-                                       realm='traffic_overall_time_series',
-                                       centricity='int' if interface else 'hos'),
+                  options=options,
                   **kwargs)
         t.save()
         return t
@@ -54,11 +56,13 @@ class GroupByTable:
         msg = 'Creating Profiler GroupBy table %s (%s, %d, %s)'
         logger.debug(msg % (name, groupby, duration, filterexpr))
 
+        options = TableOptions(groupby=groupby,
+                               realm='traffic_summary',
+                               centricity='int' if interface else 'hos'),
+
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
-                  options=TableOptions(groupby=groupby,
-                                       realm='traffic_summary',
-                                       centricity='int' if interface else 'hos'),
+                  options=options,
                   **kwargs)
         t.save()
         return t
@@ -75,6 +79,8 @@ class TableQuery:
         self.data = fake_data.make_data(self.table)
         
     def run(self):
+        """ Main execution method
+        """
         #self.fake_run()
         #return
 

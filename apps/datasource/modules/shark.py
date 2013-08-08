@@ -96,16 +96,16 @@ class TableQuery:
         self.delta = default_delta * table.resolution   # sample size interval
 
     def run(self):
-        table = self.table
-        options = table.options
+        """ Main execution method
+        """
 
-        shark = DeviceManager.get_device(table.device.id)
+        shark = DeviceManager.get_device(self.table.device.id)
 
-        logger.debug("Creating columns for Shark table %d" % table.id)
+        logger.debug("Creating columns for Shark table %d" % self.table.id)
 
         # Create Key/Value Columns
         columns = []
-        for tc in table.get_columns(synthetic=False):
+        for tc in self.table.get_columns(synthetic=False):
             tc_options = tc.options
             if tc.iskey and tc.name == 'time' and tc_options.extractor == 'sample_time':
                 # don't create column for view, we will use the sample time for timeseries
@@ -137,8 +137,8 @@ class TableQuery:
 
         # Identify Sort Column
         sortidx = None
-        if table.sortcol is not None:
-            sort_name = table.sortcol.options.extractor
+        if self.table.sortcol is not None:
+            sort_name = self.table.sortcol.options.extractor
             for i, c in enumerate(columns):
                 if c.field == sort_name:
                     sortidx = i
@@ -155,13 +155,18 @@ class TableQuery:
                         end=datetime.datetime.fromtimestamp(criteria.endtime))
         filters.append(tf)
 
-        logger.info("Setting shark table %d timeframe to %s" % (table.id, str(tf)))
+        logger.info("Setting shark table %d timeframe to %s" % (self.table.id, str(tf)))
+
+        # process Report/Table Criteria
+        self.table.apply_table_criteria(criteria)
 
         # Get source type from options
         try:
             with lock:
-                source = path_to_class(shark, options.view)
-                setup_capture_job(shark, options.view.split('/', 1)[1], options.view_size)
+                source = path_to_class(shark, self.table.options.view)
+                setup_capture_job(shark, 
+                                  self.table.options.view.split('/', 1)[1],
+                                  self.table.options.view_size)
         except RvbdHTTPException, e:
             source = None
             raise e
@@ -175,7 +180,7 @@ class TableQuery:
             return None
 
         done = False
-        logger.debug("Waiting for shark table %d to complete" % table.id)
+        logger.debug("Waiting for shark table %d to complete" % self.table.id)
         while not done:
             time.sleep(0.5)
             with lock:
@@ -186,14 +191,15 @@ class TableQuery:
 
         # Retrieve the data
         with lock:
-            if options.aggregated:
-                self.data = view.get_data(aggregated=options.aggregated, sortby=sortidx)
+            if self.table.options.aggregated:
+                self.data = view.get_data(aggregated=self.table.options.aggregated, 
+                                          sortby=sortidx)
             else:
                 self.data = view.get_data(delta=self.delta, sortby=sortidx)
             view.close()
 
-        if table.rows > 0:
-            self.data = self.data[:table.rows]
+        if self.table.rows > 0:
+            self.data = self.data[:self.table.rows]
 
         self.parse_data()
 
