@@ -59,6 +59,34 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+----------------------------------------------------------------------
+Google Maps/Google Earth APIs
+
+Use of Google Maps/Google Earth APIs (collectively, the "Maps
+Service") is subject to Google's Terms of Use as presented through the
+Maps Service.  By using the Maps Service in connection with FlyScript
+Portal, you are expressly agreeing to be bound by Google’s Terms of
+Use.  "Google" means Google Inc.  and/or one or more of its
+affiliates, as may be specified in Google's Terms of Use.  Without
+limiting the foregoing, your use of the Maps Service may also be
+subject to additional terms and conditions required by Google.  It is
+solely your responsibility to obtain all applicable licenses from
+Google for your use of the Maps Service.
+ 
+"Riverbed" means Riverbed Technology, Inc.  FlyScript Portal is
+subject to Riverbed’s privacy policy available at
+http://www.riverbed.com/legal/privacy-policy/, as may be amended by
+Riverbed from time to time ("Riverbed Privacy Policy").  If you use
+the Maps Service, the following additional terms apply to and
+supplement the Riverbed Privacy Policy:  Riverbed does not collect or
+access any personally identifiable information, usage information, or
+other information from you through your use of FlyScript Portal,
+whether or not you use the Maps Service.  If you use the Maps Service,
+Google's privacy policy (available at
+http://www.google.com/privacy.html, as may be amended by Google from
+time to time) governs Google's access to, collection and use of your
+information with respect to the Maps Service and is hereby
+incorporated into the Riverbed Privacy Policy by reference.  
 
 ----------------------------------------------------------------------
 jQuery Formset plugin
