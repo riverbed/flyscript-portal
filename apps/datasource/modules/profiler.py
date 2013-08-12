@@ -40,7 +40,7 @@ class TimeSeriesTable:
 
         options = TableOptions(groupby='time',
                                realm='traffic_overall_time_series',
-                               centricity='int' if interface else 'hos'),
+                               centricity='int' if interface else 'hos')
 
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   options=options,
@@ -58,7 +58,7 @@ class GroupByTable:
 
         options = TableOptions(groupby=groupby,
                                realm='traffic_summary',
-                               centricity='int' if interface else 'hos'),
+                               centricity='int' if interface else 'hos')
 
         t = Table(name=name, module=__name__, device=device, duration=duration,
                   filterexpr=filterexpr,
