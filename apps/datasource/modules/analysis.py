@@ -133,4 +133,6 @@ class TableQuery:
 
         df = options.func(self.table, dfs)
         self.data = df.ix[:,[col.name for col in self.table.get_columns(synthetic=False)]].values
+        #__import__('IPython').core.debugger.Pdb(color_scheme='Linux').set_trace()
+            
         return True

@@ -289,6 +289,10 @@ class Column(models.Model):
     @classmethod
     def create(cls, table, name, label=None, datatype='', units='',
                iskey=False, issortcol=False, options=None, **kwargs):
+
+        if len(Column.objects.filter(table=table, name=name)) > 0:
+            raise ValueError("Column %s already in use for table %s" % (name, str(table)))
+            
         c = Column(table=table, name=name, label=label, datatype=datatype, units=units,
                    iskey=iskey, options=options, **kwargs)
         posmax = Column.objects.filter(table=table).aggregate(Max('position'))

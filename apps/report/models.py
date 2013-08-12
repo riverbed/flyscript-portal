@@ -171,7 +171,6 @@ class WidgetJob(models.Model):
 
         return HttpResponse(json.dumps(resp))
 
-
 class Axes:
     def __init__(self, definition):
         self.definition = definition
