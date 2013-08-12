@@ -6,8 +6,12 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
+import sys
+import cgi
 import json
 import datetime
+import importlib
+import traceback
 
 import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -21,7 +25,6 @@ from django.core import management
 from apps.datasource.models import Job, Criteria, TableCriteria
 from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
-from apps.report.forms import ReportDetailForm, WidgetDetailForm, ReportCriteriaForm
 from apps.report.forms import create_report_criteria_form
 from apps.report.utils import create_debug_zipfile
 
@@ -101,9 +104,13 @@ class ReportView(APIView):
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
         form = create_report_criteria_form(initial=form_init, report=report)
 
+        profile = request.user.userprofile
+
         return render_to_response('report.html',
                                   {'report': report,
-                                   'developer': request.user.userprofile.developer,
+                                   'developer': profile.developer,
+                                   'maps_version': profile.maps_version,
+                                   'maps_api_key': profile.maps_api_key,
                                    'formstyle': FORMSTYLE,
                                    'form': form},
                                   context_instance=RequestContext(request))
@@ -128,7 +135,6 @@ class ReportView(APIView):
 
             logger.debug("Report %s validated form: %s" %
                          (report_slug, formdata))
-
 
             # parse time and localize to user profile timezone
             profile = request.user.userprofile
@@ -246,4 +252,55 @@ class WidgetJobDetail(APIView):
 
     def get(self, request, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)
-        return wjob.response()
+
+        job = wjob.job
+        widget = wjob.widget
+
+        if not job.done():
+            # job not yet done, return an empty data structure
+            logger.debug("%s: Not done yet, %d%% complete" % (str(wjob), job.progress))
+            resp = job.json()
+        elif job.status == Job.ERROR:
+            resp = job.json()
+            logger.debug("%s: Job in Error state, deleting Job" % str(wjob))
+            wjob.delete()
+        else:
+            try:
+                i = importlib.import_module(widget.module)
+                widget_func = i.__dict__[widget.uiwidget].process
+                if widget.rows > 0:
+                    tabledata = job.data()[:widget.rows]
+                else:
+                    tabledata = job.data()
+                    
+                if tabledata is None or len(tabledata) == 0:
+                    resp = job.json()
+                    resp['status'] = Job.ERROR
+                    resp['message'] = "No data returned"
+                    logger.debug("%s marked Error: No data returned" % str(wjob))
+                elif (hasattr(i, 'authorized') and 
+                      not i.authorized(request.user.userprofile)[0]):
+                    _, msg = i.authorized(request.user.userprofile)
+                    resp = job.json()
+                    resp['data'] = None
+                    resp['status'] = Job.ERROR
+                    resp['message'] = msg
+                    logger.debug("%s marked Error: module unauthorized for user %s"
+                                 % (str(wjob), request.user))
+                else:
+                    data = widget_func(widget, tabledata)
+                    resp = job.json(data)
+                    logger.debug("%s complete" % str(wjob))
+            except:
+                resp = job.json()
+                resp['status'] = Job.ERROR
+                ei = sys.exc_info()
+                resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
+                traceback.print_exc()
+            
+            wjob.delete()
+            
+        resp['message'] = cgi.escape(resp['message'])
+        #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
+
+        return HttpResponse(json.dumps(resp))

@@ -11,12 +11,32 @@
 
 {% block title %}Portal: User Preferences{% endblock %}
 
+{% block header %}
+    <script type="text/javascript">
+        $(document).ready( function() {
+            setAPIKeyInput();
+            $('#id_maps_version').change(function(e) {
+                setAPIKeyInput();
+            });
+        });
+        function setAPIKeyInput() {
+            var text = $('#id_maps_version :selected').attr('value');
+            if (text == 'DISABLED' || text == 'DEVELOPER') {
+                $('#id_maps_api_key').prop('disabled', true);
+            } else {
+                $('#id_maps_api_key').prop('disabled', false);
+            }
+        };
+    </script>
+{% endblock %}
+
 {% block header_row %}<h3>User Preferences</h3>{% endblock %}
           
 {% block content %}
     <div class="container-fluid">
       <div class="row-fluid">
-          <form class="form-horizontal" action="" method="POST">
+        <div class="span6">
+            <form class="form-horizontal" action="" method="POST">
               {% csrf_token %}
               <div class="control-group">
                   <label class="control-label"></label>
@@ -25,6 +45,18 @@
                   </div>
               </div>
               {% for field in form %}
+                {% if 'maps_version' == field.name %}
+                  <p class="text-center" style="border-top: 1px solid #eee; padding-top: 5px;">
+                      Use of Google Maps APIs is subject to <a href="https://developers.google.com/maps/terms">Google's Terms of Use</a>.
+                      Options are provided below to allow you to display the widgets which utilize Map APIs:
+                      <ul>
+                          <li>Disabled: MapWidgets will not be displayed</li>
+                          <li>Developer: This site will be used in a development, non-hosted environment</li>
+                          <li>Free: subject to the <a href="https://developers.google.com/maps/terms">terms of service</a>, provide a non-commercial API Key</li>
+                          <li>Business: subject to the <a href="https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html">business use terms of service</a>, provide a your API ClientKey</li>
+                      </ul>
+                  </p>
+                {% endif %}
                 <div class="control-group{% if field.errors %} error{% endif %}">
                   {% if not field.is_hidden %}
                       <label class="control-label" for="{{field.id_for_label}}">{{field.label}}:</label>
@@ -41,6 +73,7 @@
               {% endfor %}
               <input type="submit" value="Update">
           </form>
+        </div>
       </div>
     </div>
 {% endblock %}

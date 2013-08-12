@@ -6,18 +6,12 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import sys
-import cgi
-import json
 import inspect
 import logging
-import traceback
-import importlib
 
 from rvbd.common.jsondict import JsonDict
 
 from django.db import models
-from django.http import HttpResponse
 from django.db.models import Max, Sum
 from django.template.defaultfilters import slugify
 
@@ -124,52 +118,10 @@ class WidgetJob(models.Model):
     job = models.ForeignKey(Job)
 
     def __unicode__(self):
-        return "<WidgetJob %s: widget %s, job %s>" % (self.id, self.widget.id, self.job.id)
+        return "<WidgetJob %s: widget %s, job %s>" % (self.id, 
+                                                      self.widget.id,
+                                                      self.job.id)
     
-    def response(self):
-        job = self.job
-        widget = self.widget
-        if not job.done():
-            # job not yet done, return an empty data structure
-            logger.debug("%s: Not done yet, %d%% complete" % (str(self), job.progress))
-            resp = job.json()
-        elif job.status == Job.ERROR:
-            resp = job.json()
-            logger.debug("%s: Job in Error state, deleting Job" % str(self))
-            self.delete()
-        else:
-            try:
-                i = importlib.import_module(widget.module)
-                widget_func = i.__dict__[widget.uiwidget].process
-                if widget.rows > 0:
-                    tabledata = job.data()[:widget.rows]
-                else:
-                    tabledata = job.data()
-                    
-                if tabledata is None or len(tabledata) == 0:
-                    resp = job.json()
-                    resp['status'] = Job.ERROR
-                    resp['message'] = "No data returned"
-                    logger.debug("%s marked Error: No data returned" % str(self))
-                else:
-                    data = widget_func(widget, tabledata)
-                    resp = job.json(data)
-                    logger.debug("%s complete" % str(self))
-            except:
-                resp = job.json()
-                resp['status'] = Job.ERROR
-                ei = sys.exc_info()
-                resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
-                traceback.print_exc()
-            
-            # XXXCJ - should delete the job?  
-            #job.delete()
-            self.delete()
-            
-        resp['message'] = cgi.escape(resp['message'])
-        #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
-
-        return HttpResponse(json.dumps(resp))
 
 class Axes:
     def __init__(self, definition):

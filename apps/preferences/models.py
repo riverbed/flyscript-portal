@@ -23,11 +23,27 @@ logger = logging.getLogger(__name__)
 #
 TIMEZONE_CHOICES = zip(pytz.common_timezones, pytz.common_timezones)
 
+MAPS_VERSIONS = ('DISABLED', 'DEVELOPER', 'FREE', 'BUSINESS')
+MAPS_VERSION_CHOICES = zip(MAPS_VERSIONS, map(str.title, MAPS_VERSIONS))
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
-    timezone = models.CharField(max_length=50, default='UTC', choices=TIMEZONE_CHOICES)
-    ignore_cache = models.BooleanField(default=False, help_text='Force all reports to bypass cache')
-    developer = models.BooleanField(default=False, verbose_name='developer mode')
+    timezone = models.CharField(max_length=50, 
+                                default='UTC',
+                                choices=TIMEZONE_CHOICES)
+    ignore_cache = models.BooleanField(default=False,
+                                       help_text='Force all reports to bypass cache')
+    developer = models.BooleanField(default=False, 
+                                    verbose_name='developer mode')
+    maps_version = models.CharField(default='DISABLED',
+                                    max_length=30,
+                                    verbose_name='Maps Version',
+                                    choices=MAPS_VERSION_CHOICES)
+    maps_api_key = models.CharField(max_length=100, 
+                                    verbose_name='Maps API Key',
+                                    blank=True, 
+                                    null=True)
 
     # hidden fields
     timezone_changed = models.BooleanField(default=False)
@@ -38,8 +54,8 @@ class UserProfile(models.Model):
             self.timezone_changed = True
         super(UserProfile, self).save(*args, **kwargs)
 
+
 def create_user_profile(sender, instance, created, **kwargs):
-    #from IPython import embed; embed()
     if created:
         UserProfile.objects.create(user=instance)
 

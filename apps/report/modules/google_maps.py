@@ -21,6 +21,29 @@ from apps.report.models import Widget
 from apps.geolocation.models import Location
 from apps.geolocation.geoip import Lookup
 
+
+def authorized(userprofile):
+    """ Verifies the Google Maps API can be used given the version selected
+        and the API key supplied.
+
+        Returns True/False, and an error message if applicable
+    """
+    maps_version = userprofile.maps_version
+    api_key = userprofile.maps_api_key
+
+    if maps_version == 'DISABLED':
+        msg = (u'Google Maps API has been disabled.\n'
+               'See Configure->Preferences to update.')
+        return False, msg
+    elif maps_version in ('FREE', 'BUSINESS') and not api_key:
+        msg = (u'A valid API_KEY must be provided for either \n'
+               '"Free" or "Business" Google Maps API choices.\n'
+               'See Configure->Preferences to update.')
+        return False, msg
+    else:
+        return True, ''
+        
+
 class MapWidgetOptions(JsonDict):
     _default = { 'key': None,
                  'value' : None }
