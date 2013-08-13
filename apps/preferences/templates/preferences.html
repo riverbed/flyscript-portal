@@ -14,17 +14,58 @@
 {% block header %}
     <script type="text/javascript">
         $(document).ready( function() {
+            if ($('#id_maps_version').val() == 'DISABLED') {
+                $('#googleCheck').prop('checked', false); 
+                $('#googleDiv').hide();
+            } else {
+                $('#googleCheck').prop('checked', true); 
+                $('#googleDiv').show();
+            };
+
+            // copy key from input value and bind changes to feed back
+            $('#id_maps_api_key_input').val($('#id_maps_api_key').val())
+            $('#id_maps_api_key_input').change(function(e) {
+                text = this.value;
+                $('#id_maps_api_key').val(text);
+                if (!text && $('#id_maps_version').value != 'BUSINESS') {
+                    $('#id_maps_version').val('DEVELOPER');
+                }
+            });
+
             setAPIKeyInput();
-            $('#id_maps_version').change(function(e) {
+
+            $('input[name="optionMapsVersion"]').change(function(e) {
+                toggleMapsVersion();
+            });
+
+            $('#googleCheck').change(function(e) {
+                $('#googleDiv').toggle();
+                if (!$('#googleCheck').is(':checked')) {
+                    $('#id_maps_version').val('DISABLED');
+                } else {
+                    $('#id_maps_version').val('DEVELOPER');
+                }
                 setAPIKeyInput();
             });
         });
-        function setAPIKeyInput() {
-            var text = $('#id_maps_version :selected').attr('value');
-            if (text == 'DISABLED' || text == 'DEVELOPER') {
-                $('#id_maps_api_key').prop('disabled', true);
+        function toggleMapsVersion() {
+            if ($('#mapsVersionFree').is(':checked')) {
+                $('#id_maps_version').val('FREE');
             } else {
-                $('#id_maps_api_key').prop('disabled', false);
+                $('#id_maps_version').val('BUSINESS');
+            };
+            setAPIKeyInput();
+        };
+        function setAPIKeyInput() {
+            var text = $('#id_maps_version').val();
+            if (text == 'BUSINESS') {
+                $('#mapsVersionFree').prop('checked', false);
+                $('#mapsVersionBusiness').prop('checked', true);
+                $('#id_maps_api_key_input').prop('placeholder', 'Client ID');
+            } else {
+                $('#mapsVersionFree').prop('checked', true);
+                $('#mapsVersionBusiness').prop('checked', false);
+                $('#id_maps_api_key_input').prop('placeholder', 'API Key');
             }
         };
     </script>
@@ -33,45 +74,65 @@
 {% block header_row %}<h3>User Preferences</h3>{% endblock %}
           
 {% block content %}
-    <div class="container-fluid">
-      <div class="row-fluid">
+    <div class="container">
+      <div class="row">
         <div class="span6">
+            <div class="control-group" style="text-align: center;">
+                <a href="{% url 'django.contrib.auth.views.password_change' %}">
+                    Change User Password
+                </a>
+            </div>
             <form class="form-horizontal" action="" method="POST">
               {% csrf_token %}
-              <div class="control-group">
-                  <label class="control-label"></label>
-                  <div class="controls">
-                      <a href="{% url 'django.contrib.auth.views.password_change' %}">Change User Password</a>
-                  </div>
-              </div>
-              {% for field in form %}
-                {% if 'maps_version' == field.name %}
-                  <p class="text-center" style="border-top: 1px solid #eee; padding-top: 5px;">
-                      Use of Google Maps APIs is subject to <a href="https://developers.google.com/maps/terms">Google's Terms of Use</a>.
-                      Options are provided below to allow you to display the widgets which utilize Map APIs:
-                      <ul>
-                          <li>Disabled: MapWidgets will not be displayed</li>
-                          <li>Developer: This site will be used in a development, non-hosted environment</li>
-                          <li>Free: subject to the <a href="https://developers.google.com/maps/terms">terms of service</a>, provide a non-commercial API Key</li>
-                          <li>Business: subject to the <a href="https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html">business use terms of service</a>, provide a your API ClientKey</li>
-                      </ul>
-                  </p>
-                {% endif %}
+              {% for field in form.hidden_fields %}
+                {{ field }}
+              {% endfor %}
+              {% for field in form.visible_fields %}
                 <div class="control-group{% if field.errors %} error{% endif %}">
-                  {% if not field.is_hidden %}
-                      <label class="control-label" for="{{field.id_for_label}}">{{field.label}}:</label>
-                  {% endif %}
+                  <label class="control-label" for="{{field.id_for_label}}">
+                      {{field.label}}:
+                  </label>
                   <div class="controls">
                     {{ field }}
                     {% if field.errors %}
-                        <span class="help-inline">{% for err in field.errors %}{{ err }}{% endfor %}</span>
+                        <span class="help-inline">
+                            {% for err in field.errors %}{{ err }}{% endfor %}
+                        </span>
                     {% else %}
-                        {% if field.help_text %}<span class="help-inline">{{ field.help_text }}</span>{% endif %}
+                        {% if field.help_text %}
+                            <span class="help-inline">{{ field.help_text }}</span>
+                        {% endif %}
                     {% endif %}
                   </div>
                 </div>
               {% endfor %}
-              <input type="submit" value="Update">
+
+              <div class="control-group">
+                <label class="control-label" for="googleCheck">
+                    Enable Google Maps:
+                </label>
+                <div class="controls">
+                    <input id="googleCheck" type="checkbox">
+                </div>
+                <div id="googleDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
+                    <label class="radio">
+                      <input type="radio" name="optionMapsVersion" id="mapsVersionFree" value="FREE">
+                      Google Maps API (<a href="https://developers.google.com/maps/terms">terms</a>)
+                    </label>
+                    <label class="radio">
+                      <input type="radio" name="optionMapsVersion" id="mapsVersionBusiness" value="BUSINESS">
+                      Google Maps API for Business (<a href="https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html">terms</a>)
+                    </label>
+                    <input id="id_maps_api_key_input" type="text" style="width: 95%;" placeholder="Text input">
+                    {% if form.maps_api_key.errors %}
+                        <p class="text-error">{% for err in form.maps_api_key.errors %}{{ err }}{% endfor %}</p>
+                    {% endif %}
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                  <input class="btn btn-primary" type="submit" value="Update" />
+              </div>
           </form>
         </div>
       </div>

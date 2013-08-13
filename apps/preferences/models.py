@@ -36,10 +36,10 @@ class UserProfile(models.Model):
                                        help_text='Force all reports to bypass cache')
     developer = models.BooleanField(default=False, 
                                     verbose_name='developer mode')
-    maps_version = models.CharField(default='DISABLED',
-                                    max_length=30,
+    maps_version = models.CharField(max_length=30,
                                     verbose_name='Maps Version',
-                                    choices=MAPS_VERSION_CHOICES)
+                                    choices=MAPS_VERSION_CHOICES,
+                                    default='DISABLED')
     maps_api_key = models.CharField(max_length=100, 
                                     verbose_name='Maps API Key',
                                     blank=True, 

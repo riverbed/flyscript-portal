@@ -9,9 +9,7 @@ import shutil
 import tempfile
 
 from django import forms
-from django.forms import widgets
 from django.utils.datastructures import SortedDict
-from django.utils.html import format_html
 
 from rvbd.common import datetime_to_seconds
 

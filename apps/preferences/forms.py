@@ -17,6 +17,8 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         exclude = ['user', 'timezone_changed', 'profile_seen']
+        widgets = {'maps_version': forms.HiddenInput(),
+                   'maps_api_key': forms.HiddenInput()}
 
     def clean(self):
         # check for API key if maps are either FREE or BUSINESS
