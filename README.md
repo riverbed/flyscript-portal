@@ -118,6 +118,19 @@ After logging into the server for the first time, there will be an option under 
 upper-right `Configure` button called `Preferences`.  From there, follow the link
 titled `Change User Password` and a typical password change page will be shown.
 
+Enabling Google Maps
+--------------------
+
+Google Maps/Google Earth API
+ 
+Use of the Google Maps/Google Earth API may require login credentials from
+Google such as an API Key or Client ID.  Please see Google’s website at
+[https://developers.google.com/maps/terms](https://developers.google.com/maps/terms)
+and
+[https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html](https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html)
+for more information.
+
+
 
 Mapping locations for public IP address
 ---------------------------------------

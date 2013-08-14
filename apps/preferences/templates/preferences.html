@@ -115,13 +115,14 @@
                     <input id="googleCheck" type="checkbox">
                 </div>
                 <div id="googleDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
+                    <p>Please select your method for accessing the Google Maps/Google Earth API (see Readme for details):</p>
                     <label class="radio">
                       <input type="radio" name="optionMapsVersion" id="mapsVersionFree" value="FREE">
-                      Google Maps API (<a href="https://developers.google.com/maps/terms">terms</a>)
+                      API Key
                     </label>
                     <label class="radio">
                       <input type="radio" name="optionMapsVersion" id="mapsVersionBusiness" value="BUSINESS">
-                      Google Maps API for Business (<a href="https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html">terms</a>)
+                      Client ID
                     </label>
                     <input id="id_maps_api_key_input" type="text" style="width: 95%;" placeholder="Text input">
                     {% if form.maps_api_key.errors %}
