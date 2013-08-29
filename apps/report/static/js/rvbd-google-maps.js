@@ -45,7 +45,7 @@ rvbd_google_maps.MapWidget.prototype.render = function(data)
     map = new google.maps.Map(document.getElementById(contentid),
                               mapOptions);
 
-    data.circles.forEach (function(c) {
+    $.each(data.circles, function(i,c) {
         c.map = map;
         c.center = new google.maps.LatLng(c.center[0], c.center[1]);
         bounds.extend(c.center)

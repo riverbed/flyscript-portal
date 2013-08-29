@@ -21,7 +21,7 @@ function inherit(p) {
 var widgets = [];
 
 function resize() {
-    widgets.forEach(function(w) { w.draw(); })
+    $.each(widgets, function(w) { w.draw(); });
 }
 
 window.onresize = resize;

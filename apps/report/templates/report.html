@@ -43,7 +43,7 @@
              $('#id_endtime_0').datepicker('setDate', new Date()); 
           });
           $('#id_endtime_1').timepicker('setTime', new Date());
-          $("#criteria").on('hidden', function() { dorun() });
+          $("#criteria").on('hidden', function() { dorun(); });
           $.ajaxSetup({
               beforeSend: function(xhr) {
                   xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
@@ -77,16 +77,15 @@
           report.html(widgets);
           var rownum=0;
           var row;
-          widgets.forEach(function(w) {
+          $.each(widgets, function(i,w) {
               if (rownum != w.row) {
-                  row = $('<div />',
-                          { class: 'row-fluid' }).appendTo(report); 
+                  row = $('<div />', { 'class': 'row-fluid' }).appendTo(report); 
                   rownum = w.row;
               }
               var wid = "chart_" + w.widgetid;
               $('<div />',
                 { id: wid,
-                  class: 'blackbox span' + w.width })
+                  'class': 'blackbox span' + w.width })
                   .text ("Widget " + w.widgetid)
                   .appendTo(row);
 
