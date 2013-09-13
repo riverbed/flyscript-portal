@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 """
-This module renders raw data from a data source to be disaplyed
+This module renders raw data from a data source to be displayed
 on a Google Map.
 """
 
@@ -42,14 +42,15 @@ def authorized(userprofile):
         return False, msg
     else:
         return True, ''
-        
+
 
 class MapWidgetOptions(JsonDict):
-    _default = { 'key': None,
-                 'value' : None }
+    _default = {'key': None,
+                'value': None}
     _required = ['key', 'value']
-        
-class MapWidget:
+
+
+class MapWidget(object):
     @classmethod
     def create(cls, report, table, title, width=6, height=300, column=None):
         """Class method to create a MapWidget.
@@ -60,16 +61,16 @@ class MapWidget:
         w = Widget(report=report, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
-        keycols = [col.name for col in table.get_columns() if col.iskey == True]
+        keycols = [col.name for col in table.get_columns() if col.iskey is True]
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
 
-        column  = column or [col.name for col in table.get_columns() if col.iskey == False][0]
-            
+        column = column or [col.name for col in table.get_columns() if col.iskey is False][0]
+
         w.options = MapWidgetOptions(key=keycols[0], value=column)
         w.save()
         w.tables.add(table)
-        
+
     @classmethod
     def process(cls, widget, data):
         """Class method to generate JSON for the JavaScript-side of the MapWidget
@@ -90,14 +91,14 @@ class MapWidget:
                 keycol = ColInfo(c, i)
             elif c.name == widget.options.value:
                 valuecol = ColInfo(c, i)
-        
+
         # Array of google circle objects for each data row
         circles = []
 
         if data:
             valmin = data[0][valuecol.dataindex]
             valmax = valmin
-            
+
             for reportrow in data:
                 val = reportrow[valuecol.dataindex]
                 valmin = min(val, valmin)
@@ -110,7 +111,7 @@ class MapWidget:
             elif valuecol.col.datatype == 'metric':
                 formatter = 'formatMetric'
             else:
-                formatter = None;
+                formatter = None
 
             for reportrow in data:
                 key = reportrow[keycol.dataindex]
@@ -122,7 +123,7 @@ class MapWidget:
                     geo = Location.objects.get(name=key)
                 else:
                     # Perform geolookup on the key (should be an IP address...)
-                    if geolookup == None:
+                    if geolookup is None:
                         geolookup = Lookup.instance()
                     geo = geolookup.lookup(key)
 
@@ -136,12 +137,12 @@ class MapWidget:
                         'fillColor': '#FF0000',
                         'fillOpacity': 0.35,
                         'center': [geo.latitude, geo.longitude],
-                        'size': 15*(val / valmax),
+                        'size': 15 * (val / valmax),
                         'title': geo.name,
                         'value': val,
                         'units': valuecol.col.units,
                         'formatter': formatter
-                        };
+                    }
 
                     circles.append(circle)
         else:
@@ -150,12 +151,13 @@ class MapWidget:
 
         data = {
             "chartTitle": widget.title,
-            "circles" : circles
-            }
+            "circles": circles
+        }
 
         return data
 
-class subnet:
+
+class subnet(object):
     def __init__(self, addr, mask, lat, long, name):
         self.addr = ip2long(addr)
         self.mask = ip2long(mask)
@@ -175,4 +177,3 @@ except IOError:
     print 'Geo database not found at /tmp/GeoLiteCity.dat'
     print 'Downloads may be found here: http://dev.maxmind.com/geoip/geolite#Downloads-5'
     print 'GeoIP support will be disabled without this file.'
-
