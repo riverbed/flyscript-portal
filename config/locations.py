@@ -9,7 +9,18 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.geolocation.models import *
+from apps.geolocation.models import Location
+
+#
+# Location list to use for geo-mapping
+#
+
+# Update this list to match internal network, ensuring to keep all names unique
+# since that is currently the method by which Location lookups are made.
+
+# If a single group name covers multiple IP addresses and/or locations, pick one that
+# provides the best match
+
 
 Location(name="Seattle", address="10.99.11.0", mask="255.255.255.0", latitude=47.6097, longitude=-122.3331).save()
 Location(name="LosAngeles", address="10.99.12.0", mask="255.255.255.0", latitude=34.0522, longitude=-118.2428).save()
@@ -20,4 +31,3 @@ Location(name="Austin", address="10.99.16.0", mask="255.255.255.0", latitude=30.
 Location(name="Philadelphia", address="10.99.17.0", mask="255.255.255.0", latitude=39.88, longitude=-75.25).save()
 Location(name="Hartford", address="10.99.18.0", mask="255.255.255.0", latitude=41.73, longitude=-72.65).save()
 Location(name="DataCenter", address="10.100.0.0", mask="255.255.0.0", latitude=35.9139, longitude=-81.5392).save()
-
