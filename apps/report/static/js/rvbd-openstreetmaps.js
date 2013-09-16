@@ -27,7 +27,7 @@ rvbd_openstreetmaps.MapWidget.prototype.render = function(data)
     
     $('#' + contentid + '-title')
         .height(20)
-        .css({"text-align" : "center"});
+        .css({"text-align": "center"});
 
     $('#' + contentid).
         css({"margin": 10}).
@@ -68,19 +68,8 @@ rvbd_openstreetmaps.MapWidget.prototype.render = function(data)
                     fillColor: "red",
                     fillOpacity: 0.35,
         }).addTo(map);
-
-        if (0) {
-            circle = new google.maps.Circle(c);
-            
-            var infoWindow = new google.maps.InfoWindow();
-            var html = c.label;
-            
-            google.maps.event.addListener(circle, 'click', function() {
-                infoWindow.setContent(html);
-                infoWindow.open(map, circle);
-            });
-        }
     });
+    bounds = bounds.pad(0.10);
     map.fitBounds(bounds);
 }
 
