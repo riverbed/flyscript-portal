@@ -22,14 +22,21 @@
     {% if maps_version == 'DEVELOPER' %}
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
     {% elif maps_version == 'FREE' %}
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3%key={{ maps_api_key }}&sensor=false"></script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3%key={{ maps_api_key }}&sensor=false"></script>
     {% elif maps_version == 'BUSINESS' %}
-    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3&client={{ maps_api_key }}&sensor=false"></script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3&client={{ maps_api_key }}&sensor=false"></script>
     {% endif %}
 
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-widgets.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-google-maps.js"></script>
+
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.css" />
+     <!--[if lte IE 8]>
+         <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.ie.css" />
+     <![endif]-->
+    <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-openstreetmaps.js"></script>
 
     <script type="text/javascript">
       var runRequested = false;

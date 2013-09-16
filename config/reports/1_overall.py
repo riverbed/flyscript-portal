@@ -16,6 +16,7 @@ import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.shark import SharkTable, create_shark_column
 import apps.report.modules.google_maps as google_maps
+import apps.report.modules.openstreetmaps as openstreetmaps
 
 ### Configure Shark View To Use
 SHARK_VIEW_NAME = 'jobs/flyscript-portal'       # Note: must prefix job names with 'jobs/'
@@ -41,6 +42,7 @@ Column.create(table, 'network_rtt',   label='Net RTT',    datatype='metric')
 Column.create(table, 'server_delay',  label='Srv Delay',  datatype='metric')
 
 google_maps.MapWidget.create(report, table, "Response Time", width=6, height=300)
+openstreetmaps.MapWidget.create(report, table, "Response Time", width=6, height=300)
 yui3.TableWidget.create(report, table, "Locations by Avg Bytes", width=6)
 
 # Define a Overall TimeSeries showing Avg Bytes/s
