@@ -7,15 +7,15 @@
  # This software is distributed "AS IS" as set forth in the License.
  */
 
-var rvbd_openstreetmaps = {};
+var rvbd_maps = {};
 
-rvbd_openstreetmaps.MapWidget = function (dataurl, divid, options, criteria) {
+rvbd_maps.MapWidget = function (dataurl, divid, options, criteria) {
     Widget.apply(this, [dataurl, divid, options, criteria]);
 };
-rvbd_openstreetmaps.MapWidget.prototype = inherit(Widget.prototype)
-rvbd_openstreetmaps.MapWidget.prototype.constructor = rvbd_openstreetmaps.MapWidget;
+rvbd_maps.MapWidget.prototype = inherit(Widget.prototype)
+rvbd_maps.MapWidget.prototype.constructor = rvbd_maps.MapWidget;
 
-rvbd_openstreetmaps.MapWidget.prototype.render = function(data)
+rvbd_maps.MapWidget.prototype.render = function(data)
 {
     var contentid = this.divid + "_content";
     $('#' + this.divid).

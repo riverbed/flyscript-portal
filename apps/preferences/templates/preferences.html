@@ -16,12 +16,28 @@
 {% block header %}
     <script type="text/javascript">
         $(document).ready( function() {
-            if ($('#id_maps_version').val() == 'DISABLED') {
-                $('#googleCheck').prop('checked', false); 
+            version = $('#id_maps_version').val();
+            if ( version == 'DISABLED') {
+                $('#mapsEnable').prop('checked', false); 
+                $('#osmDiv').hide();
+                $('#mapsDiv').hide();
                 $('#googleDiv').hide();
             } else {
-                $('#googleCheck').prop('checked', true); 
-                $('#googleDiv').show();
+                $('#mapsEnable').prop('checked', true); 
+                $('#mapsDiv').show();
+                if (version == 'OPEN_STREET_MAPS') {
+                    $('#osmDiv').show();
+                    $('#googleDiv').hide();
+                    $('#mapsVersionOSM').prop('checked', true);
+                } else if (version == 'STATIC_MAPS') {
+                    $('#osmDiv').hide();
+                    $('#googleDiv').hide();
+                    $('#mapsVersionStatic').prop('checked', true);
+                } else {
+                    $('#osmDiv').hide();
+                    $('#googleDiv').show();
+                    $('#mapsVersionGoogle').prop('checked', true);
+                };
             };
 
             // copy key from input value and bind changes to feed back
@@ -39,10 +55,13 @@
             $('input[name="optionMapsVersion"]').change(function(e) {
                 toggleMapsVersion();
             });
+            $('input[name="optionGoogleMapsVersion"]').change(function(e) {
+                toggleGoogleMapsVersion();
+            });
 
-            $('#googleCheck').change(function(e) {
-                $('#googleDiv').toggle();
-                if (!$('#googleCheck').is(':checked')) {
+            $('#mapsEnable').change(function(e) {
+                $('#mapsDiv').toggle();
+                if (!$('#mapsEnable').is(':checked')) {
                     $('#id_maps_version').val('DISABLED');
                 } else {
                     $('#id_maps_version').val('DEVELOPER');
@@ -50,7 +69,24 @@
                 setAPIKeyInput();
             });
         });
+
+
         function toggleMapsVersion() {
+            if ($('#mapsVersionOSM').is(':checked')) {
+                $('#id_maps_version').val('OPEN_STREET_MAPS');
+                $('#osmDiv').show();
+                $('#googleDiv').hide();
+            } else if ($('#mapsVersionGoogle').is(':checked')) {
+                $('#osmDiv').hide();
+                $('#googleDiv').show();
+                toggleGoogleMapsVersion();
+            } else {
+                $('#id_maps_version').val('STATIC_MAPS');
+                $('#osmDiv').hide();
+                $('#googleDiv').hide();
+            };
+        };
+        function toggleGoogleMapsVersion() {
             if ($('#mapsVersionFree').is(':checked')) {
                 $('#id_maps_version').val('FREE');
             } else {
@@ -110,26 +146,47 @@
               {% endfor %}
 
               <div class="control-group">
-                <label class="control-label" for="googleCheck">
-                    Enable Google Maps:
+                <label class="control-label" for="mapsEnable">
+                    Enable Map Widgets:
                 </label>
                 <div class="controls">
-                    <input id="googleCheck" type="checkbox">
+                    <input id="mapsEnable" type="checkbox">
                 </div>
-                <div id="googleDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
-                    <p>Please select your method for accessing the Google Maps/Google Earth API (see Readme for details):</p>
-                    <label class="radio">
-                      <input type="radio" name="optionMapsVersion" id="mapsVersionFree" value="FREE">
-                      API Key
-                    </label>
-                    <label class="radio">
-                      <input type="radio" name="optionMapsVersion" id="mapsVersionBusiness" value="BUSINESS">
-                      Client ID
-                    </label>
-                    <input id="id_maps_api_key_input" type="text" style="width: 95%;" placeholder="Text input">
-                    {% if form.maps_api_key.errors %}
-                        <p class="text-error">{% for err in form.maps_api_key.errors %}{{ err }}{% endfor %}</p>
-                    {% endif %}
+                <div id="mapsDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
+
+                   <label class="radio">
+                     <input type="radio" name="optionMapsVersion" id="mapsVersionOSM" value="OPEN_STREET_MAPS">
+                     Open Street Maps
+                   </label>
+                   <div id="osmDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
+                       <p>Use of Open Street Maps subject to terms as described in the Readme file.</p>
+                   </div>
+
+                   <label class="radio">
+                     <input type="radio" name="optionMapsVersion" id="mapsVersionGoogle" value="GOOGLE">
+                     Google Maps
+                   </label>
+                   <div id="googleDiv" style="border: 1px solid #bbb; padding: 5px;margin-top:5px;display: none;">
+                       <p>Please select your method for accessing the Google Maps/Google Earth API (see Readme for details):</p>
+                       <label class="radio">
+                         <input type="radio" name="optionGoogleMapsVersion" id="mapsVersionFree" value="FREE">
+                         API Key
+                       </label>
+                       <label class="radio">
+                         <input type="radio" name="optionGoogleMapsVersion" id="mapsVersionBusiness" value="BUSINESS">
+                         Client ID
+                       </label>
+                       <input id="id_maps_api_key_input" type="text" style="width: 95%;" placeholder="Text input">
+                       {% if form.maps_api_key.errors %}
+                           <p class="text-error">{% for err in form.maps_api_key.errors %}{{ err }}{% endfor %}</p>
+                       {% endif %}
+                   </div>
+
+                   <label class="radio">
+                     <input type="radio" name="optionMapsVersion" id="mapsVersionStatic" value="STATIC_MAPS">
+                     Static Maps (not currently supported)
+                   </label>
+
                 </div>
               </div>
 

@@ -10,6 +10,7 @@ This module provides base mapping classes for specific APIs to leverage
 """
 
 import os.path
+import inspect
 import threading
 from collections import namedtuple
 
@@ -22,28 +23,74 @@ from apps.report.models import Widget
 from apps.geolocation.models import Location
 from apps.geolocation.geoip import Lookup
 
+from .maps_providers import google_postprocess, openstreetmaps_postprocess
 
-class BaseMapWidgetOptions(JsonDict):
+POST_PROCESS_MAP = {'DISABLED': google_postprocess,
+                    'DEVELOPER': google_postprocess,
+                    'FREE': google_postprocess,
+                    'BUSINESS': google_postprocess,
+                    'OPEN_STREET_MAPS': openstreetmaps_postprocess,
+                    'STATIC_MAPS': lambda x: x,
+                    }
+
+
+def authorized(userprofile):
+    """ Verifies the Maps API can be used given the version selected
+        and the API key supplied.
+
+        Returns True/False, and an error message if applicable
+    """
+    maps_version = userprofile.maps_version
+    api_key = userprofile.maps_api_key
+
+    if maps_version == 'DISABLED':
+        msg = (u'Maps API has been disabled.\n'
+               'See Configure->Preferences to update.')
+        return False, msg
+    elif maps_version in ('FREE', 'BUSINESS') and not api_key:
+        msg = (u'A valid API_KEY must be provided for either \n'
+               '"Free" or "Business" Google Maps API choices.\n'
+               'See Configure->Preferences to update.')
+        return False, msg
+    else:
+        return True, ''
+
+
+def get_request():
+    """ Run up the stack and find the `request` object. """
+    # XXX see discussion here:
+    #    http://nedbatchelder.com/blog/201008/global_django_requests.html
+    # alternative would be applying middleware for thread locals
+    # if more cases need this behavior, middleware may be better option
+
+    frame = None
+    try:
+        for f in inspect.stack()[1:]:
+            frame = f[0]
+            code = frame.f_code
+            if code.co_varnames[:1] == ("request",):
+                return frame.f_locals["request"]
+            elif code.co_varnames[:2] == ("self", "request",):
+                return frame.f_locals["request"]
+    finally:
+        del frame
+
+
+class MapWidgetOptions(JsonDict):
     _default = {'key': None,
                 'value': None}
     _required = ['key', 'value']
 
 
-class BaseMapWidget(object):
+class MapWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, height=300, column=None,
-               module=None, uiwidget=None):
+    def create(cls, report, table, title, width=6, height=300, column=None):
         """Class method to create a MapWidget.
 
         `column` is the data column to graph
         """
-        if module is None:
-            module = __name__
-        if uiwidget is None:
-            uiwidget = cls.__name__
-
         w = Widget(report=report, title=title, width=width, height=height,
-                   module=module, uiwidget=uiwidget)
+                   module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey is True]
         if len(keycols) == 0:
@@ -51,7 +98,7 @@ class BaseMapWidget(object):
 
         column = column or [col.name for col in table.get_columns() if col.iskey is False][0]
 
-        w.options = BaseMapWidgetOptions(key=keycols[0], value=column)
+        w.options = MapWidgetOptions(key=keycols[0], value=column)
         w.save()
         w.tables.add(table)
 
@@ -61,6 +108,11 @@ class BaseMapWidget(object):
 
         Subclass should manipulate this list into specific JSON structures as needed.
         """
+
+        request = get_request()
+        maps_version = request.user.userprofile.maps_version
+        post_process = POST_PROCESS_MAP[maps_version]
+
         columns = widget.table().get_columns()
 
         ColInfo = namedtuple('ColInfo', ['col', 'dataindex'])
@@ -129,7 +181,7 @@ class BaseMapWidget(object):
             "circles": circles
         }
 
-        return data
+        return post_process(data)
 
 
 class subnet(object):

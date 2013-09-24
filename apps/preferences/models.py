@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -23,26 +23,32 @@ logger = logging.getLogger(__name__)
 #
 TIMEZONE_CHOICES = zip(pytz.common_timezones, pytz.common_timezones)
 
-MAPS_VERSIONS = ('DISABLED', 'DEVELOPER', 'FREE', 'BUSINESS')
+MAPS_VERSIONS = ('DISABLED',            # Google Maps Versions
+                 'DEVELOPER',
+                 'FREE',
+                 'BUSINESS',
+                 'OPEN_STREET_MAPS',    # Open Street Maps
+                 'STATIC_MAPS'          # Static library created maps
+                 )
 MAPS_VERSION_CHOICES = zip(MAPS_VERSIONS, map(str.title, MAPS_VERSIONS))
 
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
-    timezone = models.CharField(max_length=50, 
+    timezone = models.CharField(max_length=50,
                                 default='UTC',
                                 choices=TIMEZONE_CHOICES)
     ignore_cache = models.BooleanField(default=False,
                                        help_text='Force all reports to bypass cache')
-    developer = models.BooleanField(default=False, 
+    developer = models.BooleanField(default=False,
                                     verbose_name='developer mode')
     maps_version = models.CharField(max_length=30,
                                     verbose_name='Maps Version',
                                     choices=MAPS_VERSION_CHOICES,
                                     default='DISABLED')
-    maps_api_key = models.CharField(max_length=100, 
+    maps_api_key = models.CharField(max_length=100,
                                     verbose_name='Maps API Key',
-                                    blank=True, 
+                                    blank=True,
                                     null=True)
 
     # hidden fields
