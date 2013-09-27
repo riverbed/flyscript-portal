@@ -1,6 +1,8 @@
-{% load url from future %}
-
 <!DOCTYPE html>
+
+{% block comments %}{% endblock %}
+
+{% load url from future %}
 <html>
   <head>
     <title>{% block title %}Portal: {{ report.title }} Report{% endblock %}</title>
