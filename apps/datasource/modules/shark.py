@@ -131,7 +131,7 @@ class TableQuery:
                           operation,
                           description=tc.label,
                           default_value=tc_options.default_value)
-                self.column_names.append(tc.label)
+                self.column_names.append(tc.name)
 
             columns.append(c)
 
@@ -216,12 +216,8 @@ class TableQuery:
             for d in self.data:
                 out.extend([d['t']] + x for x in d['vals'])
 
-            # upsample results to have uniform time intervals
-            if out:
-                df = pd.DataFrame(out, columns=self.column_names)
-                df = df.set_index('time').resample('%sS' % self.table.resolution, how='last')
-                out = df.reset_index().fillna(0).values
         else:
             for d in self.data:
                 out.extend(x for x in d['vals'])
+
         self.data = out

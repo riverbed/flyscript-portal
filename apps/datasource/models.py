@@ -146,12 +146,29 @@ class Table(models.Model):
     def __unicode__(self):
         return "<Table %s (id=%s)>" % (self.name, str(self.id))
 
-    def get_columns(self, synthetic=True):
-        if synthetic:
-            return Column.objects.filter(table=self).order_by('position')
-        else:
-            return Column.objects.filter(table=self,
-                                         synthetic=False).order_by('position')
+    def get_columns(self, synthetic=None, ephemeral=None):
+        """
+        Return the list of columns for this table.
+
+        `synthetic` is tri-state: None (default) is don't care,
+            True means only synthetic columns, False means
+            only non-synthetic columns
+
+        `ephemeral` is tri-state: None (default) is don't care,
+            True means only ephemeral columns, False means
+            only non-ephemeral columns
+
+        """
+        
+        filtered = []
+        for c in Column.objects.filter(table=self).order_by('position'):
+            if synthetic is not None and c.synthetic != synthetic:
+                continue
+            if ephemeral is not None and c.ephemeral != ephemeral:
+                continue
+            filtered.append(c)
+            
+        return filtered
 
     def apply_table_criteria(self, criteria):
         """ Merge updates from dict of passed criteria values
@@ -177,8 +194,8 @@ class Table(models.Model):
                     msg = 'WARNING: keyword %s not found in table %s or its options'
                     logger.debug(msg % (v.keyword, self))
 
-    def compute_synthetic(self, indata):
-        """ Compute the synthetic columns from INDATA, a two-dimensional array
+    def compute_synthetic(self, df):
+        """ Compute the synthetic columns from DF a two-dimensional array
             of the non-synthetic columns.
 
             Synthesis occurs as follows:
@@ -190,13 +207,10 @@ class Table(models.Model):
 
             3. Any remaining columns are computed.
         """
-        if len(indata) == 0:
-            return []
+        if df is None:
+            return None
         
-        cols = [col.name for col in self.get_columns(synthetic=False)]
-        df = pandas.DataFrame(indata, columns=cols)
-        
-        all_columns = self.get_columns(synthetic=True)
+        all_columns = self.get_columns()
         all_col_names = [c.name for c in all_columns]
 
         def compute(df, syncols):
@@ -231,6 +245,7 @@ class Table(models.Model):
         compute(df, [col for col in all_columns if (col.synthetic and
                                                     col.compute_post_resample is False)])
 
+
         # 2. Resample
         colmap = {}
         timecol = None
@@ -253,8 +268,7 @@ class Table(models.Model):
         compute(df, [col for col in all_columns if (col.synthetic and
                                                     col.compute_post_resample is True)])
 
-        # Replace NaN with None
-        return df.where(pandas.notnull(df), None).ix[:, all_col_names].values.tolist()
+        return df
 
 
 class Column(models.Model):
@@ -269,6 +283,10 @@ class Column(models.Model):
     isnumeric = models.BooleanField(default=True)
 
     synthetic = models.BooleanField(default=False)
+
+    # Ephemeral columns are columns added to a table at run-time
+    ephemeral = models.BooleanField(default=False)
+
     compute_post_resample = models.BooleanField(default=False)
     compute_expression = models.CharField(max_length=300)
     resample_operation = models.CharField(max_length=300, default='sum')
@@ -333,12 +351,18 @@ class Criteria(DictObject):
 
     def build_for_table(self, table):
         # used by Analysis datasource module
-        return Criteria(starttime=self._orig_starttime,
-                        endtime=self._orig_endtime,
-                        duration=self._orig_duration,
-                        filterexpr=self.filterexpr,
-                        ignore_cache=self.ignore_cache,
-                        table=table)
+        crit =  Criteria(starttime=self._orig_starttime,
+                         endtime=self._orig_endtime,
+                         duration=self._orig_duration,
+                         filterexpr=self.filterexpr,
+                         ignore_cache=self.ignore_cache,
+                         table=table)
+
+        for k,v in self.iteritems():
+            if k.startswith('criteria_'):
+                crit[k] = v
+
+        return crit
                         
     def compute_times(self, table):
         if table.duration is None:
@@ -391,7 +415,19 @@ class Job(models.Model):
     def compute_handle(self):
         h = hashlib.md5()
         h.update(str(self.table.id))
-        h.update('.'.join([c.name for c in self.table.get_columns()]))
+
+        # XXXCJ - Drop ephemeral columns when computing the cache handle, since
+        # the list of columns is modifed at run time.   Typical use case
+        # is an analysis table which creates a time-series graph of the
+        # top 10 hosts -- one column per host.  The host columns will change
+        # based on the run of the dependent table.
+        #
+        # Including epheremal columns causes some problems because the handle is computed
+        # before the query is actually run, so it never matches.
+        #
+        # May want to dig in to this further and make sure this doesn't pick up cache
+        # files when we don't want it to
+        h.update('.'.join([c.name for c in self.table.get_columns(ephemeral=False)]))
         for k, v in self.criteria.iteritems():
             if not k.startswith('criteria_'):
                 h.update('%s:%s' % (k, v))
@@ -428,42 +464,51 @@ class Job(models.Model):
         return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
     
     def data(self):
+        """ Returns a pandas.DataFrame of the data, or None if not available. """
         if os.path.exists(self.datafile()):
-            f = open(self.datafile(), "r")
-            reportdata = pickle.load(f)
-            f.close()
+            df = pandas.load(self.datafile())
+            logger.debug("%s data loaded from file: %s" % (str(self), self.datafile()))
+
         else:
-            reportdata = None
+            logger.debug("%s missing data file, no data: %s" % (str(self), self.datafile()))
+            df = None
 
-        return reportdata
+        return df
 
+    def values(self):
+        """ Return data as a list of lists. """
+        
+        df = self.data()
+        all_columns = self.table.get_columns()
+        all_col_names = [c.name for c in all_columns]
+        #logger.debug("values all_col_names: %s" % all_col_names)
+        # Replace NaN with None
+        df = df.where(pandas.notnull(df), None)
+
+        # Extract tha values in the right order
+        vals = df.ix[:, all_col_names].values.tolist()
+        return vals
+    
     def delete(self):
         logger.debug('Deleting Job: %s' % str(self))
         super(Job, self).delete()
 
     def save(self, *args, **kwargs):
+        """ Model save. """
         self.handle = self.compute_handle()
         super(Job, self).save(*args, **kwargs)
         
     def savedata(self, data):
+        """ Save pandas DataFrame. """
         logger.debug("%s saving data to datafile %s" %
                      (str(self), self.datafile()))
-        f = open(self.datafile(), "w")
-        pickle.dump(data, f)
-        f.close()
-        logger.debug("%s data saved" % (str(self)))
 
-    def pandas_dataframe(self):
-        data = self.data()
-        if len(data) == 0:
-            # Empty dataframe
-            frame = None
+        if data is not None:
+            data.save(self.datafile())
+            logger.debug("%s data saved to file: %s" % (str(self), self.datafile()))
         else:
-            frame = pandas.DataFrame(self.data(),
-                                     columns=[col.name for col in self.table.get_columns()])
+            logger.debug("%s no data saved, data is empty" % (str(self)))
 
-        return frame
-        
     def export_sqlite(self, dbfilename, tablename=None):
         import sqlite3
         if tablename is None:
@@ -478,6 +523,8 @@ class Job(models.Model):
         c.execute("CREATE TABLE %s (%s)" % (tablename, ",".join(dbcols)))
 
         data = self.data()
+        raise Exception("Not supported.")
+        # Code below no longer works -- needs to handle a DataFrame, not raw data
         for row in data:
             dbcols = []
             for col in row:
@@ -575,6 +622,14 @@ class AsyncWorker(threading.Thread):
         try:
             query = self.queryclass(self.job.table, self.job)
             query.run()
+            if isinstance(query.data, list):
+                # Convert the result to a dataframe
+                df = pandas.DataFrame(query.data,
+                                      columns=[col.name for col in self.job.table.get_columns(synthetic=False)])
+                query.data = df
+            elif len(query.data) == 0:
+                query.data = None
+
             fulldata = self.job.table.compute_synthetic(query.data)
             job.savedata(fulldata)
 

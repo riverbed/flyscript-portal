@@ -124,15 +124,15 @@ class TableQuery:
                 self.job.status = job.ERROR
                 raise ValueError("Dependent Job returned an error: %s" % (str(job)))
 
-            f = job.pandas_dataframe()
+            f = job.data()
             if f is None:
                 logger.info("Dependent job returned no data: %s" % (str(job)))
                 raise ValueError("Dependent Job returned no data: %s" % (str(job)))
             dfs[name] = f
             logger.debug("Table[%s]" % name)
 
-        df = options.func(self.table, dfs)
-        self.data = df.ix[:,[col.name for col in self.table.get_columns(synthetic=False)]].values
+        df = options.func(self.table, dfs, self.job.criteria)
+        self.data = df
         #__import__('IPython').core.debugger.Pdb(color_scheme='Linux').set_trace()
             
         return True

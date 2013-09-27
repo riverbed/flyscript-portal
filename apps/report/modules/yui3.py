@@ -14,6 +14,9 @@ from rvbd.common.jsondict import JsonDict
 from libs.nicescale import NiceScale
 from apps.report.models import Axes, Widget
 
+import logging
+logger = logging.getLogger(__name__)
+
 class TableWidget:
     @classmethod
     def create(cls, report, table, title, width=6, rows=1000, height=300):
@@ -54,7 +57,7 @@ class TableWidget:
                         val = t * 1000
                 else:
                     val = reportrow[i]
-
+                    
                 row[qcols[i]] = val
                 i = i + 1
 
@@ -168,7 +171,11 @@ class TimeSeriesWidget:
 
         t_cols = widget.table().get_columns()
         colinfo = {}
-        valuecolnames = widget.options.columns
+
+        if widget.options.columns == '*':
+            valuecolnames = [col.name for col in t_cols if col.datatype != 'time']
+        else:
+            valuecolnames = widget.options.columns
         # Retrieve the desired value columns
         # ...and the indices for the value values (as the 'data' has *all* columns)
         for i, c in enumerate(t_cols):
@@ -295,6 +302,7 @@ class TimeSeriesWidget:
             "interactionType" : "planar" if stacked else "marker"            
             }
 
+        #logger.debug("data:\n\n%s\n" % data)
         return data
 
 
@@ -307,7 +315,8 @@ class BarWidget:
         keycols = [col.name for col in table.get_columns() if col.iskey == True]
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
-            
+
+        # XXXCJ - need to implement variable column list
         valuecols = [col.name for col in table.get_columns() if col.iskey == False]
         w.options = JsonDict(dict={ 'key' : keycols[0],
                                     'columns': valuecols,
@@ -357,6 +366,7 @@ class BarWidget:
         maxval = {}
 
         stacked = False # XXXCJ
+        #__import__('IPython').core.debugger.Pdb(color_scheme='Linux').set_trace()
         for reportrow in data:
             row = {}
             rowmin = {}

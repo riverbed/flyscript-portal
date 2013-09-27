@@ -269,9 +269,9 @@ class WidgetJobDetail(APIView):
                 i = importlib.import_module(widget.module)
                 widget_func = i.__dict__[widget.uiwidget].process
                 if widget.rows > 0:
-                    tabledata = job.data()[:widget.rows]
+                    tabledata = job.values()[:widget.rows]
                 else:
-                    tabledata = job.data()
+                    tabledata = job.values()
                     
                 if tabledata is None or len(tabledata) == 0:
                     resp = job.json()

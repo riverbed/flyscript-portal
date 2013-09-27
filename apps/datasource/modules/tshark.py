@@ -102,8 +102,8 @@ class TableQuery:
             command = command + (" -R '%s'" % trafficexpr)
 
         msg = "tshark command: %s" % command
-        print msg
-        logging.debug(msg)
+        #print msg
+        logger.debug(msg)
         proc = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE)
 
         data = []
