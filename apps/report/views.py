@@ -22,15 +22,18 @@ from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
-from apps.datasource.models import Job, Criteria, TableCriteria
+from apps.datasource.models import Job, Criteria, TableCriteria, Table
+from apps.datasource.serializers import TableSerializer
 from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.forms import create_report_criteria_form
+from apps.report.serializers import ReportSerializer
 from apps.report.utils import create_debug_zipfile
 
-from rest_framework.views import APIView
+from rest_framework import generics, views
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
 from rvbd.common import parse_timedelta
 
@@ -76,11 +79,24 @@ def download_debug(request):
 FORMSTYLE = 'horizontal'
 
 
-class ReportView(APIView):
+class ReportView(views.APIView):
     """ Main handler for /report/{id}
     """
+    model = Report
+    serializer_class = ReportSerializer
+    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
     def get(self, request, report_slug=None):
+        # handle REST calls
+        if request.accepted_renderer.format != 'html':
+            if report_slug:
+                queryset = Report.objects.get(slug=report_slug)
+            else:
+                queryset = Report.objects.all()
+            serializer = ReportSerializer(instance=queryset)
+            return Response(serializer.data)
+
+        # handle HTML calls
         try:
             if report_slug is None:
                 reports = Report.objects.order_by('slug')
@@ -115,7 +131,12 @@ class ReportView(APIView):
                                    'form': form},
                                   context_instance=RequestContext(request))
 
-    def post(self, request, report_slug):
+    def post(self, request, report_slug=None):
+        # handle REST calls
+        if report_slug is None:
+            return self.http_method_not_allowed(request)
+
+        # handle HTML calls
         try:
             report = Report.objects.get(slug=report_slug)
         except:
@@ -182,7 +203,19 @@ class ReportView(APIView):
             return HttpResponse(str(form), status=400)
 
 
-class WidgetJobsList(APIView):
+class ReportTableList(generics.ListAPIView):
+    model = Table
+    serializer_class = TableSerializer
+
+    def get(self, request, *args, **kwargs):
+        report = Report.objects.get(slug=kwargs['report_slug'])
+        widgets = report.widget_set.all()
+        queryset = (table for widget in widgets for table in widget.tables.all())
+        serializer = TableSerializer(instance=queryset)
+        return Response(serializer.data)
+
+
+class WidgetJobsList(views.APIView):
 
     parser_classes = (JSONParser,)
 
@@ -248,7 +281,7 @@ class WidgetJobsList(APIView):
             from IPython import embed; embed()
 
 
-class WidgetJobDetail(APIView):
+class WidgetJobDetail(views.APIView):
 
     def get(self, request, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)

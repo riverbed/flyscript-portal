@@ -23,6 +23,9 @@ urlpatterns = patterns(
     url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/$',
         views.ReportView.as_view(), name='report-view'),
 
+    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/tables/$',
+        views.ReportTableList.as_view(), name='report-table-list'),
+
     url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/reload$', 'reload_config', name='reload-report'),
 
     url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/$',
