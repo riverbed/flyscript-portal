@@ -9,8 +9,9 @@ from django.conf.urls import patterns, include, url
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from apps.datasource.views import TableList, TableDetail
+from apps.datasource.views import TableColumnList, TableJobList
 from apps.datasource.views import ColumnList, ColumnDetail
-from apps.datasource.views import JobList, JobDetail
+from apps.datasource.views import JobList, JobDetail, JobDetailData
 
 
 urlpatterns = patterns(
@@ -24,6 +25,14 @@ urlpatterns = patterns(
         TableDetail.as_view(),
         name='table-detail'),
 
+    url(r'^tables/(?P<pk>[0-9]+)/columns/$',
+        TableColumnList.as_view(),
+        name='table-column-list'),
+
+    url(r'^tables/(?P<pk>[0-9]+)/jobs/$',
+        TableJobList.as_view(),
+        name='table-job-list'),
+
     url(r'^columns/$',
         ColumnList.as_view(),
         name='column-list'),
@@ -35,10 +44,14 @@ urlpatterns = patterns(
     url(r'^jobs/$',
         JobList.as_view(),
         name='job-list'),
-    
+
     url(r'^jobs/(?P<pk>[0-9]+)/$',
         JobDetail.as_view(),
         name='job-detail'),
+
+    url(r'^jobs/(?P<pk>[0-9]+)/data/$',
+        JobDetailData.as_view(),
+        name='job-detail-data'),
 )
 
 urlpatterns = format_suffix_patterns(urlpatterns)

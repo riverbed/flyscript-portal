@@ -121,7 +121,7 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.report.middleware.exceptions.ReloadExceptionHandler',
     'apps.report.middleware.timezones.TimezoneMiddleware',
-    'project.middleware.LoginRequiredMiddleware',
+    #'project.middleware.LoginRequiredMiddleware',
 )
 
 ROOT_URLCONF = 'project.urls'
@@ -174,6 +174,18 @@ INSTALLED_APPS = (
     'apps.help',
     'apps.preferences',
 )
+
+REST_FRAMEWORK = {
+    # Use hyperlinked styles by default.
+    # Only used if the `serializer_class` attribute is not set on a view.
+    'DEFAULT_MODEL_SERIALIZER_CLASS':
+        'rest_framework.serializers.HyperlinkedModelSerializer',
+
+    # Use Django's standard `django.contrib.auth` permissions,
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated'
+    ]
+}
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

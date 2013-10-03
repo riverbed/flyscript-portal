@@ -33,13 +33,18 @@ class DeviceDetail(views.APIView):
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
     def get(self, request, device_id=None):
-        if device_id:
-            device = get_object_or_404(Device, pk=device_id)
-            form = DeviceDetailForm(instance=device)
-        else:
-            form = DeviceDetailForm()
+        device = get_object_or_404(Device, pk=device_id)
 
-        return Response({'form': form}, template_name='device_detail.html')
+        if request.accepted_renderer.format == 'html':
+            if device_id:
+                form = DeviceDetailForm(instance=device)
+            else:
+                form = DeviceDetailForm()
+            return Response({'form': form}, template_name='device_detail.html')
+
+        serializer = DeviceSerializer(instance=device)
+        data = serializer.data
+        return Response(data)
 
     def post(self, request, device_id=None):
         if device_id:

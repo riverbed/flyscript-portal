@@ -81,15 +81,30 @@ class Command(BaseCommand):
                                      "Specify how data should be displayed")
         group.add_option('--csv',
                          action='store_true',
-                         dest='csv',
+                         dest='as_csv',
                          default=False,
                          help='Output data in CSV format instead of tabular')
+        group.add_option('--json',
+                         action='store_true',
+                         dest='as_json',
+                         default=False,
+                         help='Output data in JSON format instead of tabular')
+        group.add_option('--data',
+                         action='store_true',
+                         dest='only_data',
+                         default=False,
+                         help='Output only data ignoring columns')
+        group.add_option('--columns',
+                         action='store_true',
+                         dest='only_columns',
+                         default=False,
+                         help='Output only columns ignoring data')
         parser.add_option_group(group)
         return parser
 
     def console(self, msg, ending=None):
         """ Print text to console except if we are writing CSV file """
-        if not self.options['csv']:
+        if not self.options['as_csv']:
             self.stdout.write(msg, ending=ending)
             self.stdout.flush()
 
@@ -124,6 +139,12 @@ class Command(BaseCommand):
                                 table=table,
                                 ignore_cache=options['ignore_cache'])
 
+            columns = [c.name for c in table.get_columns()]
+
+            if options['only_columns']:
+                print columns
+                return
+
             job = Job(table=table, criteria=criteria)
             job.save()
 
@@ -143,14 +164,16 @@ class Command(BaseCommand):
 
                 end_time = datetime.datetime.now()
                 delta = end_time - start_time
-                self.console('Done!! (took roughly %.2f seconds)' % delta.total_seconds())
+                seconds = float(delta.microseconds + 
+                                (delta.seconds + delta.days * 24 * 3600) * 10**6) / 10**6
+
+                self.console('Done!! (elapsed time: %.2f seconds)' % seconds)
                 self.console('')
 
-                columns = [c.name for c in table.get_columns()]
-                if not options['csv']:
-                    Formatter.print_table(job.data(), columns)
+                if options['as_csv']:
+                    Formatter.print_csv(job.values(), columns)
                 else:
-                    Formatter.print_csv(job.data(), columns)
+                    Formatter.print_table(job.values(), columns)
 
             finally:
                 job.delete()
