@@ -11,13 +11,13 @@ import datetime
 import threading
 
 import pandas as pd
-
 from rvbd.shark import Shark
 from rvbd.shark.types import Operation, Value, Key
 from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
+from rvbd.common import timeutils
 
 from apps.datasource.models import Column, Table
 from apps.devices.devicemanager import DeviceManager
@@ -214,7 +214,8 @@ class TableQuery:
         if self.timeseries:
             # use sample times for each row
             for d in self.data:
-                out.extend([d['t']] + x for x in d['vals'])
+                t = timeutils.datetime_to_microseconds(d['t']) / float(10 ** 6)
+                out.extend([t] + x for x in d['vals'])
 
         else:
             for d in self.data:
