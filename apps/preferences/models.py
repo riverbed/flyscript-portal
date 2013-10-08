@@ -28,7 +28,7 @@ MAPS_VERSIONS = ('DISABLED',            # Google Maps Versions
                  'FREE',
                  'BUSINESS',
                  'OPEN_STREET_MAPS',    # Open Street Maps
-                 'STATIC_MAPS'          # Static library created maps
+                 #'STATIC_MAPS'          # Static library created maps
                  )
 MAPS_VERSION_CHOICES = zip(MAPS_VERSIONS, map(str.title, MAPS_VERSIONS))
 
@@ -66,4 +66,3 @@ def create_user_profile(sender, instance, created, **kwargs):
         UserProfile.objects.create(user=instance)
 
 post_save.connect(create_user_profile, sender=User)
-

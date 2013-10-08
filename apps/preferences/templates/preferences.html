@@ -29,10 +29,10 @@
                     $('#osmDiv').show();
                     $('#googleDiv').hide();
                     $('#mapsVersionOSM').prop('checked', true);
-                } else if (version == 'STATIC_MAPS') {
-                    $('#osmDiv').hide();
-                    $('#googleDiv').hide();
-                    $('#mapsVersionStatic').prop('checked', true);
+                //} else if (version == 'STATIC_MAPS') {
+                //    $('#osmDiv').hide();
+                //    $('#googleDiv').hide();
+                //    $('#mapsVersionStatic').prop('checked', true);
                 } else {
                     $('#osmDiv').hide();
                     $('#googleDiv').show();
@@ -80,10 +80,10 @@
                 $('#osmDiv').hide();
                 $('#googleDiv').show();
                 toggleGoogleMapsVersion();
-            } else {
-                $('#id_maps_version').val('STATIC_MAPS');
-                $('#osmDiv').hide();
-                $('#googleDiv').hide();
+            //} else {
+            //    $('#id_maps_version').val('STATIC_MAPS');
+            //    $('#osmDiv').hide();
+            //    $('#googleDiv').hide();
             };
         };
         function toggleGoogleMapsVersion() {
@@ -182,10 +182,12 @@
                        {% endif %}
                    </div>
 
+                   <!--
                    <label class="radio">
                      <input type="radio" name="optionMapsVersion" id="mapsVersionStatic" value="STATIC_MAPS">
                      Static Maps (not currently supported)
                    </label>
+                   -->
 
                 </div>
               </div>
