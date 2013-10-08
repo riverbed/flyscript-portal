@@ -125,10 +125,19 @@ Google Maps/Google Earth API
  
 Use of the Google Maps/Google Earth API may require login credentials from
 Google such as an API Key or Client ID.  Please see Google’s website at
-[https://developers.google.com/maps/terms](https://developers.google.com/maps/terms)
-and
-[https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html](https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html)
-for more information.
+https://developers.google.com/maps/documentation/javascript/tutorial and
+https://developers.google.com/maps/documentation/business/clientside/#MapsJS
+for more information.  Please also see the LICENSE file available at
+https://github.com/riverbed/flyscript-portal/blob/master/LICENSE for
+information regarding licensing.
+
+
+Enabling OpenStreetMap
+----------------------
+
+Please see the LICENSE file available at
+https://github.com/riverbed/flyscript-portal/blob/master/LICENSE for
+information regarding licensing of OpenStreetMap and MapQuest-OSM tiles.  
 
 
 

@@ -6,4 +6,4 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 import yui3
-import google_maps
+import maps

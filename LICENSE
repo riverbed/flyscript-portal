@@ -68,9 +68,11 @@ Maps Service.  By using the Maps Service in connection with FlyScript
 Portal, you are expressly agreeing to be bound by Google’s Terms of
 Use.  "Google" means Google Inc.  and/or one or more of its
 affiliates, as may be specified in Google's Terms of Use.  Without
-limiting the foregoing, your use of the Maps Service may also be
-subject to additional terms and conditions required by Google.  It is
-solely your responsibility to obtain all applicable licenses from
+limiting the foregoing, your use of the Maps Service may also be subject to
+additional terms and conditions required by Google, including without
+limitation the terms available at http://code.google.com/apis/maps/terms.html
+or https://www.google.com/enterprise/earthmaps/legal/us/maps_purchase_agreement.html.
+It is solely your responsibility to obtain all applicable licenses from
 Google for your use of the Maps Service.
  
 "Riverbed" means Riverbed Technology, Inc.  FlyScript Portal is
@@ -142,6 +144,33 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+----------------------------------------------------------------------
+OpenStreetMap and MapQuest-OSM tiles
+
+If you enable use of the OpenStreetMap map widget with FlyScript Portal,
+content will be provided from the OpenStreetMap database, which is made
+available under the Open Database License (ODbL).  The OpenStreetMap database
+is available at http://www.openstreetmap.org and the ODbL is available at
+http://opendatacommons.org/licenses/odbl/1.0/.  
+
+In addition, if you enable use of the OpenStreetMap map widget with FlyScript
+Portal, MapQuest-OSM tiles using OpenStreetMap data will be provided by
+MapQuest. OpenStreetMap data and tiles are provided by MapQuest pursuant to the
+Creative Commons – Attribution-Sharealike License 2.0, the terms of which are
+available at http://creativecommons.org/licenses/by-sa/2.0/. Without limiting
+the foregoing, use of MapQuest-OSM tiles is subject to MapQuest’s then-current
+Terms of Use available at http://info.mapquest.com/terms-of-use/.  By using the
+MapQuest-OSM tiles, you are expressly agreeing to be bound by MapQuest’s Terms
+of Use.  “MapQuest” means MapQuest, Inc. and/or one or more of its affiliates,
+as may be specified in MapQuest’s Terms of Use.  Without limiting the
+foregoing, your use of MapQuest-OSM tiles may also be subject to additional
+terms and conditions required by MapQuest, including without limitation the
+terms available at http://developer.mapquest.com/web/info/terms-of-use.  It is
+solely your responsibility to obtain all applicable licenses from MapQuest for
+your use of the MapQuest-OSM tiles.
+
 
 
 ----------------------------------------------------------------------

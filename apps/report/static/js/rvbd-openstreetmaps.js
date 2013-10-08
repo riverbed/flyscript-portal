@@ -27,7 +27,7 @@ rvbd_maps.MapWidget.prototype.render = function(data)
     
     $('#' + contentid + '-title')
         .height(20)
-        .css({"text-align" : "center"});
+        .css({"text-align": "center"});
 
     $('#' + contentid).
         css({"margin": 10}).
@@ -36,18 +36,23 @@ rvbd_maps.MapWidget.prototype.render = function(data)
 
     var map;
 
+ // Ignore options here due to bug:
+ // https://github.com/Leaflet/Leaflet/issues/2071
     var mapOptions = {
-        zoom: 3,
-        center: new google.maps.LatLng(42.3583, -71.063),
-        mapTypeId: google.maps.MapTypeId.ROADMAP
+ //       center: [42.3583, -71.063],
+ //       zoom: 3,
     };
-    bounds = new google.maps.LatLngBounds();
-    map = new google.maps.Map(document.getElementById(contentid),
-                              mapOptions);
+    bounds = new L.LatLngBounds();
+    map = new L.map(document.getElementById(contentid),
+                    mapOptions);
+
+    L.tileLayer('http://{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.jpg', {
+        subdomains: ['otile1', 'otile2', 'otile3', 'otile4'],
+        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">',        
+    }).addTo(map);
 
     $.each(data.circles, function(i,c) {
-        c.map = map;
-        c.center = new google.maps.LatLng(c.center[0], c.center[1]);
+        c.center = [c.center[0], c.center[1]];
         bounds.extend(c.center)
 
         var valstr = (c.formatter ?
@@ -56,33 +61,17 @@ rvbd_maps.MapWidget.prototype.render = function(data)
 
         var title = c.title + '\n' + valstr;
 
-
-        var marker = new google.maps.Marker({
-            position: c.center,
-            map: map,
-            title: title,
-            icon: { path: google.maps.SymbolPath.CIRCLE,
-                    scale: c.size,
-                    strokeColor: "red",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 0.5,
-                    fillOpacity: 0.35,
+        var marker = L.circleMarker(c.center, {
+                    radius: c.radius, 
+                    color: "red",
+                    weight: 0.5,
+                    opacity: 0.8,
+                    fill: true,
                     fillColor: "red",
-                  }
-        });
-
-        if (0) {
-            circle = new google.maps.Circle(c);
-            
-            var infoWindow = new google.maps.InfoWindow();
-            var html = c.label;
-            
-            google.maps.event.addListener(circle, 'click', function() {
-                infoWindow.setContent(html);
-                infoWindow.open(map, circle);
-            });
-        }
+                    fillOpacity: 0.35,
+        }).addTo(map);
     });
+    bounds = bounds.pad(0.10);
     map.fitBounds(bounds);
 }
 

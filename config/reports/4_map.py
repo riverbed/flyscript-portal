@@ -13,7 +13,7 @@ from apps.datasource.models import Column
 from apps.devices.models import Device
 from apps.datasource.modules.profiler import TimeSeriesTable, GroupByTable
 from apps.report.models import Report, Table
-import apps.report.modules.google_maps as google_maps
+import apps.report.modules.maps as maps
 import apps.report.modules.yui3 as yui3
 
 #### Load devices that are defined
@@ -41,7 +41,7 @@ Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', u
 Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units = 'B/s')
 
 # Create a Map widget
-google_maps.MapWidget.create(report, table, "Response Time Map", width=12, height=500)
+maps.MapWidget.create(report, table, "Response Time Map", width=12, height=500)
 
 # Create a Table showing the same data as the map
 yui3.TableWidget.create(report, table, "Locations", width=12)

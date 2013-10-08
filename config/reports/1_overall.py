@@ -13,9 +13,9 @@ from apps.datasource.models import Column
 from apps.devices.models import Device
 from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
+import apps.report.modules.maps as maps
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.shark import SharkTable, create_shark_column
-import apps.report.modules.google_maps as google_maps
 
 ### Configure Shark View To Use
 SHARK_VIEW_NAME = 'jobs/flyscript-portal'       # Note: must prefix job names with 'jobs/'
@@ -40,7 +40,7 @@ Column.create(table, 'response_time', label='Resp Time',  datatype='metric')
 Column.create(table, 'network_rtt',   label='Net RTT',    datatype='metric')
 Column.create(table, 'server_delay',  label='Srv Delay',  datatype='metric')
 
-google_maps.MapWidget.create(report, table, "Response Time", width=6, height=300)
+maps.MapWidget.create(report, table, "Response Time", width=6, height=300)
 yui3.TableWidget.create(report, table, "Locations by Avg Bytes", width=6)
 
 # Define a Overall TimeSeries showing Avg Bytes/s
@@ -52,12 +52,12 @@ Column.create(table, 'avg_bytes', label='Avg Bytes/s', datatype='bytes', units='
 yui3.TimeSeriesWidget.create(report, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
-t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, 
+t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1,
                       view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=10, resolution=1, aggregated=False)
 
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
-create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False, 
-                        extractor='generic.bytes', operation='sum', datatype='bytes')
+create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False,
+                    extractor='generic.bytes', operation='sum', datatype='bytes')
 
 yui3.TimeSeriesWidget.create(report, t, 'Overall Bandwidth (Bytes) at (1-second resolution)', width=6)
