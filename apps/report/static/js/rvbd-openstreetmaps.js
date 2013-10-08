@@ -36,9 +36,11 @@ rvbd_maps.MapWidget.prototype.render = function(data)
 
     var map;
 
+ // Ignore options here due to bug:
+ // https://github.com/Leaflet/Leaflet/issues/2071
     var mapOptions = {
-        center: [42.3583, -71.063],
-        zoom: 3,
+ //       center: [42.3583, -71.063],
+ //       zoom: 3,
     };
     bounds = new L.LatLngBounds();
     map = new L.map(document.getElementById(contentid),
