@@ -4,17 +4,17 @@ Riverbed FlyScript Dashboard
 This Django project provides a web-based reporting capability utilizing the
 FlyScript python package.
 
-Installation
-------------
+Installation Overview
+---------------------
 
 Along with a working python installation, the following packages will need to
 be installed:
 
 - Django>=1.4.5
 - django-model-utils==1.2.0
-- djangorestframework==2.2.5
+- djangorestframework==2.3.8
 - django-extensions==1.1.1
-- flyscript>=0.56
+- flyscript>=0.5.6
 - jsonfield==0.9.5
 - numpy>=1.7.0
 - pandas>=0.10.1
@@ -24,6 +24,9 @@ be installed:
 - six>=1.3.0
 - wsgiref>=0.1.2
 
+Linux/Mac OS Install
+--------------------
+
 After cloning this repository to a local directory, these dependencies can be
 installed/checked by using the included requirements.txt file.  For example:
 
@@ -32,6 +35,66 @@ installed/checked by using the included requirements.txt file.  For example:
     $ cd flyscript-portal
     $ pip install -r requirements.txt
     $ ./clean
+
+Windows Install
+---------------
+
+The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming 
+you have Python 2.7 installed successfully, follow the steps below:
+
+1. Install git if you haven't already
+    1. Download installer from [http://git-scm.com/download/win](http://git-scm.com/download/win)
+
+    2. Open installer
+        - Click next until you get to "Select Components"
+        - Check "Windows Explorer integration" and "Simple context menu"
+        - Check off the two Git Here options
+        - Leave other options as default and click through until Finish
+        
+2. Clone the flyscript-portal repository from github using "Git Bash"
+    1. Start --> All Programs --> Git --> Git Bash
+
+    2. Create a directory to store the project (you will start in "~" which
+       is the same as C:\Users\<username>).  For example:
+       
+            $ mkdir flyscript
+            $ cd flyscript
+    3. Clone the project:
+    
+            $ git clone https://github.com/riverbed/flyscript-portal.git
+            
+    4. This will create a directory called `flyscript-portal`
+
+    6. Go into this directory and check things out
+    
+            $ cd flyscript-portal
+            $ ls
+    6. Leave this window open for later.
+    
+3. Get pre-compiled packages
+
+    1. In the Git Bash window from step 2, determine which python you have
+        by running the "python" command.
+    2. Above the ">>>" you should see text including "[MSC v.1500 32 bit (Intel)]"
+    3. If you see "32 bit", download the following two packages:
+        - [numpy-1.7.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe#md5=dc11133ce1ce90ceb8f715e879a96e5f)
+        - [pandas-0.10.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win32-py2.7.exe#md5=ffe7526829437c06db3e96f308f24446)
+    4. If you see "64 bit", download these packages instead:
+        - [numpy-1.7.1.win-amd64-py2.7.exe](http://www.lfd.uci.edu/~gohlke/pythonlibs/coxofy2i/numpy-MKL-1.7.1.win-amd64-py2.7.exe)
+        - [pandas-0.10.1.win-amd64-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win-amd64-py2.7.exe#md5=44e528bc3d07c89d8c623ec1d3d129c3)
+    5. Double-click and install numpy
+
+    7. Double-click and install pandas.
+
+4. In the Git Bash window, install the remaining requirements
+
+        $ pip install -r requirements.txt
+
+5. Initialize the database and then startup the development server
+    
+        $ ./clean
+        $ python manage.py runserver
+
 
 Configuration
 -------------
@@ -247,3 +310,4 @@ flyscript-portal
 ================
 
 FlyScript Portal - building dashboards, reports from network device data
+
