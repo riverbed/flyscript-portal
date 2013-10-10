@@ -184,7 +184,10 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated'
-    ]
+    ],
+
+    'EXCEPTION_HANDLER':
+        'project.middleware.authentication_exception_handler'
 }
 
 # A sample logging configuration. The only tangible logging

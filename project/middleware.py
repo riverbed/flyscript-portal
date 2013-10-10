@@ -5,13 +5,20 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-# adapted from stack overflow question
-# http://tinyurl.com/kaeqg37
-from django.http import HttpResponseRedirect
-from django.conf import settings
 from re import compile
 
+from django.http import HttpResponseRedirect
+from django.conf import settings
+from rest_framework.views import exception_handler
 
+from project.utils import get_request
+
+
+#
+# Global authentication locks
+# adapted from stack overflow question
+# http://tinyurl.com/kaeqg37
+#
 def get_exempts():
     exempts = [compile(settings.LOGIN_URL.lstrip('/'))]
     if hasattr(settings, 'LOGIN_EXEMPT_URLS'):
@@ -41,3 +48,19 @@ doesn't work, ensure your TEMPLATE_CONTEXT_PROCESSORS setting includes\
             if not any(m.match(path) for m in get_exempts()):
                 return HttpResponseRedirect(
                     settings.LOGIN_URL + "?next=" + request.path)
+
+
+#
+# Custom exception handling for Django REST Framework
+#
+def authentication_exception_handler(exc):
+    """ Returns redirect to login page only when requesting HTML. """
+    request = get_request()
+
+    #from IPython import embed; embed()
+    if 'text/html' in request.negotiator.get_accept_list(request):
+        return HttpResponseRedirect(settings.LOGIN_URL + "?next=" + request.path)
+
+    response = exception_handler(exc)
+
+    return response
