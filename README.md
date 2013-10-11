@@ -24,8 +24,7 @@ be installed:
 - six>=1.3.0
 - wsgiref>=0.1.2
 
-Linux/Mac OS Install
---------------------
+### Linux/Mac OS Install
 
 After cloning this repository to a local directory, these dependencies can be
 installed/checked by using the included requirements.txt file.  For example:
@@ -34,10 +33,12 @@ installed/checked by using the included requirements.txt file.  For example:
     $ git clone git@github.com:riverbed/flyscript-portal.git
     $ cd flyscript-portal
     $ pip install -r requirements.txt
-    $ ./clean
+    
+After reading up on the [configuration](#configuration), see the sections below for
+[initializing the database](#initialize-the-database) and
+[starting up the development server](#starting-the-server).
 
-Windows Install
----------------
+### Windows Install
 
 The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming 
 you have Python 2.7 installed successfully, follow the steps below:
@@ -51,49 +52,53 @@ you have Python 2.7 installed successfully, follow the steps below:
         - Check off the two Git Here options
         - Leave other options as default and click through until Finish
         
-2. Clone the flyscript-portal repository from github using "Git Bash"
-    1. Start --> All Programs --> Git --> Git Bash
+2. Clone the flyscript-portal repository from github using "Git Bash" (Start --> All Programs --> Git --> Git Bash)
 
-    2. Create a directory to store the project (you will start in "~" which
-       is the same as C:\Users\<username>).  For example:
+    1. Create a directory to store the project (you will start in "~" which
+       is the same as C:\Users\your_username).  For example:
        
+            $ cd ~
             $ mkdir flyscript
             $ cd flyscript
-    3. Clone the project:
+            
+    2. Clone the project:
     
             $ git clone https://github.com/riverbed/flyscript-portal.git
             
-    4. This will create a directory called `flyscript-portal`
+    3. This will create a directory called `flyscript-portal`
 
-    6. Go into this directory and check things out
+    4. Go into this directory and check things out
     
             $ cd flyscript-portal
             $ ls
-    6. Leave this window open for later.
+    6. Leave this window open for the next step.
     
-3. Get pre-compiled packages
+3. Get pre-compiled python packages
 
     1. In the Git Bash window from step 2, determine which python you have
         by running the "python" command.
+        
     2. Above the ">>>" you should see text including "[MSC v.1500 32 bit (Intel)]"
+    
     3. If you see "32 bit", download the following two packages:
         - [numpy-1.7.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe#md5=dc11133ce1ce90ceb8f715e879a96e5f)
         - [pandas-0.10.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win32-py2.7.exe#md5=ffe7526829437c06db3e96f308f24446)
+
     4. If you see "64 bit", download these packages instead:
         - [numpy-1.7.1.win-amd64-py2.7.exe](http://www.lfd.uci.edu/~gohlke/pythonlibs/coxofy2i/numpy-MKL-1.7.1.win-amd64-py2.7.exe)
         - [pandas-0.10.1.win-amd64-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win-amd64-py2.7.exe#md5=44e528bc3d07c89d8c623ec1d3d129c3)
+
     5. Double-click and install numpy
 
-    7. Double-click and install pandas.
+    6. Double-click and install pandas.
 
 4. In the Git Bash window, install the remaining requirements
 
         $ pip install -r requirements.txt
 
-5. Initialize the database and then startup the development server
-    
-        $ ./clean
-        $ python manage.py runserver
+5. After reading up on the [configuration](#configuration), see the sections below for
+[initializing the database](#initialize-the-database) and
+[starting up the development server](#starting-the-server).
 
 
 Configuration
@@ -144,7 +149,7 @@ files, this operation is safe to run at just about any time.
 
 Note that the `clean` script is a bash shell script and will work on unix-like
 systems.  If you are running this on Windows, you'll need to manually execute
-each command.
+each command or run this from the Git-Bash or Cygwin shell.
 
 On unix-like systems:
 
@@ -305,7 +310,8 @@ by the respective copyright holders under the applicable terms and
 conditions (including, without limitation, warranty and liability
 disclaimers) identified at
 [LICENSE](https://github.com/riverbed/flyscript-portal/blob/master/LICENSE).
-=======
+
+
 flyscript-portal
 ================
 
