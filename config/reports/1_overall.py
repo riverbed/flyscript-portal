@@ -33,7 +33,7 @@ PROFILER = Device.objects.get(name="profiler")
 SHARK1 = Device.objects.get(name="shark1")
 
 # Define a map and table, group by location
-table = GroupByTable.create('maploc', PROFILER, 'host_group', duration=60, filterexpr='host 10.99/16')
+table = GroupByTable.create('maploc', PROFILER, 'host_group', duration=60)
 
 Column.create(table, 'group_name',    label='Group Name', iskey=True)
 Column.create(table, 'response_time', label='Resp Time',  datatype='metric')

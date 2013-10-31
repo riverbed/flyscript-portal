@@ -29,16 +29,16 @@ report = Report(title="Response Time Map", position=4)
 report.save()
 
 # Define a map and table, group by location
-table = GroupByTable.create('maploc2',  PROFILER, 'host_group', duration=60, filterexpr='host 10.99/16')
+table = GroupByTable.create('maploc2', PROFILER, 'host_group', duration=60)
 
 Column.create(table, 'group_name', iskey=True, label='Group Name')
 Column.create(table, 'response_time', label='Resp Time', datatype='metric')
 Column.create(table, 'network_rtt', label='Net RTT', datatype='metric')
 Column.create(table, 'server_delay', label='Srv Delay', datatype='metric')
 Column.create(table, 'avg_bytes', label='Response Time', datatype='metric')
-Column.create(table, 'peak_bytes', 'Peak Bytes/s', datatype='bytes', units = 'B/s')
-Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units = 'B/s')
-Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units = 'B/s')
+Column.create(table, 'peak_bytes', 'Peak Bytes/s', datatype='bytes', units='B/s')
+Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', units='B/s')
+Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units='B/s')
 
 # Create a Map widget
 maps.MapWidget.create(report, table, "Response Time Map", width=12, height=500)

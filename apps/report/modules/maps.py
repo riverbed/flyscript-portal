@@ -67,7 +67,8 @@ class MapWidget(object):
     def create(cls, report, table, title, width=6, height=300, column=None):
         """Class method to create a MapWidget.
 
-        `column` is the data column to graph
+        `column` is the data column to graph, defaults to the first non-key
+                 column found assigned to the table.
         """
         w = Widget(report=report, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
@@ -111,13 +112,11 @@ class MapWidget(object):
         circles = []
 
         if data:
-            valmin = data[0][valuecol.dataindex]
-            valmax = valmin
-
-            for reportrow in data:
-                val = reportrow[valuecol.dataindex]
-                valmin = min(val, valmin)
-                valmax = max(val, valmax)
+            values = zip(*data)[valuecol.dataindex]
+            filtered = filter(bool, values)
+            if filtered:
+                valmin = min(filtered)
+                valmax = max(filtered)
 
             geolookup = None
 
@@ -131,6 +130,10 @@ class MapWidget(object):
             for reportrow in data:
                 key = reportrow[keycol.dataindex]
                 val = reportrow[valuecol.dataindex]
+
+                # skip empty result values which are explicitly zero
+                if val == '':
+                    continue
 
                 # XXXCJ - this is a hack for Profiler based host groups,
                 # need to find a way to generalize this, probably via options
