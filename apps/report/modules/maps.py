@@ -131,7 +131,7 @@ class MapWidget(object):
                 key = reportrow[keycol.dataindex]
                 val = reportrow[valuecol.dataindex]
 
-                # skip empty result values which are explicitly zero
+                # skip empty result values which are not explicitly zero
                 if val == '':
                     continue
 

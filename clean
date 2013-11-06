@@ -16,6 +16,7 @@ elif [[ $1 == "--deploy" ]]; then
     python manage.py collectstatic --noinput
 fi
 
+python manage.py clean_pyc --path .
 python manage.py syncdb --noinput
 python manage.py reload
 
