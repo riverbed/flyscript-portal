@@ -37,7 +37,7 @@ installed/checked by using the included requirements.txt file.  For example:
 After reading up on the [configuration](#configuration), see the sections below for
 [initializing the database](#initialize-the-database) and
 [starting up the development server](#starting-the-server).
-
+cd fly    
 ### Windows Install
 
 The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming 
@@ -49,7 +49,7 @@ you have Python 2.7 installed successfully, follow the steps below:
     2. Open installer
         - Click next until you get to "Select Components"
         - Check "Windows Explorer integration" and "Simple context menu"
-        - Check off the two Git Here options
+        - Check the two Git Here options
         - Leave other options as default and click through until Finish
         
 2. Clone the flyscript-portal repository from github using "Git Bash" (Start --> All Programs --> Git --> Git Bash)
@@ -80,17 +80,14 @@ you have Python 2.7 installed successfully, follow the steps below:
         
     2. Above the ">>>" you should see text including "[MSC v.1500 32 bit (Intel)]"
     
-    3. If you see "32 bit", download the following two packages:
-        - [numpy-1.7.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/n/numpy/numpy-1.7.1.win32-py2.7.exe#md5=dc11133ce1ce90ceb8f715e879a96e5f)
-        - [pandas-0.10.1.win32-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win32-py2.7.exe#md5=ffe7526829437c06db3e96f308f24446)
+    3. Download and install the correct numpy package from
+       (http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy).  Pick the
+        correct 32 or 64 bit version based on what you see from starting
+        python above.
 
-    4. If you see "64 bit", download these packages instead:
-        - [numpy-1.7.1.win-amd64-py2.7.exe](http://www.lfd.uci.edu/~gohlke/pythonlibs/coxofy2i/numpy-MKL-1.7.1.win-amd64-py2.7.exe)
-        - [pandas-0.10.1.win-amd64-py2.7.exe](https://pypi.python.org/packages/2.7/p/pandas/pandas-0.10.1.win-amd64-py2.7.exe#md5=44e528bc3d07c89d8c623ec1d3d129c3)
-
-    5. Double-click and install numpy
-
-    6. Double-click and install pandas.
+    4. Download and install the correct pandas from
+       (http://www.lfd.uci.edu/~gohlke/pythonlibs/#pandas).  Pick the
+        correct 32 or 64 bit version as above.
 
 4. In the Git Bash window, install the remaining requirements
 
