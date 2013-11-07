@@ -37,7 +37,7 @@ installed/checked by using the included requirements.txt file.  For example:
 After reading up on the [configuration](#configuration), see the sections below for
 [initializing the database](#initialize-the-database) and
 [starting up the development server](#starting-the-server).
-cd fly    
+
 ### Windows Install
 
 The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming 
@@ -71,7 +71,7 @@ you have Python 2.7 installed successfully, follow the steps below:
     
             $ cd flyscript-portal
             $ ls
-    6. Leave this window open for the next step.
+    5. Leave this window open for the next step.
     
 3. Get pre-compiled python packages
 
