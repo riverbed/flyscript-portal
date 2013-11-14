@@ -1,4 +1,4 @@
-Django>=1.4.5
+Django>=1.5.1,<1.6
 django-model-utils==1.2.0
 djangorestframework==2.3.8
 django-extensions==1.1.1
