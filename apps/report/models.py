@@ -29,7 +29,7 @@ class WidgetOptions(JsonDict):
                 'axes': None}
 
 
-def get_caller_name(match='config.reports'):
+def get_caller_name(match='config.'):
     """ Determine filename of calling function.
         Used to determine source of Report class definition.
     """
