@@ -65,15 +65,20 @@ def import_directory(root, report_name=None, reload_devices=False, ignore_list=N
                     __import__(name)
 
             except RvbdHTTPException as e:
-                raise RvbdException, RvbdException('From config file "%s": %s' % (name, e.message)), sys.exc_info()[2]
+                instance = RvbdException('From config file "%s": %s' %
+                                         (name, e.message))
+                raise RvbdException, instance, sys.exc_info()[2]
+
+            except SyntaxError as e:
+                msg_format = '%s: (file: %s, line: %s, offset: %s)\n%s'
+                message = msg_format % (e.msg, e.filename,
+                                        e.lineno, e.offset, e.text)
+                instance = type(e)('From config file "%s": %s' % (name, message))
+                raise type(e), instance, sys.exc_info()[2]
 
             except Exception as e:
-                if e.message:
-                    message = e.message
-                else:
-                    # SyntaxError has different format
-                    message = '%s: (file: %s, line: %s, offset: %s)\n%s' % (e.msg, e.filename, e.lineno, e.offset, e.text)
-                raise type(e), type(e)('From config file "%s": %s' % (name, message)), sys.exc_info()[2]
+                instance = type(e)('From config file "%s": %s' % (name, str(e)))
+                raise type(e), instance, sys.exc_info()[2]
 
 
 class Command(BaseCommand):
