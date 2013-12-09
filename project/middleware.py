@@ -10,6 +10,7 @@ from re import compile
 from django.http import HttpResponseRedirect
 from django.conf import settings
 from rest_framework.views import exception_handler
+from rest_framework.exceptions import NotAuthenticated
 
 from project.utils import get_request
 
@@ -57,8 +58,8 @@ def authentication_exception_handler(exc):
     """ Returns redirect to login page only when requesting HTML. """
     request = get_request()
 
-    #from IPython import embed; embed()
-    if 'text/html' in request.negotiator.get_accept_list(request):
+    if (isinstance(exc, NotAuthenticated) and
+            'text/html' in request.negotiator.get_accept_list(request)):
         return HttpResponseRedirect(settings.LOGIN_URL + "?next=" + request.path)
 
     response = exception_handler(exc)
