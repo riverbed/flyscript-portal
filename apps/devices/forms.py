@@ -26,17 +26,17 @@ class DeviceForm(forms.ModelForm):
         enabled = cleaned_data.get('enabled')
 
         if enabled:
-            if cleaned_data.get('host').startswith('fill.in.'):
+            if cleaned_data.get('host', '').startswith('fill.in.'):
                 msg = u'Please update with a valid hostname/ip address.'
                 self._errors['host'] = self.error_class([msg])
                 del cleaned_data['host']
 
-            if cleaned_data.get('username') == '<username>':
+            if cleaned_data.get('username', '') == '<username>':
                 msg = u'Please enter a valid username.'
                 self._errors['username'] = self.error_class([msg])
                 del cleaned_data['username']
 
-            if cleaned_data.get('password') == '<password>':
+            if cleaned_data.get('password', '') == '<password>':
                 msg = u'Please enter a valid password.'
                 self._errors['password'] = self.error_class([msg])
                 del cleaned_data['password']
