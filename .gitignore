@@ -5,8 +5,9 @@
 widget_data*
 *.db
 *.data
-log.txt
-log-db.txt
+log.txt*
+log-db.txt*
+static/
 
 build
 dist
