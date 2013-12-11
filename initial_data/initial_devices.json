@@ -1,0 +1,28 @@
+[
+  {
+    "pk": 1, 
+    "model": "devices.device", 
+    "fields": {
+      "name": "profiler", 
+      "module": "profiler", 
+      "host": "fill.in.profiler.host.or.ip", 
+      "port": 443,
+      "username": "<username>", 
+      "password": "<password>", 
+      "enabled": true
+    }
+  }, 
+  {
+    "pk": 2, 
+    "model": "devices.device", 
+    "fields": {
+      "name": "shark1", 
+      "module": "shark", 
+      "host": "fill.in.profiler.host.or.ip", 
+      "port": 443,
+      "username": "<username>", 
+      "password": "<password>", 
+      "enabled": true
+    }
+  } 
+]

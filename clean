@@ -7,16 +7,11 @@
 #   https://github.com/riverbed/flyscript/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+# TODO make this a python file for cross-platform support
+
 if [[ $1 == "--reset" ]]; then
-    rm project.db
-    rm datacache/*
-    rm log*.txt*
-    rm debug-*.zip
-elif [[ $1 == "--deploy" ]]; then
-    python manage.py collectstatic --noinput
+    shift
+    python manage.py reset_portal $*
+else
+    python manage.py reload
 fi
-
-python manage.py clean_pyc --path .
-python manage.py syncdb --noinput
-python manage.py reload
-

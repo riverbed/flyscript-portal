@@ -8,6 +8,7 @@
 
 
 import os
+import glob
 import optparse
 
 from django.core.management.base import BaseCommand
@@ -16,7 +17,6 @@ from django.db.models import get_app, get_models
 
 from project import settings
 from apps.report.models import Report, Widget, WidgetJob
-from apps.devices.devicemanager import DeviceManager
 from apps.datasource.models import Table, Column, Job
 
 
@@ -29,37 +29,61 @@ class Command(BaseCommand):
                              action='store_true',
                              dest='applications',
                              default=False,
-                             help='Reset application configurations.'),
+                             help='Reset all application configurations.'),
         optparse.make_option('--report-id',
                              action='store',
                              dest='report_id',
                              default=None,
                              help='Reload single report instead of all applications.'),
-        optparse.make_option('--clear-devices',
+        optparse.make_option('--clear-cache',
                              action='store_true',
-                             dest='clear_devices',
+                             dest='clear_cache',
                              default=False,
-                             help='Reload device file too (defaults to False).'),
+                             help='Clean datacache files.'),
+        optparse.make_option('--clear-logs',
+                             action='store_true',
+                             dest='clear_logs',
+                             default=False,
+                             help='Delete logs and debug files.'),
     )
 
     def handle(self, *args, **options):
-        # clear cache files
-        for f in os.listdir(settings.DATA_CACHE):
-            if f != '.gitignore':
-                try:
-                    os.unlink(os.path.join(settings.DATA_CACHE, f))
-                except OSError:
+        if options['clear_cache']:
+            # clear cache files
+            self.stdout.write('Removing cache files ... ', ending='')
+            for f in os.listdir(settings.DATA_CACHE):
+                if f != '.gitignore':
+                    try:
+                        os.unlink(os.path.join(settings.DATA_CACHE, f))
+                    except OSError:
+                        pass
+            self.stdout.write('done.')
+
+        if options['clear_logs']:
+            self.stdout.write('Removing debug files ... ', ending='')
+            for f in glob.glob(os.path.join(settings.PROJECT_ROOT,
+                                            'debug-*.zip')):
+                os.remove(f)
+            self.stdout.write('done.')
+
+            self.stdout.write('Removing log files ... ', ending='')
+            # delete rolled over logs
+            for f in glob.glob(os.path.join(settings.PROJECT_ROOT,
+                                            'log*.txt.[1-9]')):
+                os.remove(f)
+            # truncate existing logs
+            for f in glob.glob(os.path.join(settings.PROJECT_ROOT,
+                                            'log*.txt')):
+                with open(f, 'w'):
                     pass
+            self.stdout.write('done.')
 
-        # rotate the logs once
-        management.call_command('rotate_logs')
-
-        # reset database, keeping devices
         if options['applications']:
+            # reset objects from main applications
             apps = ['report', 'geolocation', 'datasource', 'console']
             for app in apps:
                 for model in get_models(get_app(app)):
-                    print 'Deleting objects from %s' % model
+                    self.stdout.write('Deleting objects from %s\n' % model)
                     model.objects.all().delete()
         elif options['report_id']:
             # remove Report and its Widgets, Jobs, WidgetJobs, Tables and Columns
@@ -83,7 +107,7 @@ class Command(BaseCommand):
                         criteria.delete()
 
                 table.delete()
-                
+
             for widget in Widget.objects.filter(report=rid):
                 for table in widget.tables.all():
                     del_table(table)
@@ -98,6 +122,5 @@ class Command(BaseCommand):
 
             report.delete()
 
-        if options['clear_devices']:
-            # clear references to existing devices
-            DeviceManager.clear()
+        # rotate the logs once
+        management.call_command('rotate_logs')

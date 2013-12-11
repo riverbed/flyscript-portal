@@ -113,14 +113,18 @@ class ReportView(views.APIView):
         for device in Device.objects.all():
             if (device.enabled and ('host.or.ip' in device.host or
                                     device.username == '<username>' or
-                                    device.password == '<password>')):
+                                    device.password == '<password>' or
+                                    device.password == '')):
                 return HttpResponseRedirect(reverse('device-list'))
+
+        profile = request.user.userprofile
+        if not profile.profile_seen:
+            # only redirect if first login
+            return HttpResponseRedirect(reverse('preferences')+'?next=/report')
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
         form = create_report_criteria_form(initial=form_init, report=report)
-
-        profile = request.user.userprofile
 
         return render_to_response('report.html',
                                   {'report': report,
