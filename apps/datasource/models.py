@@ -67,6 +67,9 @@ class TableCriteria(models.Model):
 
     parent = models.ForeignKey("self", blank=True, null=True, related_name="children")
 
+    # whether a value must be provided by the user
+    required = models.BooleanField(default=False)
+
     # instance placeholder for form return values, not for database storage
     value = PickledObjectField(null=True, blank=True)
 

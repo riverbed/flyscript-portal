@@ -20,7 +20,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 DURATIONS = ('Default', '15 min', '1 hour', 
-             '2 hours', '4 hours', '12 hours', '1 day')
+             '2 hours', '4 hours', '12 hours', '1 day',
+             '1 week', '4 weeks')
 
 
 class ReportDetailForm(forms.ModelForm):
@@ -120,8 +121,9 @@ class ReportCriteriaForm(forms.Form):
             logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
             for field in extra:
                 field_id = 'criteria_%s' % field.id
-                eval_field = '%s(label="%s")' % (field.field_type, field.label)
-                self.fields[field_id] = eval(eval_field)
+                field_cls = eval(field.field_type)
+                self.fields[field_id] = field_cls(label=field.label,
+                                                  required=field.required)
                 self.initial[field_id] = field.initial
 
     def criteria(self):
