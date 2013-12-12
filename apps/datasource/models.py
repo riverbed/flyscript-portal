@@ -146,7 +146,7 @@ class Table(models.Model):
     def __unicode__(self):
         return "<Table %s (id=%s)>" % (self.name, str(self.id))
 
-    def get_columns(self, synthetic=None, ephemeral=None):
+    def get_columns(self, synthetic=None, ephemeral=None, iskey=None):
         """
         Return the list of columns for this table.
 
@@ -158,6 +158,10 @@ class Table(models.Model):
             True means only ephemeral columns, False means
             only non-ephemeral columns
 
+        `iskey` is tri-state: None (default) is don't care,
+            True means only key columns, False means
+            only non-key columns
+
         """
         
         filtered = []
@@ -165,6 +169,8 @@ class Table(models.Model):
             if synthetic is not None and c.synthetic != synthetic:
                 continue
             if ephemeral is not None and c.ephemeral != ephemeral:
+                continue
+            if iskey is not None and c.iskey != iskey:
                 continue
             filtered.append(c)
             
