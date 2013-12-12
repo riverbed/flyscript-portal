@@ -48,9 +48,9 @@ class Command(BaseCommand):
 
         # lets clear it
         self.stdout.write('Resetting database ... ', ending='')
-        management.call_command('flush',
+        management.call_command('reset_db',
                                 interactive=False,
-                                load_initial_data=False)
+                                router='default')
         self.stdout.write('done.')
 
         management.call_command('clean',
