@@ -170,6 +170,9 @@ class Command(BaseCommand):
                 self.console('Done!! (elapsed time: %.2f seconds)' % seconds)
                 self.console('')
 
+                # Need to refresh the column list in case the job changed them (ephemeral cols)
+                columns = [c.name for c in table.get_columns()]
+
                 if options['as_csv']:
                     Formatter.print_csv(job.values(), columns)
                 else:
