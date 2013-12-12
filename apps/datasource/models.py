@@ -176,6 +176,23 @@ class Table(models.Model):
             
         return filtered
 
+    def copy_columns(self, table):
+        """ Copy the columns from `table` into this table.
+
+        This method will copy all the columsn from another table, including
+        all attributes as well as sorting.
+
+        """
+        
+        for c in table.get_columns():
+            issortcol = (c == c.table.sortcol)
+            c.pk = None
+            c.table = self
+            c.save()
+            if issortcol:
+                self.sortcol = c
+                self.save()
+
     def apply_table_criteria(self, criteria):
         """ Merge updates from dict of passed criteria values
 
