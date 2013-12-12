@@ -508,6 +508,7 @@ class Job(models.Model):
             if done:
                 self.status = depjob.status
             self.save()
+            logger.debug("%s status: %s (from dependent job %s)" % (str(self), self.status, str(depjob)))
             return done
 
         logger.debug("%s status: %s" % (str(self), self.status))
@@ -520,8 +521,7 @@ class Job(models.Model):
         """ Returns a pandas.DataFrame of the data, or None if not available. """
         if os.path.exists(self.datafile()):
             df = pandas.load(self.datafile())
-            logger.debug("%s data loaded from file: %s" % (str(self), self.datafile()))
-
+            logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
         else:
             logger.debug("%s missing data file, no data: %s" % (str(self), self.datafile()))
             df = None

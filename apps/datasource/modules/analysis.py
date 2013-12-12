@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 
 class TableOptions(JsonDict):
     _default = { 'tables': None,
-                 'func' : None }
+                 'func' : None,
+                 'params': None }
+
     _required = [ 'tables', 'func' ]
     
 class AnalysisTable:
@@ -30,6 +32,8 @@ class AnalysisTable:
         by the analysis functon to table ids
 
     `func` is a pointer to the user defined analysis function
+
+    `params` is an optional dictionary of parameters to pass to `func`
     
     For example, consider an input of two tables A and B, and an
     AnalysisTable that simply concatetanates A and B:
@@ -67,12 +71,13 @@ class AnalysisTable:
     """
 
     @classmethod
-    def create(cls, name, tables, func, duration=-1, columns=[], **kwargs):
+    def create(cls, name, tables, func, duration=None, columns=[], params=None, **kwargs):
         """
         Class method to create an AnalysisTable.
         """
+        options = TableOptions(tables=tables, func=func, params=params)
         t = Table(name=name, module=__name__, device=None, duration=duration,
-                  options=TableOptions(tables=tables, func=func), **kwargs)
+                  options=options, **kwargs)
         t.save()
 
         if columns:
@@ -103,36 +108,68 @@ class TableQuery:
                     
         # Poll until all jobs are complete
         done=False
+        wait = 0.05 # start at 50ms wait
+        max_wait = 5
         while not done:
+            time.sleep(wait)
+            if wait < max_wait:
+                wait = wait * 2
+
             done=True
+            # XXXCJ - This could be optimized to not look at all jobs every time...
             for jid in depjobids.values():
                 job = Job.objects.get(id=jid)
                 d = job.done()
-                logger.debug("Job %s - %s" % (str(job), d))
                 if not d:
                     done=False
                     break
-            time.sleep(0.5)
 
         logger.debug("Analysis job %s - all dependent jobs complete, collecting data" % str(self.job))
         # Create dataframes for all tables
         dfs = {}
-
+        
+        failed = False
         for (name, id) in depjobids.items():
             job = Job.objects.get(id=id)
+                
             if job.status == job.ERROR:
                 self.job.status = job.ERROR
-                raise ValueError("Dependent Job returned an error: %s" % (str(job)))
-
+                self.job.progress = 100
+                self.job.message = "Dependent Job returned an error:\n%s" % (job.message)
+                self.job.save()
+                logger.info("Dependent Job returned an error: %s" % (job.message))
+                failed = True
+                break
+            
             f = job.data()
             if f is None:
+                self.job.status = job.ERROR
+                self.job.progress = 100
+                self.job.message = "Dependent Job returned no data"
+                self.job.save()
                 logger.info("Dependent job returned no data: %s" % (str(job)))
-                raise ValueError("Dependent Job returned no data: %s" % (str(job)))
+                failed = True
+                break
+
             dfs[name] = f
-            logger.debug("Table[%s]" % name)
+            logger.debug("Table[%s] - %d rows" % (name, len(f)))
 
-        df = options.func(self.table, dfs, self.job.criteria)
-        self.data = df
+        if failed:
+            return False
 
+        logger.debug ("Calling analysis function %s" % str(options.func))
+        df = options.func(self.table, dfs, self.job.criteria, params=options.params)
+
+        # Sort according to the defined sort columns
+        if df is not None:
+            if self.table.sortcol:
+                df = df.sort([self.table.sortcol.name], ascending=False)
+
+            if self.table.rows > 0:
+                self.data = df[:self.table.rows]
+            else:
+                self.data = df
+        else:
+            self.data = None
+        
         return True
-    
