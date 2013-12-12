@@ -10,6 +10,7 @@ import tempfile
 
 from django import forms
 from django.utils.datastructures import SortedDict
+from django.core.files.uploadedfile import UploadedFile
 
 from rvbd.common import datetime_to_seconds
 
@@ -133,7 +134,7 @@ class ReportCriteriaForm(forms.Form):
         for k, v in self.cleaned_data.iteritems():
             if k == 'endtime':
                 result[k] = datetime_to_seconds(v)
-            elif hasattr(v, 'temporary_file_path'):
+            elif isinstance(v, UploadedFile):
                 # look for uploaded files, save them off to another
                 # temporary file and return the path for use in JSON
                 # consumers of this file will need to clean them up
