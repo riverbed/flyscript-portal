@@ -405,6 +405,18 @@ class Criteria(DictObject):
 
         self.starttime = self.starttime - self.starttime % table.resolution
             
+    def lookup(self, key):
+        """ Lookup a criteria entry by `key`. """
+        if key in self:
+            return self[key]
+        
+        for k, v in self.iteritems():
+            if not k.startswith('criteria_'): continue
+        
+            if v.keyword == key:
+                return v.value
+
+        raise KeyError("No such criteria key '%s'" % key)
 
 class Job(models.Model):
 
