@@ -60,10 +60,12 @@ class TableCriteria(models.Model):
     keyword = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
     label = models.CharField(max_length=100)
-    initial = models.CharField(max_length=100, blank=True, null=True)
+
+    initial = PickledObjectField(blank=True, null=True)
 
     # TODO identify means to pass kwargs to this init
     field_type = models.CharField(max_length=100, default='forms.CharField')
+    field_kwargs = PickledObjectField(blank=True, null=True)
 
     parent = models.ForeignKey("self", blank=True, null=True, related_name="children")
 

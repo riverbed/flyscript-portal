@@ -123,8 +123,14 @@ class ReportCriteriaForm(forms.Form):
             for field in extra:
                 field_id = 'criteria_%s' % field.id
                 field_cls = eval(field.field_type)
+                if field.field_kwargs is not None:
+                    fkwargs = field.field_kwargs
+                else:
+                    fkwargs = {}
+
                 self.fields[field_id] = field_cls(label=field.label,
-                                                  required=field.required)
+                                                  required=field.required,
+                                                  **fkwargs)
                 self.initial[field_id] = field.initial
 
     def criteria(self):
