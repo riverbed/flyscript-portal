@@ -37,7 +37,7 @@ yui3.TimeSeriesWidget.create(report, table, "Overall Traffic", width=12)
 
 # Define a TimeSeries showing Avg Bytes/s for tcp/80
 table = TimeSeriesTable.create('ts-tcp80', PROFILER, duration=60,
-                               filterexpr = 'tcp/80')
+                               filterexpr = 'tcp/80', cacheable=False)
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = 'B/s')

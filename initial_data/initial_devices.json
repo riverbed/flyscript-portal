@@ -3,26 +3,24 @@
     "pk": 1, 
     "model": "devices.device", 
     "fields": {
+      "username": "admin", 
       "name": "profiler", 
+      "enabled": true, 
       "module": "profiler", 
-      "host": "fill.in.profiler.host.or.ip", 
-      "port": 443,
-      "username": "<username>", 
-      "password": "<password>", 
-      "enabled": true
+      "host": "tm08-1.lab.nbttech.com", 
+      "port": 443
     }
   }, 
   {
     "pk": 2, 
     "model": "devices.device", 
     "fields": {
+      "username": "<username>", 
       "name": "shark1", 
+      "enabled": false, 
       "module": "shark", 
       "host": "fill.in.profiler.host.or.ip", 
-      "port": 443,
-      "username": "<username>", 
-      "password": "<password>", 
-      "enabled": true
+      "port": 443
     }
-  } 
+  }
 ]

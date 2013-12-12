@@ -16,6 +16,8 @@ import hashlib
 import importlib
 import tokenize
 from StringIO import StringIO
+import random
+import datetime
 
 import pandas
 from django.db import models
@@ -137,6 +139,9 @@ class Table(models.Model):
     # criteria are used to override instance values at run time
     criteria = models.ManyToManyField(TableCriteria, null=True)
     
+    # indicate if data can be cached based on criteria
+    cacheable = models.BooleanField(default=True)
+
     @classmethod
     def create(cls, name, module, **kwargs):
         t = Table(name=name, module=module, **kwargs)
@@ -451,22 +456,32 @@ class Job(models.Model):
         h = hashlib.md5()
         h.update(str(self.table.id))
 
-        # XXXCJ - Drop ephemeral columns when computing the cache handle, since
-        # the list of columns is modifed at run time.   Typical use case
-        # is an analysis table which creates a time-series graph of the
-        # top 10 hosts -- one column per host.  The host columns will change
-        # based on the run of the dependent table.
-        #
-        # Including epheremal columns causes some problems because the handle is computed
-        # before the query is actually run, so it never matches.
-        #
-        # May want to dig in to this further and make sure this doesn't pick up cache
-        # files when we don't want it to
-        h.update('.'.join([c.name for c in self.table.get_columns(ephemeral=False)]))
-        for k, v in self.criteria.iteritems():
-            if not k.startswith('criteria_'):
-                h.update('%s:%s' % (k, v))
-        
+        if self.table.cacheable:
+            # XXXCJ - Drop ephemeral columns when computing the cache handle, since
+            # the list of columns is modifed at run time.   Typical use case
+            # is an analysis table which creates a time-series graph of the
+            # top 10 hosts -- one column per host.  The host columns will change
+            # based on the run of the dependent table.
+            #
+            # Including epheremal columns causes some problems because the handle is computed
+            # before the query is actually run, so it never matches.
+            #
+            # May want to dig in to this further and make sure this doesn't pick up cache
+            # files when we don't want it to
+            logger.debug("Table %s is cacheable, computing handle from criteria" % str(self.table))
+            h.update('.'.join([c.name for c in self.table.get_columns(ephemeral=False)]))
+            for k, v in self.criteria.iteritems():
+                if not k.startswith('criteria_'):
+                    logger.debug("Updating hash from %s -> %s" % (k,v))
+                    h.update('%s:%s' % (k, v))
+        else:
+            # Table is not cacheable, instead use current time plus a random value
+            # just to get a unique hash
+            logger.debug("Table %s is not cacheable, computing unique handle" % str(self.table))
+            h.update(str(datetime.datetime.now()))
+            h.update(str(random.randint(0,10000000)))
+
+        logger.debug("Table %s hash: %s" % (str(self.table), h.hexdigest()))
         return h.hexdigest()
     
     def get_depjob(self):
@@ -530,7 +545,10 @@ class Job(models.Model):
 
     def save(self, *args, **kwargs):
         """ Model save. """
-        self.handle = self.compute_handle()
+        if self.handle == "":
+            # Only compute the handle if it was not previously computed -- as it
+            # may change if the associated table is not cacheable
+            self.handle = self.compute_handle()
         super(Job, self).save(*args, **kwargs)
         
     def savedata(self, data):
