@@ -67,12 +67,12 @@ class AnalysisTable:
     """
 
     @classmethod
-    def create(cls, name, tables, func, duration=-1, columns=[]):
+    def create(cls, name, tables, func, duration=-1, columns=[], **kwargs):
         """
         Class method to create an AnalysisTable.
         """
         t = Table(name=name, module=__name__, device=None, duration=duration,
-                  options=TableOptions(tables=tables, func=func))
+                  options=TableOptions(tables=tables, func=func), **kwargs)
         t.save()
 
         if columns:
@@ -133,6 +133,6 @@ class TableQuery:
 
         df = options.func(self.table, dfs, self.job.criteria)
         self.data = df
-        #__import__('IPython').core.debugger.Pdb(color_scheme='Linux').set_trace()
-            
+
         return True
+    

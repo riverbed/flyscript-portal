@@ -527,16 +527,18 @@ class Job(models.Model):
 
     def values(self):
         """ Return data as a list of lists. """
-        
+
         df = self.data()
         all_columns = self.table.get_columns()
         all_col_names = [c.name for c in all_columns]
-        #logger.debug("values all_col_names: %s" % all_col_names)
-        # Replace NaN with None
-        df = df.where(pandas.notnull(df), None)
-
-        # Extract tha values in the right order
-        vals = df.ix[:, all_col_names].values.tolist()
+        if df is not None:
+            # Replace NaN with None
+            df = df.where(pandas.notnull(df), None)
+            
+            # Extract tha values in the right order
+            vals = df.ix[:, all_col_names].values.tolist()
+        else:
+            vals = []
         return vals
     
     def delete(self):
@@ -674,21 +676,33 @@ class AsyncWorker(threading.Thread):
         job = self.job
         try:
             query = self.queryclass(self.job.table, self.job)
-            query.run()
-            if isinstance(query.data, list):
-                # Convert the result to a dataframe
-                df = pandas.DataFrame(query.data,
-                                      columns=[col.name for col in self.job.table.get_columns(synthetic=False)])
-                query.data = df
-            elif len(query.data) == 0:
-                query.data = None
+            if query.run():
+                if isinstance(query.data, list):
+                    # Convert the result to a dataframe
+                    columns = [col.name for col in
+                               self.job.table.get_columns(synthetic=False)]
+                    df = pandas.DataFrame(query.data, columns=columns)
+                    query.data = df
+                elif query.data is not None and len(query.data) == 0:
+                    query.data = None
 
-            fulldata = self.job.table.compute_synthetic(query.data)
-            job.savedata(fulldata)
+                fulldata = self.job.table.compute_synthetic(query.data)
+                job.savedata(fulldata)
 
-            logger.debug("Saving job %s as COMPLETE" % self.job.handle)
-            job.progress = 100
-            job.status = job.COMPLETE
+                logger.debug("Saving job %s as COMPLETE" % self.job.handle)
+                job.progress = 100
+                job.status = job.COMPLETE
+            else:
+                # If the query.run() function returns false, the run() may
+                # have set the job.status, check and update if not
+                if not job.done():
+                    job.status = job.ERROR
+                if job.message == "":
+                    job.message = ("Query returned an unknown error")
+                job.progress = 100
+                logger.debug(job.message)
+                job.save()
+                
         except:
             traceback.print_exc()
             logger.error("Job %s failed: %s" % (self.job.handle, str(sys.exc_info())))
