@@ -313,7 +313,7 @@ class TimeSeriesWidget(object):
 
 class BarWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, rows=10, height=300):
+    def create(cls, report, table, title, width=6, rows=10, height=300, valuecols=None):
         w = Widget(report=report, title=title, rows=rows, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
@@ -321,8 +321,8 @@ class BarWidget(object):
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
 
-        # XXXCJ - need to implement variable column list
-        valuecols = [col.name for col in table.get_columns() if col.iskey is False]
+        if valuecols is None:
+            valuecols = [col.name for col in table.get_columns() if col.iskey is False]
         w.options = JsonDict(dict={'key': keycols[0],
                                    'columns': valuecols,
                                    'axes': None})
