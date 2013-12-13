@@ -130,9 +130,11 @@ class ReportCriteriaForm(forms.Form):
 
                 self.fields[field_id] = field_cls(label=field.label,
                                                   required=field.required,
+                                                  initial=field.initial,
                                                   **fkwargs)
-                self.initial[field_id] = field.initial
 
+                self.initial[field_id] = field.initial
+                
     def criteria(self):
         """ Return certain field values as a dict for simple json parsing
         """

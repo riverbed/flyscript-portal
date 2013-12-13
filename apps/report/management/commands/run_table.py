@@ -15,8 +15,9 @@ from django.core.management.base import BaseCommand, CommandError
 
 from rvbd.common.utils import Formatter
 
-from apps.datasource.models import Table, Job, Criteria
-from apps.report.models import Report
+from apps.datasource.models import Table, Job, Criteria, TableCriteria
+from apps.report.models import Report, Widget
+from apps.report.forms import create_report_criteria_form
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about
@@ -75,6 +76,13 @@ class Command(BaseCommand):
                          dest='ignore_cache',
                          default=False,
                          help='Criteria: optional, if present override any existing caches')
+        group.add_option('--criteria',
+                         action='append',
+                         type='str',
+                         dest='criteria',
+                         default=None,
+                         help='Criteria: optional, custome criteria <key>:<value>')
+
         parser.add_option_group(group)
 
         group = optparse.OptionGroup(parser, "Run Table Output Options",
@@ -133,11 +141,38 @@ class Command(BaseCommand):
             # Django gives us a nice error if we can't find the table
             self.console('Table %s found.' % table)
 
+            # Look for a related report
+            widgets = Widget.objects.filter(tables__in=[table])
+            if len(widgets) > 0:
+                report = widgets[0].report
+                form = create_report_criteria_form(report=report)
+            else:
+                form = None
+                
             criteria = Criteria(endtime=options['endtime'],
                                 duration=options['duration'],
                                 filterexpr=options['filterexpr'],
                                 table=table,
                                 ignore_cache=options['ignore_cache'])
+
+            if form:
+                for k,field in form.fields.iteritems():
+                    if not k.startswith('criteria_'): continue
+
+                    tc = TableCriteria.objects.get(pk=k.split('_')[1])
+
+                    if (  options['criteria'] is not None and
+                          tc.keyword in options['criteria']):
+                        val = options['criteria'][tc.keyword]
+                    else:
+                        val = field.initial
+
+                    # handle table criteria and generate children objects
+                    tc = TableCriteria.get_instance(k, val) 
+                    criteria[k] = tc
+                    for child in tc.children.all():
+                        child.value = v
+                        criteria['criteria_%d' % child.id] = child
 
             columns = [c.name for c in table.get_columns()]
 
