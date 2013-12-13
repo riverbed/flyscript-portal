@@ -105,6 +105,7 @@ Widget.prototype.formatTime = function(t, precision) {
 }
 
 Widget.prototype.formatBytes = function(bytes, precision) {
+    if (bytes == undefined) return '';
     if (bytes == 0) return '0';
     var e = parseInt(Math.floor(Math.log(bytes) / Math.log(1000)));
     var v = (bytes / Math.pow(1000, e));
@@ -126,3 +127,20 @@ Widget.prototype.formatBytes = function(bytes, precision) {
 }
 
 Widget.prototype.formatMetric = Widget.prototype.formatBytes;
+
+Widget.prototype.formatPct = function(num, precision) {
+    if (num == undefined) return '';
+    if (num == 0) return '0';
+    var v = num;
+    var vs;
+    if (precision != undefined) {
+        vs = v.toFixed(precision);
+    } else if (v < 10) {
+        vs = v.toFixed(3);
+    } else if (v < 100) {
+        vs = v.toFixed(2);
+    } else {
+        vs = v.toFixed(1);
+    }
+    return vs;
+}

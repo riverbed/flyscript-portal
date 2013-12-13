@@ -201,6 +201,8 @@ def report_business_hours(target, tables, criteria, params):
             subdf = job.data()
             logger.debug("%s: returned %d rows" %
                          (job, len(subdf) if subdf is not None else 0))
+            if subdf is None:
+                continue
             subdf['__secs__'] = t1 - t0
             total_secs += (t1 - t0)
             idx += 1
@@ -208,7 +210,10 @@ def report_business_hours(target, tables, criteria, params):
                 df = subdf
             else:
                 df = df.append(subdf)
-            
+
+    if df is None:
+        return None
+    
     keynames = [key.name for key in deptable.get_columns(iskey=True)]
     if 'aggregate' in params:
         ops = params['aggregate']

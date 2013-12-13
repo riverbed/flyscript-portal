@@ -687,6 +687,18 @@ class AsyncWorker(threading.Thread):
                     columns = [col.name for col in
                                self.job.table.get_columns(synthetic=False)]
                     df = pandas.DataFrame(query.data, columns=columns)
+                    for col in self.job.table.get_columns(synthetic=False):
+                        s = df[col.name]
+                        if col.isnumeric and s.dtype == pandas.np.dtype('object'):
+                            # The column is supposed to be numeric but must have
+                            # some strings.  Try replacing empty strings with NaN
+                            # and see if it converts to float64
+                            try:
+                                df[col.name] = (s.replace('', pandas.np.NaN)
+                                                .astype(pandas.np.float64))
+                            except ValueError:
+                                # This may incorrectly be tagged as numeric
+                                pass
                     query.data = df
                 elif query.data is not None and len(query.data) == 0:
                     query.data = None

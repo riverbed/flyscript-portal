@@ -31,8 +31,8 @@ basetable = GroupByTable.create('bh-basetable', PROFILER, 'interface', duration=
 # Define all of your columns here associated with basetable
 # For each data column (iskey=False), you must specify the aggreation method
 # in the bizhours.create below.
-Column.create(basetable, 'interface', 'Interface', iskey=True)
-Column.create(basetable, 'avg_util', '% Utilization', datatype='metric', issortcol=True) 
+Column.create(basetable, 'interface', 'Interface', iskey=True, isnumeric=False)
+Column.create(basetable, 'avg_util', '% Utilization', datatype='pct', issortcol=True) 
 Column.create(basetable, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = 'B/s')
 
 # The 'aggregate' parameter describes how similar rows on different business days
