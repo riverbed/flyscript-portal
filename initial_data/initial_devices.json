@@ -3,11 +3,11 @@
     "pk": 1, 
     "model": "devices.device", 
     "fields": {
-      "username": "admin", 
+      "username": "<username>", 
       "name": "profiler", 
-      "enabled": true, 
+      "enabled": false, 
       "module": "profiler", 
-      "host": "tm08-1.lab.nbttech.com", 
+      "host": "fill.in.profiler.host.or.ip", 
       "port": 443
     }
   }, 
@@ -19,7 +19,7 @@
       "name": "shark1", 
       "enabled": false, 
       "module": "shark", 
-      "host": "fill.in.profiler.host.or.ip", 
+      "host": "fill.in.shark.host.or.ip", 
       "port": 443
     }
   }
