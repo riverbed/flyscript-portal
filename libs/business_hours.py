@@ -70,8 +70,7 @@ def create(name, basetable, aggregate, other_tables=None, **kwargs):
     table = AnalysisTable.create('bh-bustable', tables={'times': timestable().id},
                                  func = report_business_hours,
                                  params = {'table': basetable.id,
-                                           'aggregate' : { 'avg_util' : 'avg',
-                                                           'avg_bytes' : 'avg' }},
+                                           'aggregate' : aggregate },
                                  **kwargs)
     
     table.copy_columns(basetable)
