@@ -67,7 +67,7 @@ def timestable():
     return table
 
 def create(name, basetable, aggregate, other_tables=None, **kwargs):
-    table = AnalysisTable.create('bh-bustable', tables={'times': timestable().id},
+    table = AnalysisTable.create(name, tables={'times': timestable().id},
                                  func = report_business_hours,
                                  params = {'table': basetable.id,
                                            'aggregate' : aggregate },
