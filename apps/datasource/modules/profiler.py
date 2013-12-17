@@ -134,7 +134,14 @@ class TableQuery:
 
         # Retrieve the data
         with lock:
-            self.data = report.get_data()
+            query = report.get_query_by_index(0)
+            self.data = query.get_data()
+
+            # Update criteria
+            criteria.starttime = query.actual_t0
+            criteria.endtime = query.actual_t1
+            self.job.actual_criteria = criteria
+            self.job.save()
 
         if self.table.rows > 0:
             self.data = self.data[:self.table.rows]

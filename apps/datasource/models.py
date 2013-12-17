@@ -432,6 +432,7 @@ class Job(models.Model):
 
     table = models.ForeignKey(Table)
     criteria = PickledObjectField(null=True)
+    actual_criteria = PickledObjectField(null=True)
     handle = models.CharField(max_length=100, default="")
 
     NEW = 0
