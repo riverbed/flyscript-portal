@@ -14,7 +14,9 @@ from apps.devices.models import Device
 from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+from apps.datasource.modules.analysis import  AnalysisTable
 import libs.business_hours as bizhours
+import libs.profiler_tools as protools
 
 PROFILER = Device.objects.get(name="profiler")
 
@@ -26,14 +28,16 @@ bizhours.add_criteria(report)
 #
 # Define by-interface table from Profiler
 #
-basetable = GroupByTable.create('bh-basetable', PROFILER, 'interface', duration=60)
+basetable = GroupByTable.create('bh-basetable', PROFILER, 'interface', duration=60,
+                                resolution=3600, interface=True)
 
 # Define all of your columns here associated with basetable
 # For each data column (iskey=False), you must specify the aggreation method
 # in the bizhours.create below.
-Column.create(basetable, 'interface', 'Interface', iskey=True, isnumeric=False)
+Column.create(basetable, 'interface_dns', 'Interface', iskey=True, isnumeric=False)
 Column.create(basetable, 'avg_util', '% Utilization', datatype='pct', issortcol=True) 
-Column.create(basetable, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = 'B/s')
+Column.create(basetable, 'in_avg_util', '% Utilization In', datatype='pct', issortcol=False)
+Column.create(basetable, 'out_avg_util', '% Utilization Out', datatype='pct', issortcol=False)
 
 # The 'aggregate' parameter describes how similar rows on different business days
 # should be combined.  For example:
@@ -52,11 +56,16 @@ Column.create(basetable, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units = '
 #   min    - minimum of all values
 #   max    - maximum of all values
 #
-bustable = bizhours.create('bh-bustable', basetable, 
-                            aggregate = { 'avg_util' : 'avg',
-                                          'avg_bytes': 'avg',
-                                          'total_bytes' : 'sum'},
-                            resolution=3600, duration=60*24*7, cacheable=False)
+bustable_pre = bizhours.create('bh-bustable-pre', basetable, 
+                               aggregate = { 'avg_util' : 'avg',
+                                             'in_avg_util' : 'avg',
+                                             'out_avg_util' : 'avg' },
+                               resolution=3600, duration=60*24*7, cacheable=False)
+
+bustable = AnalysisTable.create('bh-bustable', tables={'table': bustable_pre.id},
+                                func = protools.process_interface_dns)
+
+bustable.copy_columns(bustable_pre)
 
 yui3.TableWidget.create(report, bustable, "Interface", height=600)
 yui3.BarWidget.create(report, bustable, "Interface Utilization", height=600, valuecols=['avg_util'])
