@@ -10,10 +10,13 @@
 import time
 import datetime
 import optparse
+import pytz
 
 from django.core.management.base import BaseCommand, CommandError
+from django.forms import ValidationError
 
 from rvbd.common.utils import Formatter
+from rvbd.common.timeutils import datetime_to_seconds
 
 from apps.datasource.models import Table, Job, Criteria, TableCriteria
 from apps.report.models import Report, Widget
@@ -54,10 +57,14 @@ class Command(BaseCommand):
                          action='store',
                          dest='table_id',
                          help='Table ID to execute (use --table-list to find the right ID)')
+        group.add_option('--table-name',
+                         action='store',
+                         dest='table_name',
+                         help='Table name to execute (use --table-list to list all tables)')
         group.add_option('--endtime',
                          action='store',
                          dest='endtime',
-                         type='float',
+                         type='str',
                          default=None,
                          help='Criteria: optional, timestamp indicating endtime of report')
         group.add_option('--duration',
@@ -137,7 +144,13 @@ class Command(BaseCommand):
                         output.append(line)
             Formatter.print_table(output, ['ID', 'Report', 'Widget', 'Table'])
         else:
-            table = Table.objects.get(id=options['table_id'])
+            if 'table_id' in options and options['table_id'] is not None:
+                table = Table.objects.get(id=options['table_id'])
+            elif 'table_name' in options:
+                table = Table.objects.get(name=options['table_name'])
+            else:
+                raise ValueError("Must specify either --table-id or --table-name to run a table")
+                
             # Django gives us a nice error if we can't find the table
             self.console('Table %s found.' % table)
 
@@ -148,12 +161,29 @@ class Command(BaseCommand):
                 form = create_report_criteria_form(report=report)
             else:
                 form = None
-                
-            criteria = Criteria(endtime=options['endtime'],
+
+            add_options = {}
+            if 'criteria' in options and options['criteria'] is not None:
+                for s in options['criteria']:
+                    (k,v) = s.split(':', 1)
+                    add_options[k] = v
+
+            if 'endtime' in options:
+                try:
+                    endtime = form.fields['endtime'].clean(options['endtime'])
+                except ValidationError:
+                    raise ValidationError("Could not parse endtime: %s, try MM/DD/YYYY HH:MM am" % options['endtime'])
+                tz = pytz.timezone("US/Eastern")
+                endtime = endtime.replace(tzinfo=tz)
+            else:
+                endtime = datetime.datetime.now()
+
+            criteria = Criteria(endtime=datetime_to_seconds(endtime),
                                 duration=options['duration'],
                                 filterexpr=options['filterexpr'],
                                 table=table,
                                 ignore_cache=options['ignore_cache'])
+
 
             if form:
                 for k,field in form.fields.iteritems():
@@ -162,8 +192,8 @@ class Command(BaseCommand):
                     tc = TableCriteria.objects.get(pk=k.split('_')[1])
 
                     if (  options['criteria'] is not None and
-                          tc.keyword in options['criteria']):
-                        val = options['criteria'][tc.keyword]
+                          tc.keyword in add_options):
+                        val = add_options[tc.keyword]
                     else:
                         val = field.initial
 
@@ -171,7 +201,7 @@ class Command(BaseCommand):
                     tc = TableCriteria.get_instance(k, val) 
                     criteria[k] = tc
                     for child in tc.children.all():
-                        child.value = v
+                        child.value = val
                         criteria['criteria_%d' % child.id] = child
 
             columns = [c.name for c in table.get_columns()]
@@ -193,8 +223,8 @@ class Command(BaseCommand):
 
                 # wait for results
                 while not job.done():
-                    self.console('. ', ending='')
-                    self.stdout.flush()
+                    #self.console('. ', ending='')
+                    #self.stdout.flush()
                     time.sleep(1)
 
                 end_time = datetime.datetime.now()

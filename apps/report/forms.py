@@ -89,10 +89,9 @@ class ReportCriteriaForm(forms.Form):
     error_css_class = 'text-error'
 
     # field definitions
-    endtime = forms.SplitDateTimeField(label='Report End Time',
-                                       input_time_formats=['%I:%M %p'], 
-                                       input_date_formats=['%m/%d/%Y'], 
-                                       widget=ReportSplitDateTimeWidget)
+    endtime = forms.DateTimeField(label='Report End Time',
+                                  input_formats=['%m/%d/%Y %I:%M %p'], 
+                                  widget=ReportSplitDateTimeWidget)
     duration = forms.ChoiceField(choices=zip(DURATIONS, DURATIONS),
                                  widget=forms.Select(attrs={'class': 'duration'}))
     filterexpr = forms.CharField(label='Filter Expression',
@@ -101,7 +100,7 @@ class ReportCriteriaForm(forms.Form):
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, extra=None, **kwargs):
         """ Handle arbitrary number of additional fields in `extra` keyword
 
             Keyword argument options:
@@ -109,14 +108,11 @@ class ReportCriteriaForm(forms.Form):
             `extra` optional, a list of TableCriteria objects to append to
                     form listings
 
-            `jsonform` optional, boolean indicating whether input and
-                       validation will be handled via json input to 
-                       toggle form fields appropriately (e.g. 
-                       SplitDateTimeField becomes just IntegerField for
-                       timestamp)
+            Standard Form criteria options `data` and `files` should be used
+            as kwargs instead of args.
+            
         """
-        extra = kwargs.pop('extra')
-        super(ReportCriteriaForm, self).__init__(*args, **kwargs)
+        super(ReportCriteriaForm, self).__init__(**kwargs)
 
         if extra:
             logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
@@ -164,8 +160,8 @@ class ReportCriteriaJSONForm(ReportCriteriaForm):
         Since some fields will be returned via JSON in a different manner
         than the initial form submission, this class modifies the field types
     """
-    def __init__(self, *args, **kwargs):
-        super(ReportCriteriaJSONForm, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(ReportCriteriaJSONForm, self).__init__(**kwargs)
         
         for k, v in self.fields.iteritems():
             if isinstance(v, forms.FileField):
@@ -177,28 +173,30 @@ class ReportCriteriaJSONForm(ReportCriteriaForm):
         self.fields['endtime'] = forms.IntegerField()
 
 
-def create_report_criteria_form(*args, **kwargs):
-    """ Factory function to create dynamic Report forms
+def create_report_criteria_form(report, jsonform=False, **kwargs):
+    """ Create a form for this report.
 
-        Included `report` kwargs will be assessed for
-        any linked TableCriteria objects and passed to
-        the initialization method for a ReportCriteriaForm.
-
+        Any TableCriteria objects linked to this report or it's
+        widgets are passed to the initialization method for a
+        ReportCriteriaForm.
+        
         If the report has no associated TableCriteria, nothing
         special will occur, and a nominal form will be returned.
         
-        Only objects which have no "parents" will be included,
-        "parent" objects will later provide the form values
+        Only criteria objects which have no 'parent' will be included,
+        'parent' objects will later provide the form values
         to all children criteria during processing.
-    """
-    report = kwargs.pop('report')
-    jsonform = kwargs.pop('jsonform', False)
 
+    """
     # use SortedDict to limit to unique criteria objects only
     extra = SortedDict()
+
+    # Collect all criteria objects tied to this report
     for c in report.criteria.all():
         if not c.parent:
             extra[c.id] = c
+
+    # Collect all criteria objects tied to any widgets associated with report
     for widget in Widget.objects.filter(report=report):
         for table in widget.tables.all():
             for tc in table.criteria.all():
@@ -207,6 +205,6 @@ def create_report_criteria_form(*args, **kwargs):
 
     kwargs['extra'] = extra.values()
     if jsonform:
-        return ReportCriteriaJSONForm(*args, **kwargs)
+        return ReportCriteriaJSONForm(**kwargs)
     else:
-        return ReportCriteriaForm(*args, **kwargs)
+        return ReportCriteriaForm(**kwargs)
