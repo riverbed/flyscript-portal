@@ -110,7 +110,7 @@ class DeviceList(generics.ListAPIView):
             elif '/devices' not in request.META['HTTP_REFERER']:
                 return HttpResponseRedirect(request.META['HTTP_REFERER'])
             else:
-                return HttpResponseRedirect(reverse('report-view-root'))
+                return HttpResponseRedirect(reverse('device-list'))
 
         else:
             data = {'formset': formset}

@@ -50,7 +50,12 @@
                                     {{ hidden }}
                                 {% endfor %}
 
-                                <td><a href="{% url 'device-detail' device.id %}">{{ device.name }}</a></td>
+                                <td>
+                                    <a href="{% url 'device-detail' device.id %}">{{ device.name }}</a>
+                                    {% if not device.password %}
+                                    <br><span class="text-error">(missing password)</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ device.module }}</td>
                                 <td>{{ device.host }}</td>
                                 <td>{{ device.port }}</td>
