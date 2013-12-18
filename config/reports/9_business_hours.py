@@ -36,6 +36,7 @@ basetable = GroupByTable.create('bh-basetable', PROFILER, 'interface', duration=
 # For each data column (iskey=False), you must specify the aggreation method
 # in the bizhours.create below.
 Column.create(basetable, 'interface_dns', 'Interface', iskey=True, isnumeric=False)
+Column.create(basetable, 'interface_alias', 'Ifalias', iskey=True, isnumeric=False)
 Column.create(basetable, 'avg_util', '% Utilization', datatype='pct', issortcol=True) 
 Column.create(basetable, 'in_avg_util', '% Utilization In', datatype='pct', issortcol=False)
 Column.create(basetable, 'out_avg_util', '% Utilization Out', datatype='pct', issortcol=False)
@@ -83,6 +84,7 @@ Column.create(bustable, 'interface_name', 'Interface', iskey=True, isnumeric=Fal
 bustable.copy_columns(bustable_pre, except_columns=['interface_dns'])
 
 yui3.TableWidget.create(report, bustable, "Interface", height=600)
-yui3.BarWidget.create(report, bustable, "Interface Utilization", height=600, valuecols=['avg_util'])
+yui3.BarWidget.create(report, bustable, "Interface Utilization", height=600,
+                      keycols=['interface_name'], valuecols=['avg_util'])
 yui3.TableWidget.create(report, bizhours.timestable(), "Covered times", width=12, height=200)
 

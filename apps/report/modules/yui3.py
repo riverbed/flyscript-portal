@@ -315,17 +315,18 @@ class TimeSeriesWidget(object):
 
 class BarWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, rows=10, height=300, valuecols=None):
+    def create(cls, report, table, title, width=6, rows=10, height=300, keycols=None, valuecols=None):
         w = Widget(report=report, title=title, rows=rows, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
-        keycols = [col.name for col in table.get_columns() if col.iskey is True]
+        if keycols is None:
+            keycols = [col.name for col in table.get_columns() if col.iskey is True]
         if len(keycols) == 0:
             raise ValueError("Table %s does not have any key columns defined" % str(table))
 
         if valuecols is None:
             valuecols = [col.name for col in table.get_columns() if col.iskey is False]
-        w.options = JsonDict(dict={'key': keycols[0],
+        w.options = JsonDict(dict={'keycols': keycols,
                                    'columns': valuecols,
                                    'axes': None})
         w.save()
@@ -333,39 +334,71 @@ class BarWidget(object):
 
     @classmethod
     def process(cls, widget, data):
-        columns = widget.table().get_columns()
+        class ColInfo:
+            def __init__(self, col, dataindex, axis):
+                self.col = col
+                self.dataindex = dataindex
+                self.axis = axis
 
-        catcol = [c for c in columns if c.name == widget.options.key][0]
-        cols = [c for c in columns if c.name in widget.options.columns]
+        all_cols = widget.table().get_columns()
+
+        # The category "key" column -- this is the column shown along the bottom of the bar widget
+        keycols = [c for c in all_cols if c.name in widget.options.keycols]
+
+        # The value columns - one set of bars for each
+        cols = [c for c in all_cols if c.name in widget.options.columns]
 
         w_axes = Axes(widget.options.axes)
 
+        # Array of data series definitions yui3 style
         series = []
-        qcols = [catcol.name]
-        qcol_axis = [-1]
-        axes = {catcol.name: {"keys": [catcol.name],
-                              "position": "bottom",
-                              "styles": {"label": {"rotation": -60}}}}
 
-        for wc in cols:
-            series.append({"xKey": catcol.name,
-                           "xDisplayName": "Time",
-                           "yKey": wc.name,
-                           "yDisplayName": wc.label,
+        # Array of axis definitions yui3 style
+        catname = '-'.join([k.name for k in keycols])
+        axes = {catname: {"keys": [catname],
+                          "position": "bottom",
+                          "styles": {"label": {"rotation": -60}}}}
+        
+        # Map of column info by column name
+        colmap = {}
+
+        # Add keycols to the colmap
+        for i, c in enumerate(all_cols):
+            if (c not in keycols):
+                continue
+            ci = ColInfo(c, i, w_axes.getaxis(c.name))
+            colmap[c.name] = ci
+
+        for i, c in enumerate(all_cols):
+            # Rest of this is for data cols only
+            if (c not in cols):
+                continue
+
+            ci = ColInfo(c, i, w_axes.getaxis(c.name))
+            colmap[c.name] = ci
+
+            series.append({"xKey": '-'.join([k.name for k in keycols]),
+                           "xDisplayName": ','.join([k.label for k in keycols]),
+                           "yKey": c.name,
+                           "yDisplayName": c.label,
                            "styles": {"line": {"weight": 1},
                                       "marker": {"height": 6,
                                                  "width": 20}}})
-            qcols.append(wc.name)
-            wc_axis = w_axes.getaxis(wc.name)
-            qcol_axis.append(wc_axis)
-            axis_name = 'axis' + str(wc_axis)
+
+
+            # The rest compute axis min/max for datavalues, so skip keys
+            if c.iskey:
+                continue
+
+            axis_name = 'axis' + str(ci.axis)
             if axis_name not in axes:
                 axes[axis_name] = {"type": "numeric",
-                                   "position": "left" if (wc_axis == 0) else "right",
+                                   "position": "left" if (ci.axis == 0) else "right",
                                    "keys": []}
 
-            axes[axis_name]['keys'].append(wc.name)
+            axes[axis_name]['keys'].append(c.name)
 
+        # Array of actual data yui3 style.  Each row is a dict of key->value
         rows = []
 
         # min/max values by axis 0/1
@@ -373,37 +406,55 @@ class BarWidget(object):
         maxval = {}
 
         stacked = False  # XXXCJ
-        #__import__('IPython').core.debugger.Pdb(color_scheme='Linux').set_trace()
-
+        
         for reportrow in data:
             row = {}
             rowmin = {}
             rowmax = {}
-            for i in range(0, len(qcols)):
-                a = qcol_axis[i]
-                val = reportrow[i]
-                row[qcols[i]] = val
-                if a not in rowmin:
+
+            # collect key values
+            keyvals = []
+            for c in colmap.values():
+                if not c.col.iskey:
+                    continue
+                keyvals.append(reportrow[c.dataindex])
+            row[catname] = ','.join(keyvals)
+
+            # collect the data values
+            for c in colmap.values():
+                # 
+                if c.col.iskey:
+                    continue
+
+                # Set the value
+                val = reportrow[c.dataindex]
+                row[c.col.name] = val
+
+
+                a = c.axis 
+                if c.axis not in rowmin:
                     rowmin[a] = val
                     rowmax[a] = val
                 else:
                     rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a], val)
                     rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a], val)
 
-                i = i + 1
-
             for a in rowmin.keys():
                 minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
                 maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a], rowmax[a])
-
+                print "minval[%s]: %s (%s)" % (a, rowmin[a], type(rowmin[a]))
+                print "maxval[%s]: %s (%s)" % (a, rowmax[a], type(rowmax[a]))
             rows.append(row)
 
-        for wc in cols:
-            wc_axis = w_axes.getaxis(wc.name)
-            axis_name = 'axis' + str(wc_axis)
+        # Build up axes
+        for c in colmap.values():
+            if c.col.iskey:
+                continue
+
+            axis_name = 'axis' + str(c.axis)
 
             if minval and maxval:
-                n = NiceScale(minval[wc_axis], maxval[wc_axis])
+                n = NiceScale(minval[c.axis], maxval[c.axis])
 
                 axes[axis_name]['minimum'] = "%.10f" % n.niceMin
                 axes[axis_name]['maximum'] = "%.10f" % n.niceMax
@@ -419,10 +470,11 @@ class BarWidget(object):
         data = {
             "chartTitle": widget.title,
             "type": "column",
-            "categoryKey": catcol.name,
+            "categoryKey": catname,
             "dataProvider": rows,
             "seriesCollection": series,
             "axes": axes
         }
 
+        print data
         return data
