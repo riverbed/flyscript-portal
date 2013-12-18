@@ -23,7 +23,7 @@ report.save()
 #
 # Device Table
 
-devtable = DevicesTable.create('bh-devtable', PROFILER)
+devtable = DevicesTable.create('devtable', PROFILER)
 Column.create(devtable, 'ipaddr', 'Device IP', iskey=True, isnumeric=False)
 Column.create(devtable, 'name', 'Device Name', isnumeric=False)
 Column.create(devtable, 'type', 'Flow Type', isnumeric=False)

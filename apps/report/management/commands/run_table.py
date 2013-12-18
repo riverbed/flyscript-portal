@@ -168,7 +168,7 @@ class Command(BaseCommand):
                     (k,v) = s.split(':', 1)
                     add_options[k] = v
 
-            if 'endtime' in options:
+            if 'endtime' in options and options['endtime'] is not None:
                 try:
                     endtime = form.fields['endtime'].clean(options['endtime'])
                 except ValidationError:

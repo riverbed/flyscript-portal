@@ -187,7 +187,7 @@ class Table(models.Model):
             
         return filtered
 
-    def copy_columns(self, table):
+    def copy_columns(self, table, columns=None, except_columns=None):
         """ Copy the columns from `table` into this table.
 
         This method will copy all the columsn from another table, including
@@ -196,6 +196,10 @@ class Table(models.Model):
         """
         
         for c in table.get_columns():
+            if columns is not None and c.name not in columns:
+                continue
+            if except_columns is not None and c.name in except_columns:
+                continue
             issortcol = (c == c.table.sortcol)
             c.pk = None
             c.table = self
@@ -684,7 +688,8 @@ class AsyncWorker(threading.Thread):
         try:
             query = self.queryclass(self.job.table, self.job)
             if query.run():
-                if isinstance(query.data, list):
+                logger.debug("Job done, query.data: %s (%s)" % (query.data, type(query.data)))
+                if isinstance(query.data, list) and len(query.data) > 0:
                     # Convert the result to a dataframe
                     columns = [col.name for col in
                                self.job.table.get_columns(synthetic=False)]

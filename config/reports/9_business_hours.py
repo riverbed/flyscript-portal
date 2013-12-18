@@ -15,6 +15,7 @@ from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.analysis import  AnalysisTable
+from apps.datasource.modules.profiler_devices import DevicesTable
 import libs.business_hours as bizhours
 import libs.profiler_tools as protools
 
@@ -62,10 +63,24 @@ bustable_pre = bizhours.create('bh-bustable-pre', basetable,
                                              'out_avg_util' : 'avg' },
                                resolution=3600, duration=60*24*7, cacheable=False)
 
-bustable = AnalysisTable.create('bh-bustable', tables={'table': bustable_pre.id},
-                                func = protools.process_interface_dns)
+#bustable = AnalysisTable.create('bh-bustable', tables={'table': bustable_pre.id},
+#                                func = protools.process_interface_dns)
 
-bustable.copy_columns(bustable_pre)
+
+# Device Table
+
+devtable = DevicesTable.create('devtable', PROFILER)
+Column.create(devtable, 'ipaddr', 'Device IP', iskey=True, isnumeric=False)
+Column.create(devtable, 'name', 'Device Name', isnumeric=False)
+Column.create(devtable, 'type', 'Flow Type', isnumeric=False)
+Column.create(devtable, 'version', 'Flow Version', isnumeric=False)
+
+bustable = AnalysisTable.create('bh-bustable', tables={'devices': devtable.id,
+                                                       'traffic': bustable_pre.id},
+                                func = protools.process_join_ip_device)
+
+Column.create(bustable, 'interface_name', 'Interface', iskey=True, isnumeric=False)
+bustable.copy_columns(bustable_pre, except_columns=['interface_dns'])
 
 yui3.TableWidget.create(report, bustable, "Interface", height=600)
 yui3.BarWidget.create(report, bustable, "Interface Utilization", height=600, valuecols=['avg_util'])
