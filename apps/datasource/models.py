@@ -2,7 +2,7 @@
 #
 # This software is licensed under the terms and conditions of the 
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#  https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
@@ -48,14 +48,15 @@ class TableCriteria(models.Model):
         initial  -- starting or default value to include in the form
 
         optional:
-        field_type -- text name of form field type, defaults to 
-                      `forms.CharField`.
-        parent     -- reference to another TableCriteria object which
-                      provides values to inherit from.  This allows 
-                      multiple criteria to be enumerated while only
-                      displaying/filling out a single form field.
-                      TableCriteria which have a parent object identified
-                      will not be included in the HTML form output.
+        field_type   -- text name of form field type, defaults to
+                        `forms.CharField`.
+        field_kwargs -- additional keywords to pass to field initializer
+        parent       -- reference to another TableCriteria object which
+                        provides values to inherit from.  This allows
+                        multiple criteria to be enumerated while only
+                        displaying/filling out a single form field.
+                        TableCriteria which have a parent object identified
+                        will not be included in the HTML form output.
     """
     keyword = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
@@ -63,11 +64,11 @@ class TableCriteria(models.Model):
 
     initial = PickledObjectField(blank=True, null=True)
 
-    # TODO identify means to pass kwargs to this init
     field_type = models.CharField(max_length=100, default='forms.CharField')
     field_kwargs = PickledObjectField(blank=True, null=True)
 
-    parent = models.ForeignKey("self", blank=True, null=True, related_name="children")
+    parent = models.ForeignKey("self", blank=True, null=True,
+                               related_name="children")
 
     # whether a value must be provided by the user
     required = models.BooleanField(default=False)
@@ -125,7 +126,7 @@ class TableCriteria(models.Model):
 class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)         # source module name
-    device = models.ForeignKey(Device, null=True)
+    device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
     filterexpr = models.TextField(null=True)
     duration = models.IntegerField(null=True)         # length of query, mins
     resolution = models.IntegerField(default=60)      # query resolution, sec
@@ -214,15 +215,15 @@ class Table(models.Model):
                 replacement = v.template.format(v.value)
 
                 if hasattr(self, v.keyword):
-                    logger.debug('In table %s, replacing %s with %s' % (self,
-                                                                        v.keyword,
-                                                                        replacement))
+                    msg = 'In table %s, replacing %s with %s'
+                    logger.debug(msg % (self, v.keyword, replacement))
                     setattr(self, v.keyword, replacement)
+
                 elif hasattr(self.options, v.keyword):
-                    logger.debug('In table %s options, replacing %s with %s' % (self,
-                                                                                v.keyword,
-                                                                                replacement))
+                    msg = 'In table %s options, replacing %s with %s'
+                    logger.debug(msg % (self, v.keyword, replacement))
                     setattr(self.options, v.keyword, replacement)
+
                 else:
                     msg = 'WARNING: keyword %s not found in table %s or its options'
                     logger.debug(msg % (v.keyword, self))

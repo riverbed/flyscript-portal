@@ -21,32 +21,49 @@
 
 {% block content %}
     <div class="container-fluid">
-        <form class="form-horizontal" action="" method="POST">
-            <div class="row">
+        <form action="" method="POST">
                 <input type="hidden" name="_method" value="PUT">
                 {% csrf_token %}
                 {{ formset.management_form }}
-                {% for form in formset %}
-                    {% include "inc_device_form.html" %}
-                {% endfor %}
-            </div>
+                <table border="0" class="table table-bordered block-centered" style="max-width: 50%">
+                    <thead>
+                    <tr>
+                        <th>Enabled</th>
+                        <th>Name</th>
+                        <th>Module</th>
+                        <th>Host</th>
+                        <th>Port</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        {% if not tabledata %}
+                            <tr>
+                                <td colspan="5" style="text-align: center">No devices defined yet.</td>
+                            </tr>
+                        {% endif %}
+                        {% for form, device in tabledata %}
+                            <tr {% if not device.enabled %}class="row-disabled"{% endif %}>
+                                {% for field in form.visible_fields %}
+                                    <td>{{ field }}</td>
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td><a href="{% url 'device-detail' device.id %}">{{ device.name }}</a></td>
+                                <td>{{ device.module }}</td>
+                                <td>{{ device.host }}</td>
+                                <td>{{ device.port }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             <div class="row">
-                <div class="span12">
-                    <div style="text-align: center">
-                        <input type="submit" value="Save Changes" class="btn btn-primary">
-                        <a href="{% url 'device-add' %}" class="btn">Add New Device</a>
-                    </div>
+                <div class="block-centered" style="text-align: center">
+                    <input type="submit" value="Save Changes" class="btn btn-primary">
+                    <a href="{% url 'device-add' %}" class="btn">Add New Device</a>
                 </div>
             </div>
         </form>
     </div>
-
-    <script type="text/javascript">document.getElementById("id_form-0-host").focus();</script>
-    <script type="text/javascript">
-        $('.delete').click(function() {
-            if (confirm('Are you sure you want to delete this device?')) {
-                window.location = '/devices/' + this.id + '/delete';
-            }
-        })
-    </script>
 {% endblock %}

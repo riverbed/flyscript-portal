@@ -81,9 +81,12 @@ class DeviceList(generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         queryset = Device.objects.all()
         if request.accepted_renderer.format == 'html':
-            DeviceFormSet = modelformset_factory(Device, form=DeviceListForm, extra=0)
+            DeviceFormSet = modelformset_factory(Device,
+                                                 form=DeviceListForm,
+                                                 extra=0)
             formset = DeviceFormSet()
-            data = {'formset': formset}
+            tabledata = zip(formset.forms, queryset)
+            data = {'formset': formset, 'tabledata': tabledata}
             return Response(data, template_name='device_list.html')
 
         serializer = DeviceSerializer(instance=queryset)
@@ -91,7 +94,9 @@ class DeviceList(generics.ListAPIView):
         return Response(data)
 
     def put(self, request, *args, **kwargs):
-        DeviceFormSet = modelformset_factory(Device, form=DeviceListForm, extra=0)
+        DeviceFormSet = modelformset_factory(Device,
+                                             form=DeviceListForm,
+                                             extra=0)
         formset = DeviceFormSet(request.DATA)
 
         if formset.is_valid():
@@ -100,7 +105,8 @@ class DeviceList(generics.ListAPIView):
             profile = UserProfile.objects.get(user=request.user)
             if not profile.profile_seen:
                 # only redirect if first login
-                return HttpResponseRedirect(reverse('preferences') + '?next=/report')
+                return HttpResponseRedirect(
+                    reverse('preferences') + '?next=/report')
             elif '/devices' not in request.META['HTTP_REFERER']:
                 return HttpResponseRedirect(request.META['HTTP_REFERER'])
             else:

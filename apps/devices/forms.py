@@ -44,18 +44,12 @@ class DeviceForm(forms.ModelForm):
         return cleaned_data
 
 
-class DeviceListForm(DeviceForm):
+class DeviceListForm(forms.ModelForm):
     """ Used for displaying existing Devices in a list view
     """
-    # for existing model instances, change name and module fields
-    # to read-only, to avoid user from editing those values easily
-    def __init__(self, *args, **kwargs):
-        super(DeviceListForm, self).__init__(*args, **kwargs)
-
-        instance = getattr(self, 'instance', None)
-        if instance and instance.pk:
-            self.fields['name'].widget.attrs['readonly'] = True
-            self.fields['module'].widget.attrs['readonly'] = True
+    class Meta:
+        model = Device
+        fields = ('enabled', )
 
 
 class DeviceDetailForm(DeviceForm):
