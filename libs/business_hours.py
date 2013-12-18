@@ -67,11 +67,10 @@ def timestable():
     return table
 
 def create(name, basetable, aggregate, other_tables=None, **kwargs):
-    table = AnalysisTable.create('bh-bustable', tables={'times': timestable().id},
+    table = AnalysisTable.create(name, tables={'times': timestable().id},
                                  func = report_business_hours,
                                  params = {'table': basetable.id,
-                                           'aggregate' : { 'avg_util' : 'avg',
-                                                           'avg_bytes' : 'avg' }},
+                                           'aggregate' : aggregate },
                                  **kwargs)
     
     table.copy_columns(basetable)
@@ -165,7 +164,7 @@ def report_business_hours(target, tables, criteria, params):
     times = tables['times']
 
     deptable = Table.objects.get(id=params['table'])
-
+    
     # Create all the jobs
     jobs = []
     for i, row in times.iterrows():
@@ -203,6 +202,9 @@ def report_business_hours(target, tables, criteria, params):
                          (job, len(subdf) if subdf is not None else 0))
             if subdf is None:
                 continue
+
+            t0 = job.actual_criteria.starttime
+            t1 = job.actual_criteria.endtime
             subdf['__secs__'] = t1 - t0
             total_secs += (t1 - t0)
             idx += 1

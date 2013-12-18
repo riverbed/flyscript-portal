@@ -26,9 +26,9 @@ from apps.datasource.models import Job, Criteria, TableCriteria, Table
 from apps.datasource.serializers import TableSerializer
 from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
-from apps.report.forms import create_report_criteria_form
 from apps.report.serializers import ReportSerializer
 from apps.report.utils import create_debug_zipfile
+from apps.report.forms import create_report_criteria_form
 
 from rest_framework import generics, views
 from rest_framework.response import Response
@@ -124,7 +124,7 @@ class ReportView(views.APIView):
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
-        form = create_report_criteria_form(initial=form_init, report=report)
+        form = create_report_criteria_form(report, initial=form_init)
 
         return render_to_response('report.html',
                                   {'report': report,
@@ -149,7 +149,8 @@ class ReportView(views.APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = create_report_criteria_form(request.POST, request.FILES, report=report)
+        form = create_report_criteria_form(report, data=request.POST, files=request.FILES)
+
         if form.is_valid():
 
             formdata = form.cleaned_data
@@ -234,9 +235,10 @@ class WidgetJobsList(views.APIView):
 
         req_json = json.loads(request.POST['criteria'])
 
-        criteria_form = create_report_criteria_form(req_json, 
-                                                    report=report,
+        criteria_form = create_report_criteria_form(report, data=req_json,
+                                                    files=request.FILES,
                                                     jsonform=True)
+        
         if criteria_form.is_valid():
             logger.debug('criteria form passed validation: %s' % criteria_form)
             req_criteria = criteria_form.cleaned_data
