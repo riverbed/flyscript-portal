@@ -9,6 +9,8 @@ log.txt*
 log-db.txt*
 static/
 
+initial_preferences.json
+
 build
 dist
 RELEASE-VERSION

@@ -5,14 +5,18 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-
+import os
+import json
 import logging
+from cStringIO import StringIO
 
 from django.db import models
 from django.db.models.signals import post_save
+from django.core import management
 from django.contrib.auth.models import User
-
 import pytz
+
+from project.settings import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +37,39 @@ MAPS_VERSIONS = ('DISABLED',            # Google Maps Versions
 MAPS_VERSION_CHOICES = zip(MAPS_VERSIONS, map(str.title, MAPS_VERSIONS))
 
 
+def create_preference_fixture():
+    """Dump preferences to JSON file for safe keeping.
+
+    Marks all preference objects as "not seen" so they will still
+    appear after a reset to confirm choices.
+    """
+    buf = StringIO()
+    management.call_command('dumpdata', 'preferences', stdout=buf)
+    buf.seek(0)
+    preferences = list()
+    for pref in json.load(buf):
+        pref['fields']['profile_seen'] = False
+        preferences.append(pref)
+
+    fname = os.path.join(PROJECT_ROOT,
+                         'initial_data',
+                         'initial_preferences.json')
+
+    with open(fname, 'w') as f:
+        f.write(json.dumps(preferences, indent=2))
+
+    logger.debug('Wrote %d preferences to fixture file %s' % (len(preferences),
+                                                              fname))
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
     timezone = models.CharField(max_length=50,
                                 default='UTC',
                                 choices=TIMEZONE_CHOICES)
     ignore_cache = models.BooleanField(default=False,
-                                       help_text='Force all reports to bypass cache')
+                                       help_text='Force all reports to '
+                                                 'bypass cache')
     developer = models.BooleanField(default=False,
                                     verbose_name='developer mode')
     maps_version = models.CharField(max_length=30,
@@ -59,6 +89,10 @@ class UserProfile(models.Model):
         if self.timezone != 'UTC':
             self.timezone_changed = True
         super(UserProfile, self).save(*args, **kwargs)
+
+        if self.profile_seen:
+            # only save as a result of user save
+            create_preference_fixture()
 
 
 def create_user_profile(sender, instance, created, **kwargs):
