@@ -675,6 +675,12 @@ class Job(models.Model):
             worker = AsyncWorker(self, queryclass)
             worker.start()
 
+    def mark_failed(self, message):
+        logger.warning("%s failed: %s" % (self, message))
+        self.status = Job.ERROR
+        self.progress = 100
+        self.message = message
+        self.save()
 
 class AsyncWorker(threading.Thread):
     def __init__(self, job, queryclass):

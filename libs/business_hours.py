@@ -7,7 +7,7 @@ import time
 import copy
 import pytz
 from apps.datasource.models import Job, Table, Column, TableCriteria
-from apps.datasource.modules.analysis import  AnalysisTable
+from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
 from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd.common.timeutils import *
@@ -197,6 +197,11 @@ def report_business_hours(target, tables, criteria, params):
             while not job.done():
                 time.sleep(0.1)
 
+            if job.status == Job.ERROR:
+                raise AnalysisException("%s for %s-%s failed: %s" %
+                                        (job, job.criteria.starttime,
+                                         job.criteria.endtime,
+                                         job.message))
             subdf = job.data()
             logger.debug("%s: returned %d rows" %
                          (job, len(subdf) if subdf is not None else 0))

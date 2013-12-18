@@ -20,6 +20,11 @@ class TableOptions(JsonDict):
 
     _required = [ 'tables', 'func' ]
     
+class AnalysisException(Exception):
+    def _init__(self, message, *args, **kwargs):
+        self.message = message
+        super(AnalysisException, self).__init__(*args, **kwargs)
+
 class AnalysisTable:
     """
     An AnalysisTable builds on other tables, running them first to collect
@@ -133,33 +138,28 @@ class TableQuery:
             job = Job.objects.get(id=id)
                 
             if job.status == job.ERROR:
-                self.job.status = job.ERROR
-                self.job.progress = 100
-                self.job.message = "Dependent Job returned an error:\n%s" % (job.message)
-                self.job.save()
-                logger.info("Dependent Job returned an error: %s" % (job.message))
+                self.job.mark_failed("Dependent Job failed: %s" % (job.message))
                 failed = True
                 break
             
             f = job.data()
-            if f is None:
-                self.job.status = job.ERROR
-                self.job.progress = 100
-                self.job.message = "Dependent Job returned no data"
-                self.job.save()
-                logger.info("Dependent job returned no data: %s" % (str(job)))
-                failed = True
-                break
-
             dfs[name] = f
-            logger.debug("Table[%s] - %d rows" % (name, len(f)))
+            logger.debug("Table[%s] - %d rows" % (name, len(f) if f is not None else 0))
 
         if failed:
             return False
 
         logger.debug ("Calling analysis function %s" % str(options.func))
-        df = options.func(self.table, dfs, self.job.criteria, params=options.params)
 
+        try:
+            df = options.func(self.table, dfs, self.job.criteria, params=options.params)
+        except AnalysisException as e:
+            self.job.mark_failed("Analysis function %s failed: %s" % (options.func, e.message))
+            return False
+        except Exception as e:
+            self.job.mark_failed("Analysis function %s failed" % (options.func, e.message))
+            return False
+            
         # Sort according to the defined sort columns
         if df is not None:
             if self.table.sortcol:
