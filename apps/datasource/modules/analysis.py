@@ -96,18 +96,24 @@ class TableQuery:
         self.table = table
         self.job = job
 
+    def __unicode__(self):
+        return "<AnalysisTable %s>" % (self.job)
+
+    def __str__(self):
+        return "<AnalysisTable %s>" % (self.job)
+
     def run(self):
         # Collect all dependent tables
         options = self.table.options
-        logger.debug("Analysis dependent tables: %s"  % options.tables)
+        logger.debug("%s: dependent tables: %s"  % (self, options.tables))
         deptables = options.tables
         depjobids = {}
         for (name, id) in deptables.items():
             id = int(id)
-            logger.debug("Analysis dependent table %d" % id)
             deptable = Table.objects.get(id=id)
             job = Job(table=deptable, criteria=self.job.criteria.build_for_table(deptable))
             job.save()
+            logger.debug("%s: starting dependent job %s" % (self, job))
             job.start()
             depjobids[name] = (job.id)
                     
@@ -129,7 +135,7 @@ class TableQuery:
                     done=False
                     break
 
-        logger.debug("Analysis job %s - all dependent jobs complete, collecting data" % str(self.job))
+        logger.debug("%s: All dependent jobs complete, collecting data" % str(self))
         # Create dataframes for all tables
         dfs = {}
         
@@ -144,15 +150,15 @@ class TableQuery:
             
             f = job.data()
             dfs[name] = f
-            logger.debug("Table[%s] - %d rows" % (name, len(f) if f is not None else 0))
+            logger.debug("%s: Table[%s] - %d rows" % (self, name, len(f) if f is not None else 0))
 
         if failed:
             return False
 
-        logger.debug ("Calling analysis function %s" % str(options.func))
+        logger.debug ("%s: Calling analysis function %s" % (self, str(options.func)))
 
         try:
-            df = options.func(self.table, dfs, self.job.criteria, params=options.params)
+            df = options.func(self, dfs, self.job.criteria, params=options.params)
         except AnalysisException as e:
             self.job.mark_failed("Analysis function %s failed: %s" % (options.func, e.message))
             return False
@@ -176,4 +182,5 @@ class TableQuery:
         else:
             self.data = None
         
+        logger.debug("%s: completed successfully"  % (self))
         return True

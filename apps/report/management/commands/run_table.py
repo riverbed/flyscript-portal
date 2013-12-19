@@ -11,6 +11,7 @@ import time
 import datetime
 import optparse
 import pytz
+import sys
 
 from django.core.management.base import BaseCommand, CommandError
 from django.forms import ValidationError
@@ -213,35 +214,36 @@ class Command(BaseCommand):
             job = Job(table=table, criteria=criteria)
             job.save()
 
-            try:
-                self.console('Job created: %s' % job)
-                self.console('Criteria: %s' % criteria.print_details())
+            self.console('Job created: %s' % job)
+            self.console('Criteria: %s' % criteria.print_details())
 
-                start_time = datetime.datetime.now()
-                job.start()
-                self.console('Job running . . ', ending='')
+            start_time = datetime.datetime.now()
+            job.start()
+            self.console('Job running . . ', ending='')
 
-                # wait for results
-                while not job.done():
-                    #self.console('. ', ending='')
-                    #self.stdout.flush()
-                    time.sleep(1)
+            # wait for results
+            while not job.done():
+                #self.console('. ', ending='')
+                #self.stdout.flush()
+                time.sleep(1)
 
-                end_time = datetime.datetime.now()
-                delta = end_time - start_time
-                seconds = float(delta.microseconds + 
-                                (delta.seconds + delta.days * 24 * 3600) * 10**6) / 10**6
+            end_time = datetime.datetime.now()
+            delta = end_time - start_time
+            seconds = float(delta.microseconds + 
+                            (delta.seconds + delta.days * 24 * 3600) * 10**6) / 10**6
 
-                self.console('Done!! (elapsed time: %.2f seconds)' % seconds)
-                self.console('')
+            self.console('Done!! (elapsed time: %.2f seconds)' % seconds)
+            self.console('')
 
-                # Need to refresh the column list in case the job changed them (ephemeral cols)
-                columns = [c.name for c in table.get_columns()]
+            # Need to refresh the column list in case the job changed them (ephemeral cols)
+            columns = [c.name for c in table.get_columns()]
 
+            if job.status == job.COMPLETE:
                 if options['as_csv']:
                     Formatter.print_csv(job.values(), columns)
                 else:
                     Formatter.print_table(job.values(), columns)
-
-            finally:
-                job.delete()
+            else:
+                self.console("Job completed with an error:")
+                self.console(job.message)
+                sys.exit(1)

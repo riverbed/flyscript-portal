@@ -155,7 +155,7 @@ class Table(models.Model):
         return t
     
     def __unicode__(self):
-        return "<Table %s (id=%s)>" % (self.name, str(self.id))
+        return "<Table %s (%s)>" % (str(self.id), self.name)
 
     def get_columns(self, synthetic=None, ephemeral=None, iskey=None):
         """
@@ -459,9 +459,22 @@ class Job(models.Model):
     remaining = models.IntegerField(default=-1)
 
     def __unicode__(self):
-        return "<Job %d, table %d (%s), %s/%s%%>" % (self.id, self.table.id,
-                                                     self.table.name,
-                                                     self.status, self.progress)
+        if self.handle == '':
+            return "<Job t=%s>" % (self.table.id)
+        else:
+            return "<Job t=%s %8.8s>" % (self.table.id, self.handle)
+    
+    def delete(self):
+        logger.debug('%s deleted' % str(self))
+        super(Job, self).delete()
+
+    def save(self, *args, **kwargs):
+        """ Model save. """
+        if self.handle == "":
+            # Only compute the handle if it was not previously computed -- as it
+            # may change if the associated table is not cacheable
+            self.handle = self.compute_handle()
+        super(Job, self).save(*args, **kwargs)
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -479,20 +492,20 @@ class Job(models.Model):
             #
             # May want to dig in to this further and make sure this doesn't pick up cache
             # files when we don't want it to
-            logger.debug("Table %s is cacheable, computing handle from criteria" % str(self.table))
+            logger.debug("%s: %s is cacheable, computing handle from criteria" % (self, str(self.table)))
             h.update('.'.join([c.name for c in self.table.get_columns(ephemeral=False)]))
             for k, v in self.criteria.iteritems():
                 if not k.startswith('criteria_'):
-                    logger.debug("Updating hash from %s -> %s" % (k,v))
+                    #logger.debug("Updating hash from %s -> %s" % (k,v))
                     h.update('%s:%s' % (k, v))
         else:
             # Table is not cacheable, instead use current time plus a random value
             # just to get a unique hash
-            logger.debug("Table %s is not cacheable, computing unique handle" % str(self.table))
+            logger.debug("%s: %s is not cacheable, computing unique handle" % (self, str(self.table)))
             h.update(str(datetime.datetime.now()))
             h.update(str(random.randint(0,10000000)))
 
-        logger.debug("Table %s hash: %s" % (str(self.table), h.hexdigest()))
+        logger.info("%s: %s -> full handle: %s" % (str(self), str(self.table), h.hexdigest()))
         return h.hexdigest()
     
     def get_depjob(self):
@@ -508,7 +521,7 @@ class Job(models.Model):
         if self.status == Job.RUNNING_DEP:
             depjob = self.get_depjob()
             if not depjob:
-                raise ValueError("Failed to find dependent job")
+                raise ValueError("%s: failed to find dependent job" % str(self))
             self.progress = depjob.progress
             self.message = depjob.message
             self.remaining = depjob.remaining
@@ -516,25 +529,11 @@ class Job(models.Model):
             if done:
                 self.status = depjob.status
             self.save()
-            logger.debug("%s status: %s (from dependent job %s)" % (str(self), self.status, str(depjob)))
+            #logger.debug("%s status: %s (from dependent %s)" % (str(self), self.status, str(depjob)))
             return done
 
-        logger.debug("%s status: %s" % (str(self), self.status))
+        #logger.debug("%s status: %s" % (str(self), self.status))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
-
-    def datafile(self):
-        return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
-    
-    def data(self):
-        """ Returns a pandas.DataFrame of the data, or None if not available. """
-        if os.path.exists(self.datafile()):
-            df = pandas.load(self.datafile())
-            logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
-        else:
-            logger.debug("%s missing data file, no data: %s" % (str(self), self.datafile()))
-            df = None
-
-        return df
 
     def values(self):
         """ Return data as a list of lists. """
@@ -551,19 +550,11 @@ class Job(models.Model):
         else:
             vals = []
         return vals
-    
-    def delete(self):
-        logger.debug('Deleting Job: %s' % str(self))
-        super(Job, self).delete()
-
-    def save(self, *args, **kwargs):
-        """ Model save. """
-        if self.handle == "":
-            # Only compute the handle if it was not previously computed -- as it
-            # may change if the associated table is not cacheable
-            self.handle = self.compute_handle()
-        super(Job, self).save(*args, **kwargs)
         
+    def datafile(self):
+        """ Return the data file for this job. """
+        return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
+    
     def savedata(self, data):
         """ Save pandas DataFrame. """
         logger.debug("%s saving data to datafile %s" %
@@ -574,6 +565,17 @@ class Job(models.Model):
             logger.debug("%s data saved to file: %s" % (str(self), self.datafile()))
         else:
             logger.debug("%s no data saved, data is empty" % (str(self)))
+
+    def data(self):
+        """ Returns a pandas.DataFrame of the data, or None if not available. """
+        if os.path.exists(self.datafile()):
+            df = pandas.load(self.datafile())
+            logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
+        else:
+            logger.debug("%s no data, missing data file: %s" % (str(self), self.datafile()))
+            df = None
+
+        return df
 
     def export_sqlite(self, dbfilename, tablename=None):
         import sqlite3
@@ -603,8 +605,10 @@ class Job(models.Model):
         conn.close()
         
     def json(self, data=None):
-                                      
-        return {'progress': self.progress,
+        """ Return a simple JSON structure representing the status of this Job """
+        return {'id': self.id,
+                'handle': self.handle,
+                'progress': self.progress,
                 'remaining': self.remaining,
                 'status': self.status,
                 'message': self.message,
@@ -625,12 +629,23 @@ class Job(models.Model):
             return ""
             
     def start(self):
+        """ Start this job. """
+        
         ignore_cache = self.criteria.ignore_cache
         
         with lock:
-            # Look for another job running
+            # Look for another job that matches this handle
             running = self.get_depjob()
-            if not running or (ignore_cache and running.status == self.COMPLETE):
+            if (  not running or
+
+                  # ignoring cache and the job is not running -- this
+                  # tries to capture the case where one report has
+                  # multiple jobs based of the same base job... incomplete
+                  # solution, really need to track a "run id" or something
+                  (ignore_cache and running.status == self.COMPLETE) or
+
+                  # Don't shadow failed jobs
+                  (running.status == self.ERROR)):
                 running = None
                 self.status = self.RUNNING
                 self.progress = 0
@@ -687,14 +702,22 @@ class AsyncWorker(threading.Thread):
         threading.Thread.__init__(self)
         self.job = job
         self.queryclass = queryclass
-        
+        logger.info("%s created" % self)
+
+    def __unicode__(self):
+        return "<AsyncWorker %s>" % (self.job)
+
+    def __str__(self):
+        return "<AsyncWorker %s>" % (self.job)
+
     def run(self):
-        logger.debug("Starting job %s" % self.job.handle)
+        logger.info("%s run starting" % self)
         job = self.job
         try:
             query = self.queryclass(self.job.table, self.job)
             if query.run():
-                logger.debug("Job done, query.data: %s (%s)" % (query.data, type(query.data)))
+                  # This log message is too verbose...
+                #logger.debug("Job done, query.data: %s (%s)" % (query.data, type(query.data)))
                 if isinstance(query.data, list) and len(query.data) > 0:
                     # Convert the result to a dataframe
                     columns = [col.name for col in
@@ -719,7 +742,7 @@ class AsyncWorker(threading.Thread):
                 fulldata = self.job.table.compute_synthetic(query.data)
                 job.savedata(fulldata)
 
-                logger.debug("Saving job %s as COMPLETE" % self.job.handle)
+                logger.info("%s finished as COMPLETE" % self)
                 job.progress = 100
                 job.status = job.COMPLETE
             else:
@@ -730,12 +753,11 @@ class AsyncWorker(threading.Thread):
                 if job.message == "":
                     job.message = ("Query returned an unknown error")
                 job.progress = 100
-                logger.debug(job.message)
-                job.save()
+                logger.error("%s finished with an error: %s" % (self, job.message))
                 
         except:
             traceback.print_exc()
-            logger.error("Job %s failed: %s" % (self.job.handle, str(sys.exc_info())))
+            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
             job.status = job.ERROR
             job.progress = 100
             job.message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
