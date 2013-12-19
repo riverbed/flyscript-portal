@@ -145,7 +145,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.request",
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
-    "project.context_processors.django_version",
+#    "project.context_processors.django_version",
     'apps.report.context_processors.report_list_processor',
 )
 
@@ -259,5 +259,3 @@ LOGGING = {
 APPS_DATASOURCE = {
     'max_job_age_seconds' : 60*60*24
     }
-
-    

@@ -1,36 +1,14 @@
-<!DOCTYPE html>
+{% extends "site_base.html" %}
 
 {% block comments %}{% endblock %}
 
 {% load url from future %}
-<html>
-  <head>
-    <title>{% block title %}Portal: {{ report.title }} Report{% endblock %}</title>
-    <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
-    <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
-    <link href="{{ STATIC_URL }}jquery-timepicker/jquery.timepicker.css" rel="stylesheet"/>
-    <link href="{{ STATIC_URL }}bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
-    <link href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" rel="stylesheet"/>
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/portal.js"></script>
+<title>{% block title %}Portal: {{ report.title }} Report{% endblock %}</title>
 
-    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="{{ STATIC_URL }}bootstrap-select/bootstrap-select.min.js"></script>
+{% block header %}{% endblock %}
 
-    <script type="text/javascript" src="//yui.yahooapis.com/3.8.1/build/yui/yui-min.js"></script>
-    {% block header %}{% endblock %}
-
-
-  </head>
-  <body>
-    <div class="navbar navbar-inverse ">
-      <div class="navbar-inner">
-        <div class="container">
-        <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/flyscript.png'/ style="max-width:None;"> FlyScript&nbsp;Portal </a>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
+{% block navbar_left %}
               {% if reports %}
               <li class="dropdown active">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Reports <b class="caret"></b></a>
@@ -52,19 +30,15 @@
                       <li><a href="/help/shark">Shark Columns</a></li>
                   </ul>
               </li>
+{% endblock %}
 
-              {% block extra_nav_left %}
-              {% endblock %}
-            </ul>
-            <ul class="nav pull-right">
-              {% block extra_nav_right %}
-              {% endblock %}
+{% block extra_nav_left %}
+{% endblock %}
 
-              {% if django_version.1 >= 5 %}
-                  <li class="active pull-right">
-                      <a href="/console">Console</a>
-                  </li>
-              {% endif %}
+{% block extra_nav_right %}
+{% endblock %}
+
+{% block navbar_right %}
                 <li class="active">
                     <div class="btn-group pull-right">
                         <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -81,19 +55,11 @@
                         </ul>
                     </div>
                 </li>
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div>
-      </div>
-    </div>
-    <div class="container-fluid">
-      <div class="row-fluid">
-        <div class="span6">
-          {% block header_row %}{% endblock %}
-        </div>
+{% endblock %}
+
+{% block header_row %}{% endblock %}
+
         {% block login %}
-        <div class="span6">
-            <div class="pull-right">
                 {% if user.is_authenticated %}
                     <small class="text-info pull-right">Welcome, <a href="{% url 'preferences' %}">{{ user.username }}</a> <a href='/accounts/logout/'> [logout] </a></small>
                 {% else %}
@@ -101,12 +67,7 @@
                 {% endif %}
                 <br><small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
                 <br><small class="text-info pull-right"><span id="report_timezone">{{ TIME_ZONE }}</span>&nbsp;<span class="text-info"><a href='/preferences/?next={{ request.path }}'>(update)</a></span></small>
-            </div>
-        </div>
         {% endblock %}
-      </div>
-    </div>
-    {% block content %}{% endblock %}
-  </body>
-</html>
+
+{% block content %}{% endblock %}
 

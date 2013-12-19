@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+
+{% block comments %}{% endblock %}
+
+{% load url from future %}
+<html>
+  <head>
+    <title>{% block title %}FlyScript Portal{% endblock %}</title>
+
+    {% block site_header %}
+    <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen, print"/>
+    <link href="{{ STATIC_URL }}css/main.css" rel="stylesheet"/>
+    <link href="{{ STATIC_URL }}jquery-timepicker/jquery.timepicker.css" rel="stylesheet"/>
+    <link href="{{ STATIC_URL }}bootstrap-select/bootstrap-select.min.css" rel="stylesheet"/>
+    <link href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" rel="stylesheet"/>
+
+    <script type="text/javascript" src="{{ STATIC_URL }}js/portal.js"></script>
+
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="{{ STATIC_URL }}bootstrap-select/bootstrap-select.min.js"></script>
+    {% endblock %}
+
+    <script type="text/javascript" src="//yui.yahooapis.com/3.8.1/build/yui/yui-min.js"></script>
+    {% block header %}{% endblock %}
+
+  </head>
+  <body>
+    <div class="navbar navbar-inverse ">
+      <div class="navbar-inner">
+        <div class="container">
+        <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/flyscript.png'/ style="max-width:None;"> FlyScript&nbsp;Portal </a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              {% block navbar_left %}
+              {% endblock %}
+
+              {% block extra_nav_left %}
+              {% endblock %}
+            </ul>
+            <ul class="nav pull-right">
+              {% block extra_nav_right %}
+              {% endblock %}
+
+              {% block navbar_right %}
+              {% endblock %}
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span6">
+          {% block header_row %}{% endblock %}
+        </div>
+        <div class="span6">
+            <div class="pull-right">
+                {% block login %}
+                {% endblock %}
+            </div>
+        </div>
+      </div>
+    </div>
+    {% block content %}{% endblock %}
+  </body>
+</html>
+
