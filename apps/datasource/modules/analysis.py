@@ -163,7 +163,7 @@ class TableQuery:
             self.job.mark_failed("Analysis function %s failed: %s" % (options.func, e.message))
             return False
         except Exception as e:
-            self.job.mark_failed("Analysis function %s failed" % (options.func, e.message))
+            self.job.mark_failed("Analysis function %s failed" % (options.func))
             return False
             
         # Sort according to the defined sort columns

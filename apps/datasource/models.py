@@ -496,7 +496,7 @@ class Job(models.Model):
             jobs = Job.objects.all()
 
         num = len(jobs)
-        if jobs > 0:
+        if num > 0:
             logger.info("Deleting %d job(s) older than %s" %
                          (len(jobs), str(age) if age is not None else "now"))
             [j.delete() for j in jobs]
@@ -559,10 +559,10 @@ class Job(models.Model):
             if done:
                 self.status = depjob.status
             self.save()
-            #logger.debug("%s status: %s (from dependent %s)" % (str(self), self.status, str(depjob)))
+            logger.debug("%s status: %s (from dependent %s)" % (str(self), self.status, str(depjob)))
             return done
 
-        #logger.debug("%s status: %s" % (str(self), self.status))
+        logger.debug("%s status: %s" % (str(self), self.status))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
 
     def values(self):
