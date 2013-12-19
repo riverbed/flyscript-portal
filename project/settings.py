@@ -255,3 +255,9 @@ LOGGING = {
         },
     }
 }
+
+APPS_DATASOURCE = {
+    'max_job_age_seconds' : 60*60*24
+    }
+
+    

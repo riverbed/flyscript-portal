@@ -32,7 +32,7 @@ from project import settings
 logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
-
+delete_jobs_last_run = 0
 
 class TableCriteria(models.Model):
     """ Criteria model to provide report run-time overrides for key values.
@@ -435,6 +435,8 @@ class Criteria(DictObject):
 
 class Job(models.Model):
 
+    created = models.DateTimeField(auto_now_add=True)
+    touched = models.DateTimeField(auto_now_add=True)
     table = models.ForeignKey(Table)
     criteria = PickledObjectField(null=True)
     actual_criteria = PickledObjectField(null=True)
@@ -460,11 +462,15 @@ class Job(models.Model):
 
     def __unicode__(self):
         if self.handle == '':
-            return "<Job t=%s>" % (self.table.id)
+            return "<Job %s t=%s>" % (self.id, self.table.id)
         else:
-            return "<Job t=%s %8.8s>" % (self.table.id, self.handle)
+            return "<Job %s t=%s %8.8s>" % (self.id, self.table.id, self.handle)
     
     def delete(self):
+        if os.path.exists(self.datafile()):
+            logger.debug('%s datafile removed' % str(self))
+            os.remove(self.datafile())
+            
         logger.debug('%s deleted' % str(self))
         super(Job, self).delete()
 
@@ -475,6 +481,28 @@ class Job(models.Model):
             # may change if the associated table is not cacheable
             self.handle = self.compute_handle()
         super(Job, self).save(*args, **kwargs)
+        Job.delete_jobs(datetime.timedelta(seconds=settings.APPS_DATASOURCE['max_job_age_seconds']))
+
+    @classmethod
+    def delete_jobs(cls, age=None):
+        # Throttle - only run this at most once every 15 minutes
+        global delete_jobs_last_run
+        if time.time() - delete_jobs_last_run < 60*15:
+            return
+        
+        if age is not None:
+            jobs = Job.objects.filter(touched__lte = datetime.datetime.utcnow() - age)
+        else:
+            jobs = Job.objects.all()
+
+        num = len(jobs)
+        if jobs > 0:
+            logger.info("Deleting %d job(s) older than %s" %
+                         (len(jobs), str(age) if age is not None else "now"))
+            [j.delete() for j in jobs]
+        
+        delete_jobs_last_run = time.time()
+        return num
 
     def compute_handle(self):
         h = hashlib.md5()
@@ -508,10 +536,12 @@ class Job(models.Model):
         logger.info("%s: %s -> full handle: %s" % (str(self), str(self.table), h.hexdigest()))
         return h.hexdigest()
     
-    def get_depjob(self):
+    def get_depjob(self, status=None):
+        if status is None:
+            status = [self.RUNNING, self.COMPLETE, self.ERROR]
         jobs = Job.objects.filter(
             handle=self.handle,
-            status__in=[self.RUNNING, self.COMPLETE, self.ERROR])
+            status__in=status)
 
         if len(jobs) == 0:
             return None
@@ -635,22 +665,22 @@ class Job(models.Model):
         
         with lock:
             # Look for another job that matches this handle
-            running = self.get_depjob()
+            running = self.get_depjob(status=[self.COMPLETE, self.RUNNING])
             if (  not running or
 
                   # ignoring cache and the job is not running -- this
                   # tries to capture the case where one report has
                   # multiple jobs based of the same base job... incomplete
                   # solution, really need to track a "run id" or something
-                  (ignore_cache and running.status == self.COMPLETE) or
+                  (ignore_cache and running.status == self.COMPLETE)):
 
-                  # Don't shadow failed jobs
-                  (running.status == self.ERROR)):
                 running = None
                 self.status = self.RUNNING
                 self.progress = 0
                 self.save()
             else:
+                running.touched = datetime.datetime.utcnow()
+                running.save()
                 self.status = self.RUNNING_DEP
                 self.progress = running.progress
                 self.save()
