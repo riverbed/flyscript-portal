@@ -67,7 +67,7 @@ Widget.prototype.getData = function(criteria) {
         data: null,
         success: function(data, textStatus) { self.processResponse(criteria, data, textStatus); },
         error: function(jqXHR, textStatus, errorThrown) { 
-            alert("an error occured: " + textStatus + " : " + errorThrown); 
+            alert("an error occurred: " + textStatus + " : " + errorThrown);
             $('#' + self.divid).hideLoading();
         }
     });
@@ -84,7 +84,8 @@ Widget.prototype.processResponse = function(criteria, response, textStatus)
     } else if (response.status == 4) {
         // ERROR
         $('#' + this.divid).hideLoading();
-        $('#' + this.divid).html("<p>Server error: <pre>" + response.message + "</pre></p>");
+        var message = $("<div/>").html(response.message).text()
+        $('#' + this.divid).html("<p>Server error: <pre>" + message + "</pre></p>");
         rvbd_status[self.posturl] = 'error';
     } else {
         if (response.progress > 0) {

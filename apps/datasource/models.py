@@ -22,6 +22,7 @@ import datetime
 import pandas
 from django.db import models
 from django.db.models import Max
+from django.core.urlresolvers import reverse
 from rvbd.common.utils import DictObject
 
 from apps.devices.models import Device
@@ -699,8 +700,9 @@ class Job(models.Model):
             logger.debug("Job %s: Device disabled, bypassing job" % str(self))
             self.status = self.ERROR
             self.message = ('Device %s disabled.\n'
-                            'See Configure->Edit Devices page to enable.'
-                            % self.table.device.name)
+                            "See <a href='%s'>Configure->Edit Devices</a> "
+                            'page to enable.'
+                            % (self.table.device.name, reverse('device-list')))
             self.progress = 100
             self.save()
 
