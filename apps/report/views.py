@@ -149,7 +149,8 @@ class ReportView(views.APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = create_report_criteria_form(report, data=request.POST, files=request.FILES)
+        form = create_report_criteria_form(report, data=request.POST,
+                                           files=request.FILES)
 
         if form.is_valid():
 
@@ -189,7 +190,8 @@ class ReportView(views.APIView):
             for row in rows:
                 for w in row:
                     widget_def = {"widgettype": w.widgettype().split("."),
-                                  "posturl": "/report/%s/widget/%d/jobs/" % (report.slug, w.id),
+                                  "posturl": reverse('widget-job-list',
+                                                     args=(report.slug, w.id)),
                                   "options": w.uioptions,
                                   "widgetid": w.id,
                                   "row": w.row,
