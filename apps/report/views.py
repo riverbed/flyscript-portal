@@ -115,7 +115,8 @@ class ReportView(views.APIView):
                                     device.username == '<username>' or
                                     device.password == '<password>' or
                                     device.password == '')):
-                return HttpResponseRedirect(reverse('device-list'))
+                return HttpResponseRedirect('%s?invalid=true' %
+                                            reverse('device-list'))
 
         profile = request.user.userprofile
         if not profile.profile_seen:
@@ -284,7 +285,9 @@ class WidgetJobsList(views.APIView):
                          (str(wjob), report_slug, job.handle))
 
             return Response({"joburl": reverse('report-job-detail',
-                                               args=[report_slug, widget_id, wjob.id])})
+                                               args=[report_slug,
+                                                     widget_id,
+                                                     wjob.id])})
         else:
             from IPython import embed; embed()
 
@@ -299,7 +302,8 @@ class WidgetJobDetail(views.APIView):
 
         if not job.done():
             # job not yet done, return an empty data structure
-            logger.debug("%s: Not done yet, %d%% complete" % (str(wjob), job.progress))
+            logger.debug("%s: Not done yet, %d%% complete" % (str(wjob),
+                                                              job.progress))
             resp = job.json()
         elif job.status == Job.ERROR:
             resp = job.json()
@@ -326,7 +330,7 @@ class WidgetJobDetail(views.APIView):
                     resp['data'] = None
                     resp['status'] = Job.ERROR
                     resp['message'] = msg
-                    logger.debug("%s marked Error: module unauthorized for user %s"
+                    logger.debug("%s Error: module unauthorized for user %s"
                                  % (str(wjob), request.user))
                 else:
                     data = widget_func(widget, tabledata)

@@ -21,6 +21,11 @@
 
 {% block content %}
     <div class="container-fluid">
+        {% if invalid %}
+        <div class="block-centered" style="text-align: center">
+            <h4 class="text-error">Ensure all enabled devices have valid credentials</h4>
+        </div>
+        {% endif %}
         <form action="" method="POST">
                 <input type="hidden" name="_method" value="PUT">
                 {% csrf_token %}
