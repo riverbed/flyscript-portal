@@ -79,12 +79,12 @@ class DeviceList(generics.ListAPIView):
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
     def get(self, request, *args, **kwargs):
-        queryset = Device.objects.all()
+        queryset = Device.objects.order_by('id')
         if request.accepted_renderer.format == 'html':
             DeviceFormSet = modelformset_factory(Device,
                                                  form=DeviceListForm,
                                                  extra=0)
-            formset = DeviceFormSet()
+            formset = DeviceFormSet(queryset=queryset)
             tabledata = zip(formset.forms, queryset)
             data = {'formset': formset, 'tabledata': tabledata}
             return Response(data, template_name='device_list.html')

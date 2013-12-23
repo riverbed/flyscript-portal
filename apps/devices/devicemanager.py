@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
 
-class DeviceManager:
+class DeviceManager(object):
     # map of active devices by datasource_id
     devices = {}
 
@@ -35,9 +35,12 @@ class DeviceManager:
         with lock:
             if ds.id not in cls.devices:
                 import apps.datasource.modules
-                create_func = apps.datasource.modules.__dict__[ds.module].new_device_instance
+                module = apps.datasource.modules.__dict__[ds.module]
+                create_func = module.new_device_instance
 
-                logger.debug("Creating new Device: %s(%s:%s)" % (ds.module, ds.host, ds.port))
+                logger.debug("Creating new Device: %s(%s:%s)" % (ds.module,
+                                                                 ds.host,
+                                                                 ds.port))
                 cls.devices[ds.id] = create_func(host=ds.host, port=ds.port,
                                                  auth=UserAuth(ds.username,
                                                                ds.password))
@@ -45,7 +48,8 @@ class DeviceManager:
 
     @classmethod
     def list_modules(cls):
-        """ Returns list of modules which have 'new_device_instance' function defined
+        """ Returns list of modules which have 'new_device_instance'
+            function defined.
         """
         modules = []
         import apps.datasource.modules
