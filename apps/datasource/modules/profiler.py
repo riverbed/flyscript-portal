@@ -20,7 +20,6 @@ from apps.devices.devicemanager import DeviceManager
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
-
 def new_device_instance(*args, **kwargs):
     # Used by DeviceManager to create a Profiler instance
     return rvbd.profiler.Profiler(*args, **kwargs)

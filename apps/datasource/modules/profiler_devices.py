@@ -17,15 +17,9 @@ from rvbd.common.jsondict import JsonDict
 
 from apps.datasource.models import Table
 from apps.devices.devicemanager import DeviceManager
+from apps.datasource.modules.profiler import lock
 
 logger = logging.getLogger(__name__)
-lock = threading.Lock()
-
-
-def new_device_instance(*args, **kwargs):
-    # Used by DeviceManager to create a Profiler instance
-    return rvbd.profiler.Profiler(*args, **kwargs)
-
 
 class DevicesTable:
     @classmethod
@@ -36,7 +30,6 @@ class DevicesTable:
                   duration=None, **kwargs)
         t.save()
         return t
-        
 
 class TableQuery:
     # Used by Table to actually run a query
@@ -59,7 +52,8 @@ class TableQuery:
 
         # This returns an array of rows, one row per device
         # Each row is a dict containing elements such as id, ipaddr, name, type, type_id, and version
-        devicedata = profiler.api.devices.get_all()
+        with lock:
+            devicedata = profiler.api.devices.get_all()
 
         # Convert to a DataFrame to make it easier to work with
         df = pandas.DataFrame(devicedata)
