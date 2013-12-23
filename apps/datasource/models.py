@@ -580,8 +580,10 @@ class Job(models.Model):
 
                     logger.debug("%s just finished parents query" % str(handle))
                     time.sleep(0.2)
+                else:
+                    parents = None
 
-                if len(parents) > 0:
+                if parents is not None and len(parents) > 0:
                     parent = parents[0]
 
                     job = Job(table = table,
