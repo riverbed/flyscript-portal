@@ -442,8 +442,6 @@ class BarWidget(object):
             for a in rowmin.keys():
                 minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
                 maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a], rowmax[a])
-                print "minval[%s]: %s (%s)" % (a, rowmin[a], type(rowmin[a]))
-                print "maxval[%s]: %s (%s)" % (a, rowmax[a], type(rowmax[a]))
             rows.append(row)
 
         # Build up axes
@@ -476,5 +474,4 @@ class BarWidget(object):
             "axes": axes
         }
 
-        print data
         return data

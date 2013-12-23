@@ -14,6 +14,9 @@ from rvbd.common.jsondict import JsonDict
 from django.db import models
 from django.db.models import Max, Sum
 from django.template.defaultfilters import slugify
+from django.db import transaction
+from django.db.models.signals import pre_delete 
+from django.dispatch import receiver
 
 from model_utils.managers import InheritanceManager
 from apps.datasource.models import Table, Job, TableCriteria
@@ -121,8 +124,16 @@ class WidgetJob(models.Model):
         return "<WidgetJob %s: widget %s, job %s>" % (self.id, 
                                                       self.widget.id,
                                                       self.job.id)
-    
 
+    def save(self, *args, **kwargs):
+        with transaction.commit_on_success():
+            self.job.reference(str(self))
+            super(WidgetJob, self).save(*args, **kwargs)
+
+@receiver(pre_delete, sender=WidgetJob)
+def _widgetjob_delete(sender, instance, **kwargs):
+    instance.job.dereference(str(instance))
+        
 class Axes:
     def __init__(self, definition):
         self.definition = definition

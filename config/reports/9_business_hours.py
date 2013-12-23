@@ -62,7 +62,7 @@ bustable_pre = bizhours.create('bh-bustable-pre', basetable,
                                aggregate = { 'avg_util' : 'avg',
                                              'in_avg_util' : 'avg',
                                              'out_avg_util' : 'avg' },
-                               resolution=3600, duration=60*24*7, cacheable=False)
+                               resolution=3600, duration=60*24*7)
 
 #bustable = AnalysisTable.create('bh-bustable', tables={'table': bustable_pre.id},
 #                                func = protools.process_interface_dns)

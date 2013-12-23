@@ -36,6 +36,20 @@ DATABASES = {
     }
 }
 
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.postgresql_psycopg2',      # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+#        'NAME': 'portal',
+#        'USER': '',                      
+#        'PASSWORD': '',                  
+#        'HOST': 'localhost',             
+#        'PORT': '',                      
+#    },
+#    'OPTIONS': {
+#        'autocommit': True,
+#    },
+#}
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -257,5 +271,8 @@ LOGGING = {
 }
 
 APPS_DATASOURCE = {
-    'max_job_age_seconds' : 60*60*24
+    #'job_age_old_seconds' : 60*60*24
+    #'job_age_ancient_seconds' : 7*60*60*24
+    'job_age_old_seconds' : 60*1,
+    'job_age_ancient_seconds' : 60*10
     }

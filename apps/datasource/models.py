@@ -18,22 +18,45 @@ import tokenize
 from StringIO import StringIO
 import random
 import datetime
-
+import pytz
 import pandas
+
 from django.db import models
 from django.db.models import Max
 from django.core.urlresolvers import reverse
+from django.db import transaction
+from django.db.models import F
+from django.db.models.signals import pre_delete 
+from django.dispatch import receiver
+
 from rvbd.common.utils import DictObject
 
 from apps.devices.models import Device
 from libs.fields import PickledObjectField
 from project import settings
 
-
 logger = logging.getLogger(__name__)
 
-lock = threading.Lock()
-delete_jobs_last_run = 0
+if settings.DATABASES['default']['ENGINE'].endswith('sqlite3'):
+    # sqlite doesn't support row locking (select_for_update()), so need
+    # to use a threading lock.  This provides support when running
+    # the dev server.  It will not work across multiple processes, only
+    # between threads of a single process
+    lock = threading.RLock()
+else:
+    lock = None
+
+age_jobs_last_run = 0
+
+class LocalLock(object):
+    def __enter__(self):
+        if lock is not None:
+            lock.acquire() 
+
+    def __exit__(self, type, value, traceback):
+        if lock is not None:
+            lock.release()
+        return False
 
 class TableCriteria(models.Model):
     """ Criteria model to provide report run-time overrides for key values.
@@ -196,6 +219,9 @@ class Table(models.Model):
 
         """
         
+        posmax = Column.objects.filter(table=table).aggregate(Max('position'))
+        pos = (posmax['position__max'] or 0) + 1
+
         for c in table.get_columns():
             if columns is not None and c.name not in columns:
                 continue
@@ -204,6 +230,8 @@ class Table(models.Model):
             issortcol = (c == c.table.sortcol)
             c.pk = None
             c.table = self
+            c.position = pos
+            pos = pos + 1
             c.save()
             if issortcol:
                 self.sortcol = c
@@ -353,7 +381,7 @@ class Column(models.Model):
         c = Column(table=table, name=name, label=label, datatype=datatype, units=units,
                    iskey=iskey, options=options, **kwargs)
         posmax = Column.objects.filter(table=table).aggregate(Max('position'))
-        c.position = posmax['position__max'] or 1
+        c.position = (posmax['position__max'] or 0) + 1
         c.save()
         if issortcol:
             table.sortcol = c
@@ -436,16 +464,36 @@ class Criteria(DictObject):
 
 class Job(models.Model):
 
+    # Timestamp when the job was created
     created = models.DateTimeField(auto_now_add=True)
+
+    # Timestamp the last time the job was accessed
     touched = models.DateTimeField(auto_now_add=True)
+
+    # Number of references to this job
+    refcount = models.IntegerField(default=0)
+
+    # Whether this job is a child of another job
+    ischild = models.BooleanField(default=False)
+
+    # If ischild, this points to the parent job
+    parent = models.ForeignKey('self', null=True)
+
+    # Table assocaited with this job
     table = models.ForeignKey(Table)
+
+    # Criteria used to start this job
     criteria = PickledObjectField(null=True)
+
+    # Actual criteria as returned by the job after running
     actual_criteria = PickledObjectField(null=True)
+
+    # Unique handle for the job
     handle = models.CharField(max_length=100, default="")
 
+    # Job status
     NEW = 0
     RUNNING = 1
-    RUNNING_DEP = 2
     COMPLETE = 3
     ERROR = 4
     
@@ -453,13 +501,17 @@ class Job(models.Model):
         default=NEW,
         choices=((NEW, "New"),
                  (RUNNING, "Running"),
-                 (RUNNING_DEP, "Running dependent on another job"),
                  (COMPLETE, "Complete"),
                  (ERROR, "Error")))
 
+    # Message if job complete or error
     message = models.CharField(max_length=200, default="")
+
+    # While RUNNING, this provides an indicator of progress 0-100
     progress = models.IntegerField(default=-1)
-    remaining = models.IntegerField(default=-1)
+
+    # While RUNNING, time remaining
+    remaining = models.IntegerField(default=None, null=True)
 
     def __unicode__(self):
         if self.handle == '':
@@ -467,49 +519,114 @@ class Job(models.Model):
         else:
             return "<Job %s t=%s %8.8s>" % (self.id, self.table.id, self.handle)
     
-    def delete(self):
-        if os.path.exists(self.datafile()):
-            logger.debug('%s datafile removed' % str(self))
-            os.remove(self.datafile())
-            
-        logger.debug('%s deleted' % str(self))
-        super(Job, self).delete()
+    def refresh(self):
+        """ Refresh dynamic job parameters from the database. """
+        job = Job.objects.get(pk=self.pk)
+        for k in ['status', 'message', 'progress', 'remaining',
+                  'actual_criteria', 'touched', 'refcount']:
+            setattr(self, k, getattr(job, k))
+    
+    @transaction.commit_on_success
+    def safe_update(self, **kwargs):
+        """ Update the job with the passed dictionary in a database safe way.
 
-    def save(self, *args, **kwargs):
-        """ Model save. """
-        if self.handle == "":
-            # Only compute the handle if it was not previously computed -- as it
-            # may change if the associated table is not cacheable
-            self.handle = self.compute_handle()
-        super(Job, self).save(*args, **kwargs)
-        Job.delete_jobs(datetime.timedelta(seconds=settings.APPS_DATASOURCE['max_job_age_seconds']))
+        This method updates only the requested paraemters and refreshes
+        the rest from the database.  This should be used for all updates
+        to Job's to ensure that unmodified keys are not accidentally
+        clobbered by doing a blanket job.save().
 
-    @classmethod
-    def delete_jobs(cls, age=None):
-        # Throttle - only run this at most once every 15 minutes
-        global delete_jobs_last_run
-        if time.time() - delete_jobs_last_run < 60*15:
+        """
+    
+        if kwargs is None:
             return
-        
-        if age is not None:
-            jobs = Job.objects.filter(touched__lte = datetime.datetime.utcnow() - age)
-        else:
-            jobs = Job.objects.all()
 
-        num = len(jobs)
-        if num > 0:
-            logger.info("Deleting %d job(s) older than %s" %
-                         (len(jobs), str(age) if age is not None else "now"))
-            [j.delete() for j in jobs]
-        
-        delete_jobs_last_run = time.time()
-        return num
+        with LocalLock():
+            logger.debug("%s safe_update %s" % (self, kwargs))
+            Job.objects.filter(pk=self.pk).update(**kwargs)
 
-    def compute_handle(self):
+            # Force a reload of the job to get latest data
+            self.refresh()
+
+            if not self.ischild:
+                # Push changes to children of this job
+                child_kwargs = {}
+                for k,v in kwargs.iteritems():
+                    if k in ['status', 'message', 'progress', 'remaining',
+                             'actual_criteria']:
+                        child_kwargs[k] = v
+                # There should be no recursion, so a direct update to the database
+                # is possible.  (If recursion, would need to call self_update()
+                # on each child.)
+                Job.objects.filter(parent=self).update(**child_kwargs)
+            
+    @classmethod
+    def create(cls, table, criteria):
+
+        with LocalLock():
+            with transaction.commit_on_success():
+
+                # First, compute the handle -- this will take into
+                # account cacheability
+                handle = Job._compute_handle(table, criteria)
+
+                # Look for another job by the same handle in any state except ERROR
+                if not criteria.ignore_cache:
+                    parents = (Job.objects
+                               .select_for_update()
+                               .filter(status__in=[Job.NEW, Job.COMPLETE, Job.RUNNING],
+                                       handle=handle,
+                                       ischild=False)
+                               .order_by('created'))
+
+                    logger.debug("%s just finished parents query" % str(handle))
+                    time.sleep(0.2)
+
+                if len(parents) > 0:
+                    parent = parents[0]
+
+                    job = Job(table = table,
+                              criteria = criteria,
+                              status = parent.status,
+                              handle = handle,
+                              parent = parent,
+                              ischild = True,
+                              progress = parent.progress,
+                              remaining = parent.remaining,
+                              message = '')
+                    job.save()
+
+                    parent.reference("Link from job %s" % (job))
+                    parent.safe_update(touched = datetime.datetime.utcnow())
+
+                    logger.info("%s: New job for table %s, linked to parent %s" %
+                                (job, table.name, parent))
+                else:
+                    job = Job(table = table,
+                              criteria = criteria,
+                              status = Job.NEW,
+                              handle = handle,
+                              parent = None,
+                              ischild = False,
+                              progress = 0,
+                              remaining = -1,
+                              message = '')
+                    job.save()
+                    logger.info("%s: New job for table %s" % (job, table.name))
+
+            # Flush old jobs
+            Job.age_jobs()
+
+        return job
+    
+    def __unicode__(self):
+        return "<Job %s (%8.8s) - t%s>" % (self.id, self.handle, self.table.id)
+    
+    @classmethod
+    def _compute_handle(cls, table, criteria):
         h = hashlib.md5()
-        h.update(str(self.table.id))
+        h.update(str(table.id))
 
-        if self.table.cacheable:
+        if table.cacheable and not criteria.ignore_cache:
             # XXXCJ - Drop ephemeral columns when computing the cache handle, since
             # the list of columns is modifed at run time.   Typical use case
             # is an analysis table which creates a time-series graph of the
@@ -521,122 +638,34 @@ class Job(models.Model):
             #
             # May want to dig in to this further and make sure this doesn't pick up cache
             # files when we don't want it to
-            logger.debug("%s: %s is cacheable, computing handle from criteria" % (self, str(self.table)))
-            h.update('.'.join([c.name for c in self.table.get_columns(ephemeral=False)]))
-            for k, v in self.criteria.iteritems():
+            h.update('.'.join([c.name for c in table.get_columns(ephemeral=False)]))
+            for k, v in criteria.iteritems():
                 if not k.startswith('criteria_'):
                     #logger.debug("Updating hash from %s -> %s" % (k,v))
                     h.update('%s:%s' % (k, v))
         else:
             # Table is not cacheable, instead use current time plus a random value
             # just to get a unique hash
-            logger.debug("%s: %s is not cacheable, computing unique handle" % (self, str(self.table)))
             h.update(str(datetime.datetime.now()))
             h.update(str(random.randint(0,10000000)))
 
-        logger.info("%s: %s -> full handle: %s" % (str(self), str(self.table), h.hexdigest()))
         return h.hexdigest()
-    
-    def get_depjob(self, status=None):
-        if status is None:
-            status = [self.RUNNING, self.COMPLETE, self.ERROR]
-        jobs = Job.objects.filter(
-            handle=self.handle,
-            status__in=status)
 
-        if len(jobs) == 0:
-            return None
-        return jobs[0]
-
-    def done(self):
-        if self.status == Job.RUNNING_DEP:
-            depjob = self.get_depjob()
-            if not depjob:
-                raise ValueError("%s: failed to find dependent job" % str(self))
-            self.progress = depjob.progress
-            self.message = depjob.message
-            self.remaining = depjob.remaining
-            done = depjob.done()
-            if done:
-                self.status = depjob.status
-            self.save()
-            logger.debug("%s status: %s (from dependent %s)" % (str(self), self.status, str(depjob)))
-            return done
-
-        logger.debug("%s status: %s" % (str(self), self.status))
-        return self.status == Job.COMPLETE or self.status == Job.ERROR
-
-    def values(self):
-        """ Return data as a list of lists. """
-
-        df = self.data()
-        all_columns = self.table.get_columns()
-        all_col_names = [c.name for c in all_columns]
-        if df is not None:
-            # Replace NaN with None
-            df = df.where(pandas.notnull(df), None)
-            
-            # Extract tha values in the right order
-            vals = df.ix[:, all_col_names].values.tolist()
-        else:
-            vals = []
-        return vals
+    def reference(self, message=""):
+        pk = self.pk
+        Job.objects.filter(pk=pk).update(refcount=F('refcount')+1)
+        logger.debug("%s: reference(%s) @ %d" %
+                     (self, message, Job.objects.get(pk=pk).refcount))
         
-    def datafile(self):
-        """ Return the data file for this job. """
-        return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
-    
-    def savedata(self, data):
-        """ Save pandas DataFrame. """
-        logger.debug("%s saving data to datafile %s" %
-                     (str(self), self.datafile()))
-
-        if data is not None:
-            data.save(self.datafile())
-            logger.debug("%s data saved to file: %s" % (str(self), self.datafile()))
-        else:
-            logger.debug("%s no data saved, data is empty" % (str(self)))
-
-    def data(self):
-        """ Returns a pandas.DataFrame of the data, or None if not available. """
-        if os.path.exists(self.datafile()):
-            df = pandas.load(self.datafile())
-            logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
-        else:
-            logger.debug("%s no data, missing data file: %s" % (str(self), self.datafile()))
-            df = None
-
-        return df
-
-    def export_sqlite(self, dbfilename, tablename=None):
-        import sqlite3
-        if tablename is None:
-            tablename = "table%d" % self.table.id
-        conn = sqlite3.connect(dbfilename)
-        c = conn.cursor()
-        dbcols = []
-        for col in self.table.get_columns():
-            dbcols.append("%s %s" % (col.name, "real" if col.isnumeric else "text"))
-
-        c.execute("DROP TABLE IF EXISTS %s" % tablename)
-        c.execute("CREATE TABLE %s (%s)" % (tablename, ",".join(dbcols)))
-
-        data = self.data()
-        raise Exception("Not supported.")
-        # Code below no longer works -- needs to handle a DataFrame, not raw data
-        for row in data:
-            dbcols = []
-            for col in row:
-                if type(col) in [str, unicode]:
-                    dbcols.append("'%s'" % col)
-                else:
-                    dbcols.append(str(col))
-            c.execute("INSERT INTO %s VALUES(%s)" % (tablename, ",".join(dbcols)))
-        conn.commit()
-        conn.close()
+    def dereference(self, message=""):
+        pk = self.pk
+        Job.objects.filter(pk=pk).update(refcount=F('refcount')-1)
+        logger.debug("%s: dereference(%s) @ %d" %
+                     (self, message, Job.objects.get(pk=pk).refcount))
         
     def json(self, data=None):
         """ Return a simple JSON structure representing the status of this Job """
+        self.refresh()
         return {'id': self.id,
                 'handle': self.handle,
                 'progress': self.progress,
@@ -647,95 +676,171 @@ class Job(models.Model):
 
     def combine_filterexprs(self, joinstr="and"):
         exprs = []
+        self.refresh()
         criteria = self.criteria
         for e in [self.table.filterexpr, criteria.filterexpr if criteria else None]:
             if e != "" and e is not None:
                 exprs.append(e)
-
+                
         if len(exprs) > 1:
             return "(" + (") " + joinstr + " (").join(exprs) + ")"
         elif len(exprs) == 1:
             return exprs[0]
         else:
             return ""
-            
+
     def start(self):
         """ Start this job. """
+
+        self.refresh()
+
+        if self.ischild:
+            logger.debug("%s: Shadowing parent job %s" % (self, self.parent))
+            return
         
-        ignore_cache = self.criteria.ignore_cache
-        
-        with lock:
-            # Look for another job that matches this handle
-            running = self.get_depjob(status=[self.COMPLETE, self.RUNNING])
-            if (  not running or
-
-                  # ignoring cache and the job is not running -- this
-                  # tries to capture the case where one report has
-                  # multiple jobs based of the same base job... incomplete
-                  # solution, really need to track a "run id" or something
-                  (ignore_cache and running.status == self.COMPLETE)):
-
-                running = None
-                self.status = self.RUNNING
-                self.progress = 0
-                self.save()
-            else:
-                running.touched = datetime.datetime.utcnow()
-                running.save()
-                self.status = self.RUNNING_DEP
-                self.progress = running.progress
-                self.save()
-
-        # See if this job was run before and we have a valid cache file
-        if running:
-            logger.debug("Job %s: Shadowing a running job by the same handle: %s" %
-                         (str(self), str(running)))
-
-        elif self.table.device and not self.table.device.enabled:
-            # User has disabled the device so lets wrap up here
-
-            # would be better if we could mark COMPLETE vs ERROR, but then follow-up
-            # processing would occur which we want to avoid.  This short-circuits the
-            # process to return the message in the Widget window immediately.
-            logger.debug("Job %s: Device disabled, bypassing job" % str(self))
-            self.status = self.ERROR
-            self.message = ('Device %s disabled.\n'
-                            "See <a href='%s'>Configure->Edit Devices</a> "
-                            'page to enable.'
-                            % (self.table.device.name, reverse('device-list')))
-            self.progress = 100
-            self.save()
-
-        elif os.path.exists(self.datafile()) and not ignore_cache:
-            logger.debug("Job %s: results from cachefile" % str(self))
-            self.status = self.COMPLETE
-            self.progress = 100
-            self.save()
-
-        else:
-            logger.debug("Job %s: Spawning AsyncWorker to run report" % str(self))
-            # Lookup the query class for this table
-            i = importlib.import_module(self.table.module)
-            queryclass = i.TableQuery
+        with transaction.commit_on_success():
+            logger.debug("%s: Starting job" % str(self))
             
-            # Create an asynchronous worker to do the work
-            worker = AsyncWorker(self, queryclass)
-            worker.start()
+            if self.table.device and not self.table.device.enabled:
+                # User has disabled the device so lets wrap up here
+                
+                # would be better if we could mark COMPLETE vs ERROR, but then follow-up
+                # processing would occur which we want to avoid.  This short-circuits the
+                # process to return the message in the Widget window immediately.
+                logger.debug("%s: Device %s disabled, bypassing job" % (self, self.table.device))
+                self.mark_error('Device %s disabled.\n'
+                                'See Configure->Edit Devices page to enable.'
+                                % self.table.device.name)
+            else:
+                self.mark_progress(0)
 
-    def mark_failed(self, message):
+                logger.debug("%s: Spawning AsyncWorker to run report" % str(self))
+                # Lookup the query class for this table
+                i = importlib.import_module(self.table.module)
+                queryclass = i.TableQuery
+
+                # Create an asynchronous worker to do the work
+                worker = AsyncWorker(self, queryclass)
+                worker.start()
+
+    def mark_error(self, message):
         logger.warning("%s failed: %s" % (self, message))
-        self.status = Job.ERROR
-        self.progress = 100
-        self.message = message
-        self.save()
+        self.safe_update(status = Job.ERROR,
+                         progress = 100,
+                         message = message)
 
+    def mark_complete(self):
+        logger.info("%s complete" % (self))
+        self.safe_update(status = Job.COMPLETE,
+                         progress = 100,
+                         message = '')
+
+    def mark_progress(self, progress, remaining=None):
+        logger.debug("%s progress %s" % (self, progress))
+        self.safe_update(status = Job.RUNNING,
+                         progress = progress,
+                         remaining = remaining)
+
+
+    def datafile(self):
+        """ Return the data file for this job. """
+        return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
+    
+    def data(self):
+        """ Returns a pandas.DataFrame of the data, or None if not available. """
+
+        with transaction.commit_on_success():
+            self.refresh()
+            if not self.status == Job.COMPLETE:
+                raise ValueError("Job not complete, no data available")
+            
+            self.reference("data()")
+
+            e = None
+            try:
+                logger.debug("%s looking for data file: %s" % (str(self), self.datafile()))
+                if os.path.exists(self.datafile()):
+                    df = pandas.load(self.datafile())
+                    logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
+                else:
+                    logger.debug("%s no data, missing data file: %s" % (str(self), self.datafile()))
+                    df = None
+            except Exception as e:
+                pass
+            finally:
+                self.dereference("data()")
+
+            if e:
+                raise e
+            
+            return df
+
+    def values(self):
+        """ Return data as a list of lists. """
+
+        df = self.data()
+        if df is not None:
+            # Replace NaN with None
+            df = df.where(pandas.notnull(df), None)
+            
+            # Extract tha values in the right order
+            all_columns = self.table.get_columns()
+            all_col_names = [c.name for c in all_columns]
+            vals = df.ix[:, all_col_names].values.tolist()
+        else:
+            vals = []
+        return vals
+        
+    @classmethod
+    def age_jobs(cls, old=None, ancient=None, force=False):
+        """ Delete old jobs that have no refcount and all ancient jobs. """
+        # Throttle - only run this at most once every 15 minutes
+        global age_jobs_last_run
+        if not force and time.time() - age_jobs_last_run < 60*15:
+            return
+        
+        if old is None:
+            old = datetime.timedelta(seconds=settings.APPS_DATASOURCE['job_age_old_seconds'])
+        elif type(old) in [int, float]:
+            old = datetime.timedelta(seconds=old)
+            
+        if ancient is None:
+            ancient = datetime.timedelta(seconds=settings.APPS_DATASOURCE['job_age_ancient_seconds'])
+        elif type(ancient) in [int, float]:
+            ancient = datetime.timedelta(seconds=ancient)
+
+        # Ancient jobs are deleted regardless of refcount
+        now = datetime.datetime.now(tz=pytz.utc)
+        (Job.objects.filter(touched__lte = now - ancient)).delete()
+            
+        # Old jobs are deleted only if they have a refcount of 0
+        (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+
+        age_jobs_last_run = time.time()
+
+    def done(self):
+        self.refresh()
+        logger.debug("%s status: %s - %s%%" % (str(self), self.status, self.progress))
+        return self.status == Job.COMPLETE or self.status == Job.ERROR
+
+@receiver(pre_delete, sender=Job)
+def _my_job_delete(sender, instance, **kwargs):
+    if instance.parent is not None:
+        instance.parent.dereference(str(instance))
+        
 class AsyncWorker(threading.Thread):
     def __init__(self, job, queryclass):
         threading.Thread.__init__(self)
         self.job = job
         self.queryclass = queryclass
-        logger.info("%s created" % self)
 
+        logger.info("%s created" % self)
+        job.reference("AsyncWorker created")
+
+    def __delete__(self):
+        if self.job:
+            self.job.dereference("AsyncWorker deleted")
+            
     def __unicode__(self):
         return "<AsyncWorker %s>" % (self.job)
 
@@ -743,19 +848,18 @@ class AsyncWorker(threading.Thread):
         return "<AsyncWorker %s>" % (self.job)
 
     def run(self):
-        logger.info("%s run starting" % self)
         job = self.job
         try:
-            query = self.queryclass(self.job.table, self.job)
+            logger.info("%s running queryclass %s" % (self, self.queryclass))
+            query = self.queryclass(job.table, job)
             if query.run():
-                  # This log message is too verbose...
-                #logger.debug("Job done, query.data: %s (%s)" % (query.data, type(query.data)))
+                logger.info("%s query finished" % self)
                 if isinstance(query.data, list) and len(query.data) > 0:
                     # Convert the result to a dataframe
                     columns = [col.name for col in
-                               self.job.table.get_columns(synthetic=False)]
+                               job.table.get_columns(synthetic=False)]
                     df = pandas.DataFrame(query.data, columns=columns)
-                    for col in self.job.table.get_columns(synthetic=False):
+                    for col in job.table.get_columns(synthetic=False):
                         s = df[col.name]
                         if col.isnumeric and s.dtype == pandas.np.dtype('object'):
                             # The column is supposed to be numeric but must have
@@ -767,32 +871,101 @@ class AsyncWorker(threading.Thread):
                             except ValueError:
                                 # This may incorrectly be tagged as numeric
                                 pass
-                    query.data = df
-                elif query.data is not None and len(query.data) == 0:
-                    query.data = None
 
-                fulldata = self.job.table.compute_synthetic(query.data)
-                job.savedata(fulldata)
+                elif query.data is not None and len(query.data) == 0:
+                    df = None
+                elif isinstance(query.data, pandas.DataFrame):
+                    df = query.data
+                else:
+                    raise ValueError("Unrecognized query result type: %s" % type(query.data))
+
+                if df is not None:
+                    df = job.table.compute_synthetic(df)
+
+                if df is not None:
+                    df.save(job.datafile())
+                    logger.debug("%s data saved to file: %s" % (str(self), job.datafile()))
+                else:
+                    logger.debug("%s no data saved, data is empty" % (str(self)))
 
                 logger.info("%s finished as COMPLETE" % self)
-                job.progress = 100
-                job.status = job.COMPLETE
+                job.mark_complete()
             else:
                 # If the query.run() function returns false, the run() may
                 # have set the job.status, check and update if not
+                vals = {}
+                job.refresh()
                 if not job.done():
-                    job.status = job.ERROR
+                    vals['status'] = job.ERROR
                 if job.message == "":
-                    job.message = ("Query returned an unknown error")
-                job.progress = 100
+                    vals['message'] = "Query returned an unknown error"
+                vals['progress'] = 100
+                job.safe_update(**vals)
                 logger.error("%s finished with an error: %s" % (self, job.message))
                 
         except:
             traceback.print_exc()
             logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
-            job.status = job.ERROR
-            job.progress = 100
-            job.message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1])
+            job.safe_update(status = job.ERROR,
+                            progress = 100,
+                            message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 
-        job.save()
+        finally:
+            job.dereference("AsyncWorker exiting")
+            
+        logger.debug("AsyncWorker caling sys.exit(0)")
         sys.exit(0)
+
+class BatchJobRunner(object):
+
+    def __init__(self, basejob, batchsize=4, min_progress=0, max_progress=100):
+        self.basejob = basejob
+        self.jobs = []
+        self.batchsize = batchsize
+        self.min_progress = min_progress
+        self.max_progress = max_progress
+
+    def add_job(self, job):
+        self.jobs.append(job)
+
+    def run(self):
+        jobs = self.jobs
+
+        for i in range(0, len(jobs), self.batchsize):
+            batch = jobs[i:i+self.batchsize]
+            batch_status = {}
+            for job in batch:
+                batch_status[job.id] = False
+                job.start()
+
+            interval = 0.2
+            max_interval = 2
+            batch_done = False
+            while not batch_done:
+                batch_progress = 0
+                batch_done = True
+                for job in batch:
+                    job.refresh()
+                    
+                    if batch_status[job.id] is False:
+                        if job.done():
+                            batch_status[job.id] = True
+                        else:
+                            batch_done = False
+                            batch_progress += (float(job.progress) / float(self.batchsize))
+                    else:
+                        batch_progress += (100.0 / float(self.batchsize))
+
+                total_progress = (i * 100.0 + batch_progress * self.batchsize) / len(jobs)
+                job_progress = (self.min_progress +
+                                (total_progress * (self.max_progress -
+                                                   self.min_progress)) / 100)
+                logger.debug("BatchJobRunner: batch[%d:%d] %d%% / total %d%% / job %d%%",
+                             i, i+self.batchsize, int(batch_progress),
+                             int(total_progress), int(job_progress))
+                self.basejob.mark_progress(job_progress)
+                if not batch_done:
+                    time.sleep(interval)
+                    interval = (interval * 2) if interval < max_interval else max_interval
+
+                

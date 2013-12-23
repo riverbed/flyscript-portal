@@ -7,9 +7,11 @@
 
 import time
 import logging
+import traceback
+import sys
 
 from rvbd.common.jsondict import JsonDict
-from apps.datasource.models import Column, Job, Table
+from apps.datasource.models import Column, Job, Table, BatchJobRunner
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +92,7 @@ class AnalysisTable:
                 Column.create(t, c)
                 
         return t
-    
+
 class TableQuery:
     def __init__(self, table, job):
         self.table = table
@@ -102,38 +104,26 @@ class TableQuery:
     def __str__(self):
         return "<AnalysisTable %s>" % (self.job)
 
+    def mark_progress(self, progress):
+        # Called by the analysis function
+        self.job.mark_progress(70 + (progress * 30)/100)
+        
     def run(self):
         # Collect all dependent tables
         options = self.table.options
         logger.debug("%s: dependent tables: %s"  % (self, options.tables))
         deptables = options.tables
         depjobids = {}
+        batch = BatchJobRunner(self.job, max_progress=70)
         for (name, id) in deptables.items():
             id = int(id)
             deptable = Table.objects.get(id=id)
-            job = Job(table=deptable, criteria=self.job.criteria.build_for_table(deptable))
-            job.save()
+            job = Job.create(table=deptable, criteria=self.job.criteria.build_for_table(deptable))
+            batch.add_job(job)
             logger.debug("%s: starting dependent job %s" % (self, job))
-            job.start()
             depjobids[name] = (job.id)
                     
-        # Poll until all jobs are complete
-        done=False
-        wait = 0.05 # start at 50ms wait
-        max_wait = 5
-        while not done:
-            time.sleep(wait)
-            if wait < max_wait:
-                wait = wait * 2
-
-            done=True
-            # XXXCJ - This could be optimized to not look at all jobs every time...
-            for jid in depjobids.values():
-                job = Job.objects.get(id=jid)
-                d = job.done()
-                if not d:
-                    done=False
-                    break
+        batch.run()
 
         logger.debug("%s: All dependent jobs complete, collecting data" % str(self))
         # Create dataframes for all tables
@@ -144,7 +134,7 @@ class TableQuery:
             job = Job.objects.get(id=id)
                 
             if job.status == job.ERROR:
-                self.job.mark_failed("Dependent Job failed: %s" % (job.message))
+                self.job.mark_error("Dependent Job failed: %s" % (job.message))
                 failed = True
                 break
             
@@ -160,10 +150,14 @@ class TableQuery:
         try:
             df = options.func(self, dfs, self.job.criteria, params=options.params)
         except AnalysisException as e:
-            self.job.mark_failed("Analysis function %s failed: %s" % (options.func, e.message))
+            self.job.mark_error("Analysis function %s failed: %s" % (options.func, e.message))
+            traceback.print_exc()
+            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
             return False
         except Exception as e:
-            self.job.mark_failed("Analysis function %s failed" % (options.func))
+            self.job.mark_error("Analysis function %s failed: %s" % (options.func, str(e)))
+            traceback.print_exc()
+            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
             return False
             
         # Sort according to the defined sort columns

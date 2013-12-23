@@ -128,8 +128,7 @@ class TableQuery:
             with lock:
                 s = report.status()
 
-            self.job.progress = int(s['percent'])
-            self.job.save()
+            self.job.safe_update(progress = int(s['percent']))
             done = (s['status'] == 'completed')
 
         # Retrieve the data
@@ -140,8 +139,8 @@ class TableQuery:
             # Update criteria
             criteria.starttime = query.actual_t0
             criteria.endtime = query.actual_t1
-            self.job.actual_criteria = criteria
-            self.job.save()
+
+        self.job.safe_update(actual_criteria = criteria)
 
         if self.table.rows > 0:
             self.data = self.data[:self.table.rows]

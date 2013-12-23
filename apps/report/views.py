@@ -273,9 +273,8 @@ class WidgetJobsList(views.APIView):
                         child.value = v
                         job_criteria['criteria_%d' % child.id] = child
 
-            job = Job(table=widget.table(),
-                      criteria=job_criteria)
-            job.save()
+            job = Job.create(table=widget.table(),
+                             criteria=job_criteria)
             job.start()
 
             wjob = WidgetJob(widget=widget, job=job)

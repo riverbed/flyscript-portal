@@ -17,6 +17,7 @@ import os
 
 from django.core.management.base import BaseCommand, CommandError
 from django.forms import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
@@ -46,11 +47,16 @@ class Command(BaseCommand):
                          dest='job_list',
                          default=False,
                          help='List all jobs')
+        group.add_option('--job-age',
+                         action='store_true',
+                         dest='job_age',
+                         default=False,
+                         help='Delete old/ancient jobs')
         group.add_option('--job-flush',
                          action='store_true',
                          dest='job_flush',
                          default=False,
-                         help='Delete all jobs')
+                         help='Delete all jobs without question')
         group.add_option('--job-data',
                          action='store',
                          dest='job_data',
@@ -72,14 +78,14 @@ class Command(BaseCommand):
 
         if options['job_list']:
             # print out the id's instead of processing anything
-            columns = ['ID', 'Table', 'Created', 'Touched', 'Status', 'Progress', 'Data file']
+            columns = ['ID', 'Table', 'Created', 'Touched', 'Sts', 'Refs', 'Progress', 'Data file']
             data = []
             for j in Job.objects.all():
                 datafile = j.datafile()
                 if not os.path.exists(datafile):
                     datafile += " (missing)"
                 data.append ([j.id, j.table.name, j.created, j.touched,
-                              j.status, j.progress, datafile])
+                              j.status, j.refcount, j.progress, datafile])
 
             Formatter.print_table(data, columns)
 
@@ -91,7 +97,9 @@ class Command(BaseCommand):
             if job.status == job.COMPLETE:
                 Formatter.print_table(job.values(), columns)
 
+        elif options['job_age']:
+            Job.age_jobs(force=True)
+                
         elif options['job_flush']:
-            num = Job.delete_jobs()
-
-            self.console("Deleted %d job(s)" % num)
+            Job.objects.all().delete()
+                

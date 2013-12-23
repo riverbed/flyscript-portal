@@ -211,7 +211,7 @@ class Command(BaseCommand):
                 print columns
                 return
 
-            job = Job(table=table, criteria=criteria)
+            job = Job.create(table=table, criteria=criteria)
             job.save()
 
             self.console('Job created: %s' % job)

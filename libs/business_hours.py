@@ -6,7 +6,7 @@ import random
 import time
 import copy
 import pytz
-from apps.datasource.models import Job, Table, Column, TableCriteria
+from apps.datasource.models import Job, Table, Column, TableCriteria, BatchJobRunner
 from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -160,13 +160,16 @@ def compute_times(target, tables, criteria, params):
     else:
         return pandas.DataFrame(times, columns=['starttime', 'endtime', 'totalsecs'])
 
-def report_business_hours(target, tables, criteria, params):
+def report_business_hours(query, tables, criteria, params):
     times = tables['times']
 
+    if times is None or len(times) == 0:
+        return None
+    
     deptable = Table.objects.get(id=params['table'])
     
     # Create all the jobs
-    jobs = []
+    batch = BatchJobRunner(query)
     for i, row in times.iterrows():
         t0 = row['starttime']/1000
         t1 = row['endtime']/1000
@@ -174,49 +177,42 @@ def report_business_hours(target, tables, criteria, params):
         sub_criteria.starttime = t0
         sub_criteria.endtime = t1
 
-        job = Job(table=deptable, criteria=sub_criteria)
-        job.save()
+        job = Job.create(table=deptable, criteria=sub_criteria)
         logger.debug("Created %s: %s - %s" % (job, t0, t1))
-        jobs.append(job)
+        batch.add_job(job)
 
-    if len(jobs) == 0:
+    if len(batch.jobs) == 0:
         return None
-    
-    # Now launch the jobs in batches
-    batch_size = 4
+
+    # Run all the Jobs
+    batch.run()
+
+    # Now collect the data
     total_secs = 0
     df = None
     idx = 0
-    for i in range(0, len(jobs), batch_size):
-        batch = jobs[i:i+batch_size]
-        for job in batch:
-            job.start()
-        time.sleep(0.1)
+    for job in batch.jobs:
+        if job.status == Job.ERROR:
+            raise AnalysisException("%s for %s-%s failed: %s" %
+                                    (job, job.criteria.starttime,
+                                     job.criteria.endtime,
+                                     job.message))
+        subdf = job.data()
+        logger.debug("%s: returned %d rows" %
+                     (job, len(subdf) if subdf is not None else 0))
+        if subdf is None:
+            continue
 
-        for job in batch:
-            while not job.done():
-                time.sleep(0.1)
-
-            if job.status == Job.ERROR:
-                raise AnalysisException("%s for %s-%s failed: %s" %
-                                        (job, job.criteria.starttime,
-                                         job.criteria.endtime,
-                                         job.message))
-            subdf = job.data()
-            logger.debug("%s: returned %d rows" %
-                         (job, len(subdf) if subdf is not None else 0))
-            if subdf is None:
-                continue
-
-            t0 = job.actual_criteria.starttime
-            t1 = job.actual_criteria.endtime
-            subdf['__secs__'] = t1 - t0
-            total_secs += (t1 - t0)
-            idx += 1
-            if df is None:
-                df = subdf
-            else:
-                df = df.append(subdf)
+        logger.debug("%s: actual_criteria %s" % (job, job.actual_criteria))
+        t0 = job.actual_criteria.starttime
+        t1 = job.actual_criteria.endtime
+        subdf['__secs__'] = t1 - t0
+        total_secs += (t1 - t0)
+        idx += 1
+        if df is None:
+            df = subdf
+        else:
+            df = df.append(subdf)
 
     if df is None:
         return None

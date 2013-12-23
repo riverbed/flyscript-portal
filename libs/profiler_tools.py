@@ -31,9 +31,16 @@ def explode_interface_dns(interface_dns):
     return ip, ifindex
 
 def process_join_ip_device(target, tables, criteria, params):
-    dev = tables['devices'].copy()
+    dev = tables['devices']
     traffic = tables['traffic']
 
+    if traffic is None or len(traffic) == 0:
+        return None
+
+    if dev is None or len(dev) == 0:
+        return traffic
+
+    dev = dev.copy()
     traffic['interface_ip'], traffic['interface_index'] = zip(*traffic['interface_dns'].
                                                                map(explode_interface_dns))
     
