@@ -22,7 +22,7 @@ from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
 
-from apps.datasource.models import Job, Criteria, TableCriteria, Table
+from apps.datasource.models import Job, Criteria, CriteriaParameter, Table
 from apps.datasource.serializers import TableSerializer
 from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
@@ -267,7 +267,7 @@ class WidgetJobsList(views.APIView):
             # handle table criteria and generate children objects
             for k, v in req_criteria.iteritems():
                 if k.startswith('criteria_'):
-                    tc = TableCriteria.get_instance(k, v) 
+                    tc = CriteriaParameter.get_instance(k, v) 
                     job_criteria[k] = tc
                     for child in tc.children.all():
                         child.value = v

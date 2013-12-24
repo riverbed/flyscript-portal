@@ -19,7 +19,7 @@ from django.forms import ValidationError
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
 
-from apps.datasource.models import Table, Job, Criteria, TableCriteria
+from apps.datasource.models import Table, Job, Criteria, CriteriaParameter
 from apps.report.models import Report, Widget
 from apps.report.forms import create_report_criteria_form
 
@@ -190,7 +190,7 @@ class Command(BaseCommand):
                 for k,field in form.fields.iteritems():
                     if not k.startswith('criteria_'): continue
 
-                    tc = TableCriteria.objects.get(pk=k.split('_')[1])
+                    tc = CriteriaParameter.objects.get(pk=k.split('_')[1])
 
                     if (  options['criteria'] is not None and
                           tc.keyword in add_options):
@@ -199,7 +199,7 @@ class Command(BaseCommand):
                         val = field.initial
 
                     # handle table criteria and generate children objects
-                    tc = TableCriteria.get_instance(k, val) 
+                    tc = CriteriaParameter.get_instance(k, val) 
                     criteria[k] = tc
                     for child in tc.children.all():
                         child.value = val

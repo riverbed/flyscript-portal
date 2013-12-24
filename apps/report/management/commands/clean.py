@@ -101,7 +101,7 @@ class Command(BaseCommand):
                             del_table(deptable)
 
                 for criteria in table.criteria.all():
-                    # try to delete only TableCriteria where this
+                    # try to delete only CriteriaParameter where this
                     # table was the last reference
                     if len(criteria.table_set.all()) == 1:
                         criteria.delete()

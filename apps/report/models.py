@@ -19,7 +19,7 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 
 from model_utils.managers import InheritanceManager
-from apps.datasource.models import Table, Job, TableCriteria
+from apps.datasource.models import Table, Job, CriteriaParameter
 
 from libs.fields import PickledObjectField
 
@@ -55,7 +55,7 @@ class Report(models.Model):
     """
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
-    criteria = models.ManyToManyField(TableCriteria, null=True)
+    criteria = models.ManyToManyField(CriteriaParameter, null=True)
     sourcefile = models.CharField(max_length=200, default=get_caller_name)
     slug = models.SlugField()
 

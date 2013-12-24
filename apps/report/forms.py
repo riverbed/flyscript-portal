@@ -105,7 +105,7 @@ class ReportCriteriaForm(forms.Form):
 
             Keyword argument options:
 
-            `extra` optional, a list of TableCriteria objects to append to
+            `extra` optional, a list of CriteriaParameter objects to append to
                     form listings
 
             Standard Form criteria options `data` and `files` should be used
@@ -176,11 +176,11 @@ class ReportCriteriaJSONForm(ReportCriteriaForm):
 def create_report_criteria_form(report, jsonform=False, **kwargs):
     """ Create a form for this report.
 
-        Any TableCriteria objects linked to this report or it's
+        Any CriteriaParameter objects linked to this report or it's
         widgets are passed to the initialization method for a
         ReportCriteriaForm.
         
-        If the report has no associated TableCriteria, nothing
+        If the report has no associated CriteriaParameter, nothing
         special will occur, and a nominal form will be returned.
         
         Only criteria objects which have no 'parent' will be included,

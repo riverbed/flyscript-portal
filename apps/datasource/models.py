@@ -58,15 +58,15 @@ class LocalLock(object):
             lock.release()
         return False
 
-class TableCriteria(models.Model):
-    """ Criteria model to provide report run-time overrides for key values.
+class CriteriaParameter(models.Model):
+    """ Defines a single criteria parameter associated with a table.
 
         Primarily used to parameterize reports with values that may change
         from time to time, such as interfaces, thresholds, QOS types, etc.
 
         keyword  -- text name of table field or TableOption field
         template -- python string template to use for replacement, e.g.
-                    "inbound interface {} and qos EF", where the {} would
+                    'inbound interface {} and qos EF', where the {} would
                     be replaced with the value provided in the form field
         label    -- text label shown in the HTML form
         initial  -- starting or default value to include in the form
@@ -75,11 +75,11 @@ class TableCriteria(models.Model):
         field_type   -- text name of form field type, defaults to
                         `forms.CharField`.
         field_kwargs -- additional keywords to pass to field initializer
-        parent       -- reference to another TableCriteria object which
+        parent       -- reference to another CriteriaParameter object which
                         provides values to inherit from.  This allows
                         multiple criteria to be enumerated while only
                         displaying/filling out a single form field.
-                        TableCriteria which have a parent object identified
+                        CriteriaParameter which have a parent object identified
                         will not be included in the HTML form output.
     """
     keyword = models.CharField(max_length=100)
@@ -101,12 +101,12 @@ class TableCriteria(models.Model):
     value = PickledObjectField(null=True, blank=True)
 
     def __unicode__(self):
-        return "<TableCriteria %s (id=%s)>" % (self.keyword, str(self.id))
+        return "<CriteriaParameter %s (id=%s)>" % (self.keyword, str(self.id))
 
     def save(self, *args, **kwargs):
         #if not self.field_type:
         #    self.field_type = 'forms.CharField'
-        super(TableCriteria, self).save(*args, **kwargs)
+        super(CriteriaParameter, self).save(*args, **kwargs)
 
     def is_report_criteria(self, table):
         """ Runs through intersections of widgets to determine if this criteria
@@ -114,7 +114,7 @@ class TableCriteria(models.Model):
 
             report  <-->  widgets  <-->  table
                 |
-                L- TableCriteria (self)
+                L- CriteriaParameter (self)
         """
         wset = set(table.widget_set.all())
         rset = set(self.report_set.all())
@@ -127,7 +127,7 @@ class TableCriteria(models.Model):
             If we have an initial value (e.g. no parent specified)
             then save value as our new initial value
         """
-        tc = TableCriteria.objects.get(pk=key.split('_')[1])
+        tc = CriteriaParameter.objects.get(pk=key.split('_')[1])
         if tc.initial and tc.initial != value:
             tc.initial = value
             tc.save()
@@ -167,7 +167,7 @@ class Table(models.Model):
     options = PickledObjectField()                          
 
     # criteria are used to override instance values at run time
-    criteria = models.ManyToManyField(TableCriteria, null=True)
+    criteria = models.ManyToManyField(CriteriaParameter, null=True)
     
     # indicate if data can be cached based on criteria
     cacheable = models.BooleanField(default=True)

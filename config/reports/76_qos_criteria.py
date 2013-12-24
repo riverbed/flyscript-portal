@@ -9,7 +9,7 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column, TableCriteria
+from apps.datasource.models import Column, CriteriaParameter
 from apps.devices.models import Device
 from apps.report.models import Report
 import apps.report.modules.yui3 as yui3
@@ -22,26 +22,26 @@ INTERFACE = '10.99.16.252:2'
 PROFILER = Device.objects.get(name="profiler")
 
 
-report_criteria = TableCriteria(keyword='datafilter',
-                                template='interfaces_a,{0}',
-                                label='WAN Interface - DataFilter',
-                                initial=INTERFACE)
+report_criteria = CriteriaParameter(keyword='datafilter',
+                                    template='interfaces_a,{0}',
+                                    label='WAN Interface - DataFilter',
+                                    initial=INTERFACE)
 report_criteria.save()
 
 report = Report(title="QoS Heirarchical Criteria Report", position=66)
 report.save()
 report.criteria.add(report_criteria)
 
-table_criteria_inbound = TableCriteria(keyword='filterexpr',
-                                       template='inbound interface {0}',
-                                       label='WAN Inbound Interface',
-                                       parent=report_criteria)
+table_criteria_inbound = CriteriaParameter(keyword='filterexpr',
+                                           template='inbound interface {0}',
+                                           label='WAN Inbound Interface',
+                                           parent=report_criteria)
 table_criteria_inbound.save()
 
-table_criteria_outbound = TableCriteria(keyword='filterexpr',
-                                        template='outbound interface {0}',
-                                        label='WAN Outbound Interface',
-                                        parent=report_criteria)
+table_criteria_outbound = CriteriaParameter(keyword='filterexpr',
+                                            template='outbound interface {0}',
+                                            label='WAN Outbound Interface',
+                                            parent=report_criteria)
 table_criteria_outbound.save()
 
 
@@ -98,10 +98,10 @@ table = TimeSeriesTable.create('qos-inbound-%s' % QOS.lower(), PROFILER,
                                datafilter='interfaces_a,%s' % INTERFACE,
                                filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
 
-table_criteria_inbound_qos = TableCriteria(keyword='filterexpr',
-                                           template='inbound interface {0} and qos %s' % QOS,
-                                           label='WAN %s Inbound Interface' % QOS,
-                                           parent=report_criteria)
+table_criteria_inbound_qos = CriteriaParameter(keyword='filterexpr',
+                                               template='inbound interface {0} and qos %s' % QOS,
+                                               label='WAN %s Inbound Interface' % QOS,
+                                               parent=report_criteria)
 table_criteria_inbound_qos.save()
 table.criteria.add(table_criteria_inbound_qos)
 
@@ -118,10 +118,10 @@ table = TimeSeriesTable.create('qos-outbound-%s' % QOS.lower(), PROFILER,
                                datafilter='interfaces_a,%s' % INTERFACE,
                                filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
 
-table_criteria_outbound_qos = TableCriteria(keyword='filterexpr',
-                                            template='outbound interface {0} and qos %s' % QOS,
-                                            label='WAN %s Outbound Interface' % QOS,
-                                            parent=report_criteria)
+table_criteria_outbound_qos = CriteriaParameter(keyword='filterexpr',
+                                                template='outbound interface {0} and qos %s' % QOS,
+                                                label='WAN %s Outbound Interface' % QOS,
+                                                parent=report_criteria)
 table_criteria_outbound_qos.save()
 table.criteria.add(table_criteria_outbound_qos)
 

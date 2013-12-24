@@ -10,7 +10,7 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.report.models import Report
-from apps.datasource.models import Table, Column, TableCriteria
+from apps.datasource.models import Table, Column, CriteriaParameter
 import apps.report.modules.yui3 as yui3
 
 from apps.datasource.modules.tshark import TSharkTable, TableOptions
@@ -27,10 +27,10 @@ logger = logging.getLogger(__name__)
 report = Report(title="PCAP Analysis (FileField)")
 report.save()
 
-filefield = TableCriteria(keyword='pcapfile',
-                          template='{}',
-                          label='PCAP File',
-                          field_type='forms.FileField')
+filefield = CriteriaParameter(keyword='pcapfile',
+                              template='{}',
+                              label='PCAP File',
+                              field_type='forms.FileField')
 filefield.save()
 report.criteria.add(filefield)
 #
