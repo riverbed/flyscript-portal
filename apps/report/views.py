@@ -35,7 +35,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
-from rvbd.common import parse_timedelta
+from rvbd.common import parse_timedelta, datetime_to_seconds
 
 import logging
 logger = logging.getLogger(__name__)
@@ -132,6 +132,7 @@ class ReportView(views.APIView):
                                    'developer': profile.developer,
                                    'maps_version': profile.maps_version,
                                    'maps_api_key': profile.maps_api_key,
+                                   'endtime' : 'endtime' in form.fields,
                                    'formstyle': FORMSTYLE,
                                    'form': form},
                                   context_instance=RequestContext(request))
@@ -241,37 +242,35 @@ class WidgetJobsList(views.APIView):
         criteria_form = create_report_criteria_form(report, data=req_json,
                                                     files=request.FILES,
                                                     jsonform=True)
-        
+
         if criteria_form.is_valid():
             logger.debug('criteria form passed validation: %s' % criteria_form)
-            req_criteria = criteria_form.cleaned_data
-            logger.debug('criteria cleaned data: %s' % req_criteria)
+            form_data = criteria_form.cleaned_data
+            logger.debug('criteria cleaned data: %s' % form_data)
 
             widget = Widget.objects.get(id=widget_id)
 
-            if req_criteria['duration'] == 'Default':
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
+            for k,v in form_data.iteritems():
+                if isinstance(v, datetime.datetime):
+                    if v.tzinfo is None:
+                        v = v.replace(tzinfo=timezone)
+                    form_data[k] = datetime_to_seconds(v)
+                
+            if (('duration' not in form_data) or (form_data['duration'] == 'Default')):
                 duration = None
             else:
                 # py2.6 compatibility
-                td = parse_timedelta(req_criteria['duration'])
+                td = parse_timedelta(form_data['duration'])
                 duration_sec = td.days * 24 * 3600 + td.seconds
                 duration_usec = duration_sec * 10**6 + td.microseconds
                 duration = float(duration_usec) / 10**6
 
-            job_criteria = Criteria(endtime=req_criteria['endtime'],
-                                    duration=duration,
-                                    filterexpr=req_criteria['filterexpr'],
-                                    table=widget.table(),
-                                    ignore_cache=req_criteria['ignore_cache'])
-
-            # handle table criteria and generate children objects
-            for k, v in req_criteria.iteritems():
-                if k.startswith('criteria_'):
-                    tc = CriteriaParameter.get_instance(k, v) 
-                    job_criteria[k] = tc
-                    for child in tc.children.all():
-                        child.value = v
-                        job_criteria['criteria_%d' % child.id] = child
+            filterexpr = form_data['filterexpr'] if 'filterexpr' in form_data else None
+            
+            job_criteria = Criteria(table=widget.table(),
+                                    **form_data)
 
             job = Job.create(table=widget.table(),
                              criteria=job_criteria)
@@ -288,6 +287,7 @@ class WidgetJobsList(views.APIView):
                                                      widget_id,
                                                      wjob.id])})
         else:
+            logger.error("criteria_form is invalid, entering debugger")
             from IPython import embed; embed()
 
 
@@ -345,6 +345,6 @@ class WidgetJobDetail(views.APIView):
             wjob.delete()
             
         resp['message'] = cgi.escape(resp['message'])
-        #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
+        logger.debug("Response: job %s:\n%s" % (job.id, resp))
 
         return HttpResponse(json.dumps(resp))

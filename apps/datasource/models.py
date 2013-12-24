@@ -28,6 +28,7 @@ from django.db import transaction
 from django.db.models import F
 from django.db.models.signals import pre_delete 
 from django.dispatch import receiver
+from django import forms
 
 from rvbd.common.utils import DictObject
 
@@ -72,8 +73,7 @@ class CriteriaParameter(models.Model):
         initial  -- starting or default value to include in the form
 
         optional:
-        field_type   -- text name of form field type, defaults to
-                        `forms.CharField`.
+        field_cls    -- form field class, defaults to forms.CharField.
         field_kwargs -- additional keywords to pass to field initializer
         parent       -- reference to another CriteriaParameter object which
                         provides values to inherit from.  This allows
@@ -88,7 +88,7 @@ class CriteriaParameter(models.Model):
 
     initial = PickledObjectField(blank=True, null=True)
 
-    field_type = models.CharField(max_length=100, default='forms.CharField')
+    field_cls = PickledObjectField(default=forms.CharField)
     field_kwargs = PickledObjectField(blank=True, null=True)
 
     parent = models.ForeignKey("self", blank=True, null=True,
@@ -121,22 +121,20 @@ class CriteriaParameter(models.Model):
         return any(wset.intersection(set(rwset.widget_set.all())) for rwset in rset)
 
     @classmethod
-    def get_instance(cls, key, value):
-        """ Return instance given the 'criteria_%d' formatted key
-
-            If we have an initial value (e.g. no parent specified)
-            then save value as our new initial value
-        """
-        tc = CriteriaParameter.objects.get(pk=key.split('_')[1])
-        if tc.initial and tc.initial != value:
-            tc.initial = value
-            tc.save()
-        tc.value = value
-        return tc
+    def find_instance(cls, key):
+        """ Return instance given a keyword. """
+        params = CriteriaParameter.objects.filter(keyword=key)
+        if len(params) == 0:
+            return None
+        elif len(params) > 1:
+            raise KeyError("Multiple CriteriaParameter matches found for %s"
+                           % key)
+        param = param[0]
+        return param
 
     @classmethod
     def get_children(cls, key, value):
-        """ Given a 'criteria_%d' key, return all children objects
+        """ Given a key, return all children objects
             with value attributes filled in.  Return empty list if no
             children.
         """
@@ -242,6 +240,9 @@ class Table(models.Model):
 
             Changes are only applied to instance, not saved to database
         """
+        # xxxcj
+        return
+    
         for k, v in criteria.iteritems():
             if k.startswith('criteria_') and (self in v.table_set.all() or
                                               v.is_report_criteria(self)):
@@ -390,44 +391,64 @@ class Column(models.Model):
 
 
 class Criteria(DictObject):
-    def __init__(self, starttime=None, endtime=None, duration=None, 
-                 filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
-        super(Criteria, self).__init__(*args, **kwargs)
-        self.starttime = starttime
-        self.endtime = endtime
-        self.duration = duration
-        self.filterexpr = filterexpr
-        self.ignore_cache = ignore_cache
+    def __init__(self, table=None,
+                 #starttime=None, endtime=None, duration=None, 
+                 #filterexpr=None, ignore_cache=False,
+                 **kwargs):
+        self.starttime = None
+        self.endtime = None
+        self.duration = None
 
-        self._orig_starttime = starttime
-        self._orig_endtime = endtime
-        self._orig_duration = duration
+        super(Criteria, self).__init__(kwargs)
+
+        #self.filterexpr = filterexpr
+        #self.ignore_cache = ignore_cache
+
+        self._orig_starttime = self.starttime
+        self._orig_endtime = self.endtime
+        self._orig_duration = self.duration
         
         if table:
             self.compute_times(table)
+
+    def __setattr__(self, key, value):
+        self[key] = value
+        if key.startswith('_'):
+            return
+        elif key in ['starttime', 'endtime', 'duration']:
+            self['_orig_%s' % key] = value
+        else:
+            param = CriteriaParameter.find_instance(key)
+            if param.initial != value:
+                param.initial = value
+                param.save()
             
     def print_details(self):
         """ Return instance variables as nicely formatted string
         """
-        msg = 'starttime: %s, endtime: %s, duration: %s, ' % (str(self.starttime), 
-                                                              str(self.endtime), 
-                                                              str(self.duration))
-        msg += 'filterexpr: %s, ignore_cache: %s' % (str(self.filterexpr),
-                                                     str(self.ignore_cache))
-        return msg
+        return ', '.join([("%s: %s" % (k,v)) for k,v in self.iteritems()])
 
     def build_for_table(self, table):
-        # used by Analysis datasource module
+        """ Build a criteria object for a table.
+
+        This copies over all criteria parameters but has 
+        special handling for starttime, endtime, and duration,
+        as they may be altered if duration is 'default'.
+
+        """
         crit =  Criteria(starttime=self._orig_starttime,
                          endtime=self._orig_endtime,
                          duration=self._orig_duration,
-                         filterexpr=self.filterexpr,
-                         ignore_cache=self.ignore_cache,
+                         #filterexpr=self.filterexpr,
+                         #ignore_cache=self.ignore_cache,
                          table=table)
 
         for k,v in self.iteritems():
-            if k.startswith('criteria_'):
-                crit[k] = v
+            if (  (k in ['starttime', 'endtime', 'duration']) or
+                  k.startswith('_')):
+                continue
+            
+            crit[k] = v
 
         return crit
                         
@@ -677,6 +698,8 @@ class Job(models.Model):
                 'data': data}
 
     def combine_filterexprs(self, joinstr="and"):
+        # xxxcj
+        return ""
         exprs = []
         self.refresh()
         criteria = self.criteria

@@ -7,6 +7,9 @@
 
 import shutil
 import tempfile
+import datetime
+import dateutil
+import pytz
 
 from django import forms
 from django.utils.datastructures import SortedDict
@@ -15,7 +18,7 @@ from django.core.files.uploadedfile import UploadedFile
 from rvbd.common import datetime_to_seconds
 
 from apps.report.models import Report, Widget
-from apps.datasource.models import Criteria
+from apps.datasource.models import Criteria, CriteriaParameter
 
 import logging
 logger = logging.getLogger(__name__)
@@ -71,7 +74,6 @@ class ReportTimeWidget(forms.TimeInput):
         msg = '{0} <span id="timenow" class="icon-time" title="Set time/date to now"> </span> '
         return msg.format(super(ReportTimeWidget, self).render(*args, **kwargs))
 
-
 class ReportSplitDateTimeWidget(forms.SplitDateTimeWidget):
     """ A SplitDateTime Widget that uses overridden Report widgets
     """
@@ -81,7 +83,47 @@ class ReportSplitDateTimeWidget(forms.SplitDateTimeWidget):
         # we want to define widgets.
         forms.MultiWidget.__init__(self, split_widgets, attrs)
 
+    def value_from_datadict(self, data, files, name):
+        if name in data:
+            secs = int(data[name])
+            d = datetime.datetime.utcfromtimestamp(secs)
+            v = d.strftime('%m/%d/%Y %I:%M %p')
+        else:
+            v = super(ReportSplitDateTimeWidget, self).value_from_datadict(data, files, name)
+            v = ' '.join(v)
+        logger.debug("ReportSplitDateTimeWidget: %s (%s)" % (v, data))
+        return v
 
+    def decompress(self, value):
+        logger.debug("ReportSplitDateTimeWidget.decompress: %s" % (value))
+        if value:
+            return value.split(" ", 1)
+        else:
+            return [None, None]
+        
+class ReportDateTimeField(forms.DateTimeField):
+    
+    def to_python(self, data):
+        v = dateutil.parser.parse(data)
+        logger.debug("ReportDateTimeField.to_python: %s => %s" % (v, datetime_to_seconds(v)))
+        return v
+            
+    #def validate(self, *args, **kwargs):
+    #    __import__('IPython').core.debugger.Pdb().set_trace()
+        
+    #def run_validators(self, *args, **kwargs):
+    #    __import__('IPython').core.debugger.Pdb().set_trace()
+
+def criteria_add_endtime(report):
+    endtime = CriteriaParameter(keyword = 'endtime',
+                                template = {},
+                                label = 'End Time',
+                                field_cls = ReportDateTimeField,
+                                field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
+                                required=True)
+    endtime.save()
+    report.criteria.add(endtime)
+    
 class ReportCriteriaForm(forms.Form):
     """ Base Form for Report Criteria
     """
@@ -89,19 +131,19 @@ class ReportCriteriaForm(forms.Form):
     error_css_class = 'text-error'
 
     # field definitions
-    endtime = forms.DateTimeField(label='Report End Time',
-                                  input_formats=['%m/%d/%Y %I:%M %p'], 
-                                  widget=ReportSplitDateTimeWidget)
-    duration = forms.ChoiceField(choices=zip(DURATIONS, DURATIONS),
-                                 widget=forms.Select(attrs={'class': 'duration'}))
-    filterexpr = forms.CharField(label='Filter Expression',
-                                 required=False, max_length=100,
-                                 widget=forms.TextInput(attrs={'class': 'filterexpr'}))
+    #endtime = forms.DateTimeField(label='Report End Time',
+    #                              input_formats=['%m/%d/%Y %I:%M %p'], 
+    #                              widget=ReportSplitDateTimeWidget)
+    #duration = forms.ChoiceField(choices=zip(DURATIONS, DURATIONS),
+    #                             widget=forms.Select(attrs={'class': 'duration'}))
+    #filterexpr = forms.CharField(label='Filter Expression',
+    #                             required=False, max_length=100,
+    #                             widget=forms.TextInput(attrs={'class': 'filterexpr'}))
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
 
     def __init__(self, extra=None, **kwargs):
-        """ Handle arbitrary number of additional fields in `extra` keyword
+        """ Handle arbitrary number of additional params in `extra` keyword
 
             Keyword argument options:
 
@@ -115,28 +157,28 @@ class ReportCriteriaForm(forms.Form):
         super(ReportCriteriaForm, self).__init__(**kwargs)
 
         if extra:
-            logging.debug('creating ReportCriteriaForm, with extra fields: %s' % extra)
-            for field in extra:
-                field_id = 'criteria_%s' % field.id
-                field_cls = eval(field.field_type)
-                if field.field_kwargs is not None:
-                    fkwargs = field.field_kwargs
+            logging.debug('creating ReportCriteriaForm, with extra params: %s' % extra)
+            for param in extra:
+                field_id = param.keyword
+                field_cls = param.field_cls
+                if param.field_kwargs is not None:
+                    fkwargs = param.field_kwargs
                 else:
                     fkwargs = {}
 
-                self.fields[field_id] = field_cls(label=field.label,
-                                                  required=field.required,
-                                                  initial=field.initial,
+                self.fields[field_id] = field_cls(label=param.label,
+                                                  required=param.required,
+                                                  initial=param.initial,
                                                   **fkwargs)
 
-                self.initial[field_id] = field.initial
+                self.initial[field_id] = param.initial
                 
     def criteria(self):
         """ Return certain field values as a dict for simple json parsing
         """
         result = {}
         for k, v in self.cleaned_data.iteritems():
-            if k == 'endtime':
+            if isinstance(v, datetime.datetime):
                 result[k] = datetime_to_seconds(v)
             elif isinstance(v, UploadedFile):
                 # look for uploaded files, save them off to another
@@ -152,26 +194,6 @@ class ReportCriteriaForm(forms.Form):
             elif k != 'debug':
                 result[k] = v
         return result
-
-
-class ReportCriteriaJSONForm(ReportCriteriaForm):
-    """ Subclass to handle validation of JSON submission of equivalent form
-
-        Since some fields will be returned via JSON in a different manner
-        than the initial form submission, this class modifies the field types
-    """
-    def __init__(self, **kwargs):
-        super(ReportCriteriaJSONForm, self).__init__(**kwargs)
-        
-        for k, v in self.fields.iteritems():
-            if isinstance(v, forms.FileField):
-                # FileFields instead have a pathname to the stored tempfile
-                new_field = forms.CharField(label=v.label, initial=v.initial)
-                self.fields[k] = new_field
-
-        # toggle endtime formfield to handle timestamps via IntegerField
-        self.fields['endtime'] = forms.IntegerField()
-
 
 def create_report_criteria_form(report, jsonform=False, **kwargs):
     """ Create a form for this report.
@@ -204,7 +226,5 @@ def create_report_criteria_form(report, jsonform=False, **kwargs):
                     extra[tc.id] = tc
 
     kwargs['extra'] = extra.values()
-    if jsonform:
-        return ReportCriteriaJSONForm(**kwargs)
-    else:
-        return ReportCriteriaForm(**kwargs)
+
+    return ReportCriteriaForm(**kwargs)
