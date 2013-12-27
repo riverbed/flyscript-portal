@@ -50,7 +50,6 @@ def get_caller_name(match='config.'):
     del frm
     return ''
 
-
 class Report(models.Model):
     """ Defines the collection of Widgets and criteria for a Report view
     """
@@ -69,7 +68,7 @@ class Report(models.Model):
         return self.title
 
     def collect_criteria(self):
-        criteria = self.criteria.all()
+        criteria = [c for c in self.criteria.all()]
         criteria_keywords = [c.keyword for c in criteria]
         widgets = Widget.objects.filter(report=self)
         for w in widgets:

@@ -168,29 +168,16 @@ def criteria_add_time_selection(obj, initial_duration=None):
     obj.criteria.add(duration)
 
 
-class TestForm(forms.Form):
-    time = DateTimeField(label="Date",
-                         initial="12/31/2013 8:00 am")
-
-    
 class CriteriaForm(forms.Form):
     """ Form built from a list of criteria parameters
     """
     # css definitions
     error_css_class = 'text-error'
 
-    # field definitions
-    #endtime = forms.DateTimeField(label='Report End Time',
-    #                              input_formats=['%m/%d/%Y %I:%M %p'], 
-    #                              widget=ReportSplitDateTimeWidget)
-    #duration = forms.ChoiceField(choices=zip(DURATIONS, DURATIONS),
-    #                             widget=forms.Select(attrs={'class': 'duration'}))
-    #filterexpr = forms.CharField(label='Filter Expression',
-    #                             required=False, max_length=100,
-    #                             widget=forms.TextInput(attrs={'class': 'filterexpr'}))
+    # special hidden field definitions
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
-
+    
     def __init__(self, parameters, use_widgets=True, **kwargs):
         """ Initialize a CriteriaForm for the given set of table.
 
@@ -214,7 +201,8 @@ class CriteriaForm(forms.Form):
                 # Already added this field
                 continue
 
-            field_cls = param.field_cls
+            field_cls = param.field_cls or forms.CharField
+
             if param.field_kwargs is not None:
                 fkwargs = param.field_kwargs
             else:
@@ -227,6 +215,7 @@ class CriteriaForm(forms.Form):
             self.fields[field_id] = field_cls(label=param.label,
                                               required=param.required,
                                               initial=param.initial,
+                                              help_text=param.help_text,
                                               **fkwargs)
 
             self.initial[field_id] = param.initial

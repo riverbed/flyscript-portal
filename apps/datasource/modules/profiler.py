@@ -14,7 +14,7 @@ import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Table
+from apps.datasource.models import Table, CriteriaParameter
 from apps.devices.devicemanager import DeviceManager
 from apps.datasource.forms import criteria_add_time_selection
 
@@ -26,6 +26,20 @@ def new_device_instance(*args, **kwargs):
     return rvbd.profiler.Profiler(*args, **kwargs)
 
 
+def criteria_add_filterexpr(obj,
+                            keyword = 'profiler_filterexpr',
+                            initial=None
+                            ):
+    field = ( CriteriaParameter
+              (keyword = keyword,
+               label = 'Profiler Filter Expression',
+               help_text = ('Traffic expression using Profiler Advanced ' +
+                            'Traffic Expression syntax'),
+               initial = initial,
+               required = False))
+    field.save()
+    obj.criteria.add(field)
+
 class TableOptions(JsonDict):
     _default = {'groupby': None,
                 'realm': None,
@@ -35,30 +49,38 @@ class TableOptions(JsonDict):
 class TimeSeriesTable:
     @classmethod
     def create(cls, name, device, duration,
-               interface=False, **kwargs):
+               filterexpr=None, interface=False,
+               add_time_selection=True, add_filterexpr=True,
+               **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
         `duration` is in minutes
 
         """
-        logger.debug('Creating Profiler TimeSeries table %s (%d)' % (name, duration))
+        logger.debug('Creating Profiler TimeSeries table %s (%d)' %
+                     (name, duration))
 
         options = TableOptions(groupby='time',
                                realm='traffic_overall_time_series',
                                centricity='int' if interface else 'hos')
 
         t = Table(name=name, module=__name__, device=device, duration=duration*60,
-                  options=options, **kwargs)
+                  filterexpr=filterexpr, options=options, **kwargs)
         t.save()
 
-        criteria_add_time_selection(t, initial_duration="%d min" % duration)
+        if add_time_selection:
+            criteria_add_time_selection(t, initial_duration="%d min" % duration)
+        if add_filterexpr:
+            criteria_add_filterexpr(t)
         return t
         
 
 class GroupByTable:
     @classmethod
     def create(cls, name, device, groupby, duration, 
-               filterexpr=None, interface=False, **kwargs):
+               filterexpr=None, interface=False,
+               add_time_selection=True, add_filterexpr=True,
+               **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
         `duration` is in minutes
@@ -74,7 +96,10 @@ class GroupByTable:
         t = Table(name=name, module=__name__, device=device, duration=duration*60,
                   filterexpr=filterexpr, options=options, **kwargs)
         t.save()
-        criteria_add_time_selection(t, initial_duration="%d min" % duration)
+        if add_time_selection:
+            criteria_add_time_selection(t, initial_duration="%d min" % duration)
+        if add_filterexpr:
+            criteria_add_filterexpr(t)
         return t
         
 
@@ -118,13 +143,15 @@ class TableQuery:
         else:
             datafilter = None
 
+        trafficexpr = TrafficFilter(self.job.combine_filterexprs(exprs=criteria.profiler_filterexpr))
+        
         with lock:
             report.run(realm=self.table.options.realm,
                        groupby=profiler.groupbys[self.table.options.groupby],
                        centricity=self.table.options.centricity,
                        columns=columns,
                        timefilter=tf, 
-                       trafficexpr=TrafficFilter(self.job.combine_filterexprs()),
+                       trafficexpr=trafficexpr,
                        data_filter=datafilter,
                        resolution="%dmin" % (int(self.table.resolution / 60)),
                        sort_col=sortcol,

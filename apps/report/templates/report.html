@@ -196,6 +196,9 @@
 
                     {% for field in form.visible_fields %}
                         {{ field.label_tag }}: {{ field }}
+                        {% if field.help_text %} 
+                           <span class="icon-info-sign" title="info">Foo</span>
+                        {% endif %}
                         {% if field.errors %}
                             {% for err in field.errors %}
                                 <p class="text-error">{{ err }}</p>
@@ -226,6 +229,9 @@
                                         {% for err in field.errors %}
                                             <p class="text-error">{{ err }}</p>
                                         {% endfor %}
+                                    {% endif %}
+                                    {% if field.help_text %} 
+                                        <span class="icon-info-sign" title="{{ field.help_text }}"></span>
                                     {% endif %}
                                 </div>
                             </div>

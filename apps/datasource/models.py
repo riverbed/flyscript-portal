@@ -85,10 +85,10 @@ class CriteriaParameter(models.Model):
     keyword = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
     label = models.CharField(max_length=100)
-
+    help_text = models.CharField(blank=True, null=True, default=None, max_length=400)
     initial = PickledObjectField(blank=True, null=True)
 
-    field_cls = PickledObjectField(default=forms.CharField)
+    field_cls = PickledObjectField(null=True)
     field_kwargs = PickledObjectField(blank=True, null=True)
 
     parent = models.ForeignKey("self", blank=True, null=True,
@@ -99,6 +99,9 @@ class CriteriaParameter(models.Model):
 
     # instance placeholder for form return values, not for database storage
     value = PickledObjectField(null=True, blank=True)
+
+    def __repr__(self):
+        return "<CriteriaParameter %s (%s)>" % (self.keyword, self.id)
 
     def __unicode__(self):
         return "<CriteriaParameter %s (%s)>" % (self.keyword, self.id)
@@ -710,20 +713,26 @@ class Job(models.Model):
                 'message': self.message,
                 'data': data}
 
-    def combine_filterexprs(self, joinstr="and"):
-        # xxxcj
-        return ""
-        exprs = []
+    def combine_filterexprs(self, joinstr="and", exprs=None):
         self.refresh()
+
         criteria = self.criteria
-        for e in [self.table.filterexpr, criteria.filterexpr if criteria else None]:
+        if exprs is None:
+            exprs = []
+        elif type(exprs) is not list:
+            exprs = [exprs]
+            
+        exprs.append(self.table.filterexpr)
+
+        nonnull_exprs = []
+        for e in exprs:
             if e != "" and e is not None:
-                exprs.append(e)
-                
-        if len(exprs) > 1:
-            return "(" + (") " + joinstr + " (").join(exprs) + ")"
-        elif len(exprs) == 1:
-            return exprs[0]
+                nonnull_exprs.append(e)
+
+        if len(nonnull_exprs) > 1:
+            return "(" + (") " + joinstr + " (").join(nonnull_exprs) + ")"
+        elif len(nonnull_exprs) == 1:
+            return nonnull_exprs[0]
         else:
             return ""
 

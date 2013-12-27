@@ -19,7 +19,7 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
 
-from apps.datasource.models import Column, Table
+from apps.datasource.models import Column, Table, CriteriaParameter
 from apps.datasource.forms import criteria_add_time_selection
 from apps.devices.devicemanager import DeviceManager
 
@@ -45,6 +45,19 @@ class ColumnOptions(JsonDict):
                 'default_value': None}
 
 
+def criteria_add_filterexpr(obj,
+                            keyword = 'shark_filterexpr',
+                            initial=None
+                            ):
+    field = ( CriteriaParameter
+              (keyword = keyword,
+               label = 'Shark Filter Expression',
+               help_text = 'Traffic expression using Shark filter syntax',
+               initial = initial,
+               required = False))
+    field.save()
+    obj.criteria.add(field)
+
 class SharkTable:
     @classmethod
     def create(cls, name, device, view, view_size, duration,
@@ -63,6 +76,7 @@ class SharkTable:
                   sortcol=sortcol)
         t.save()
         criteria_add_time_selection(t, initial_duration="%d sec" % duration)
+        criteria_add_filterexpr(t)
         return t
 
 
@@ -152,14 +166,14 @@ class TableQuery:
                     break
 
         # Initialize filters
+        criteria = self.job.criteria
+
         filters = []
-        filterexpr = self.job.combine_filterexprs(joinstr="&")
+        filterexpr = self.job.combine_filterexprs(exprs=criteria.shark_filterexpr, joinstr="&")
         if filterexpr:
             filters.append(SharkFilter(filterexpr))
 
-        criteria = self.job.criteria
-        tf = TimeFilter(start=criteria.starttime,
-                        end=criteria.endtime)
+        tf = TimeFilter(start=criteria.starttime, end=criteria.endtime)
         filters.append(tf)
 
         logger.info("Setting shark table %d timeframe to %s" % (self.table.id, str(tf)))
@@ -221,8 +235,9 @@ class TableQuery:
         if self.timeseries:
             # use sample times for each row
             for d in self.data:
-                t = timeutils.datetime_to_microseconds(d['t']) / float(10 ** 6)
-                out.extend([t] + x for x in d['vals'])
+                if d['t'] is not None:
+                    t = timeutils.datetime_to_microseconds(d['t']) / float(10 ** 6)
+                    out.extend([t] + x for x in d['vals'])
 
         else:
             for d in self.data:

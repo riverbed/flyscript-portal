@@ -79,7 +79,6 @@ def download_debug(request):
 # currently valid: 'inline' or 'horizontal'
 FORMSTYLE = 'horizontal'
 
-
 class ReportView(views.APIView):
     """ Main handler for /report/{id}
     """
