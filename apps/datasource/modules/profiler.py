@@ -16,6 +16,7 @@ from rvbd.common.jsondict import JsonDict
 
 from apps.datasource.models import Table
 from apps.devices.devicemanager import DeviceManager
+from apps.datasource.forms import criteria_add_time_selection
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -35,16 +36,22 @@ class TimeSeriesTable:
     @classmethod
     def create(cls, name, device, duration,
                interface=False, **kwargs):
+        """ Create a Profiler TimeSeriesTable.
+
+        `duration` is in minutes
+
+        """
         logger.debug('Creating Profiler TimeSeries table %s (%d)' % (name, duration))
 
         options = TableOptions(groupby='time',
                                realm='traffic_overall_time_series',
                                centricity='int' if interface else 'hos')
 
-        t = Table(name=name, module=__name__, device=device, duration=duration,
-                  options=options,
-                  **kwargs)
+        t = Table(name=name, module=__name__, device=device, duration=duration*60,
+                  options=options, **kwargs)
         t.save()
+
+        criteria_add_time_selection(t, initial_duration="%d min" % duration)
         return t
         
 
@@ -52,6 +59,11 @@ class GroupByTable:
     @classmethod
     def create(cls, name, device, groupby, duration, 
                filterexpr=None, interface=False, **kwargs):
+        """ Create a Profiler TimeSeriesTable.
+
+        `duration` is in minutes
+
+        """
         msg = 'Creating Profiler GroupBy table %s (%s, %d, %s)'
         logger.debug(msg % (name, groupby, duration, filterexpr))
 
@@ -59,11 +71,10 @@ class GroupByTable:
                                realm='traffic_summary',
                                centricity='int' if interface else 'hos')
 
-        t = Table(name=name, module=__name__, device=device, duration=duration,
-                  filterexpr=filterexpr,
-                  options=options,
-                  **kwargs)
+        t = Table(name=name, module=__name__, device=device, duration=duration*60,
+                  filterexpr=filterexpr, options=options, **kwargs)
         t.save()
+        criteria_add_time_selection(t, initial_duration="%d min" % duration)
         return t
         
 
@@ -93,8 +104,8 @@ class TableQuery:
             sortcol = self.table.sortcol.name
 
         criteria = self.job.criteria
-        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
-                        end=datetime.datetime.fromtimestamp(criteria.endtime))
+        tf = TimeFilter(start=criteria.starttime,
+                        end=criteria.endtime)
 
         logger.info("Running Profiler table %d report for timeframe %s" % (self.table.id,
                                                                            str(tf)))

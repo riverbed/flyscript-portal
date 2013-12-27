@@ -17,6 +17,7 @@ from django.template.defaultfilters import slugify
 from django.db import transaction
 from django.db.models.signals import pre_delete 
 from django.dispatch import receiver
+from django.utils.datastructures import SortedDict
 
 from model_utils.managers import InheritanceManager
 from apps.datasource.models import Table, Job, CriteriaParameter
@@ -67,7 +68,18 @@ class Report(models.Model):
     def __unicode__(self):
         return self.title
 
+    def collect_criteria(self):
+        criteria = self.criteria.all()
+        criteria_keywords = [c.keyword for c in criteria]
+        widgets = Widget.objects.filter(report=self)
+        for w in widgets:
+            for t in w.tables.all():
+                for c in t.criteria.all():
+                    if c.keyword not in criteria_keywords:
+                        criteria.append(c)
 
+        return criteria
+        
 class Widget(models.Model):
     """ Defines a UI widget and the source datatables
     """

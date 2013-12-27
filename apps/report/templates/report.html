@@ -47,25 +47,6 @@
       var debugFlag = false;
       $(document).ready( function() {
           //run();
-          {% if endtime %}
-              $('#id_endtime_0').datepicker({
-                 format: 'mm/dd/YY',
-                 defaultDate: +2, 
-                 autoclose: true
-              });
-              $('#id_endtime_0').datepicker('setDate', new Date());
-              $('#datenow').click(function() { $('#id_endtime_0').datepicker('setDate', new Date()); });
-              $('#id_endtime_1').timepicker({ 
-                 step: 15, 
-                 scrollDefaultNow:true,
-                 timeFormat:'g:i a'
-              });
-              $('#timenow').click(function() { 
-                 $('#id_endtime_1').timepicker('setTime', new Date()); 
-                 $('#id_endtime_0').datepicker('setDate', new Date()); 
-              });
-              $('#id_endtime_1').timepicker('setTime', new Date());
-          {% endif %}
           $("#criteria").on('hidden', function() { dorun(); });
           $.ajaxSetup({
               beforeSend: function(xhr) {

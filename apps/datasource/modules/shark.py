@@ -20,6 +20,7 @@ from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
 
 from apps.datasource.models import Column, Table
+from apps.datasource.forms import criteria_add_time_selection
 from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,11 @@ class SharkTable:
     @classmethod
     def create(cls, name, device, view, view_size, duration,
                aggregated=False, filterexpr=None, resolution=60, sortcol=None):
+        """ Create a Shark table.
+
+        `duration` is in seconds
+
+        """
         logger.debug('Creating Shark table %s (%s, %d)' % (name, view, duration))
         options = TableOptions(view=view,
                                view_size=view_size,
@@ -56,6 +62,7 @@ class SharkTable:
                   filterexpr=filterexpr, options=options, resolution=resolution,
                   sortcol=sortcol)
         t.save()
+        criteria_add_time_selection(t, initial_duration="%d sec" % duration)
         return t
 
 
@@ -151,8 +158,8 @@ class TableQuery:
             filters.append(SharkFilter(filterexpr))
 
         criteria = self.job.criteria
-        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
-                        end=datetime.datetime.fromtimestamp(criteria.endtime))
+        tf = TimeFilter(start=criteria.starttime,
+                        end=criteria.endtime)
         filters.append(tf)
 
         logger.info("Setting shark table %d timeframe to %s" % (self.table.id, str(tf)))

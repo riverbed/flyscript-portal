@@ -9,6 +9,8 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
+from django import forms
+
 from apps.report.models import Report
 from apps.datasource.models import Table, Column, CriteriaParameter
 import apps.report.modules.yui3 as yui3
@@ -30,7 +32,7 @@ report.save()
 filefield = CriteriaParameter(keyword='pcapfile',
                               template='{}',
                               label='PCAP File',
-                              field_type='forms.FileField')
+                              field_cls=forms.FileField)
 filefield.save()
 report.criteria.add(filefield)
 #

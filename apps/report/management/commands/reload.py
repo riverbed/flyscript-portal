@@ -33,7 +33,13 @@ class Command(BaseCommand):
                              dest='report_id',
                              default=None,
                              help='Reload single report.'),
-    )
+
+        optparse.make_option('--report-dir',
+                             action='store',
+                             dest='report_dir',
+                             default=None,
+                             help='Reload reports from this directory.'),
+)
 
     def import_directory(self, root, report_name=None, ignore_list=None):
         """ Recursively imports all python files in a directory
@@ -116,5 +122,6 @@ class Command(BaseCommand):
         # start with fresh device instances
         DeviceManager.clear()
 
-        config_dir = os.path.join(settings.PROJECT_ROOT, 'config')
-        self.import_directory(config_dir, report_name=report_name)
+        report_dir = os.path.join(settings.PROJECT_ROOT, options['report_dir'] or  'config')
+            
+        self.import_directory(report_dir, report_name=report_name)

@@ -101,7 +101,7 @@ class CriteriaParameter(models.Model):
     value = PickledObjectField(null=True, blank=True)
 
     def __unicode__(self):
-        return "<CriteriaParameter %s (id=%s)>" % (self.keyword, str(self.id))
+        return "<CriteriaParameter %s (%s)>" % (self.keyword, self.id)
 
     def save(self, *args, **kwargs):
         #if not self.field_type:
@@ -150,7 +150,7 @@ class Table(models.Model):
     module = models.CharField(max_length=200)         # source module name
     device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
     filterexpr = models.TextField(null=True)
-    duration = models.IntegerField(null=True)         # length of query, mins
+    duration = models.IntegerField(null=True)         # default duration in seconds
     resolution = models.IntegerField(default=60)      # query resolution, sec
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
@@ -240,7 +240,7 @@ class Table(models.Model):
 
             Changes are only applied to instance, not saved to database
         """
-        # xxxcj
+        # XXXCJ - needs to be revamped
         return
     
         for k, v in criteria.iteritems():
@@ -391,10 +391,10 @@ class Column(models.Model):
 
 
 class Criteria(DictObject):
-    def __init__(self, table=None,
-                 #starttime=None, endtime=None, duration=None, 
-                 #filterexpr=None, ignore_cache=False,
-                 **kwargs):
+    """ Manage a collection of criteria values. """
+    def __init__(self, **kwargs):
+        """ Initialize a criteria object based on key/value pairs. """
+
         self.starttime = None
         self.endtime = None
         self.duration = None
@@ -404,12 +404,12 @@ class Criteria(DictObject):
         #self.filterexpr = filterexpr
         #self.ignore_cache = ignore_cache
 
+        # Keep track of the original starttime / endtime
+        # This are needed when recomputing start/end times with
+        # different default durations
         self._orig_starttime = self.starttime
         self._orig_endtime = self.endtime
         self._orig_duration = self.duration
-        
-        if table:
-            self.compute_times(table)
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -436,12 +436,9 @@ class Criteria(DictObject):
         as they may be altered if duration is 'default'.
 
         """
-        crit =  Criteria(starttime=self._orig_starttime,
+        crit = Criteria(starttime=self._orig_starttime,
                          endtime=self._orig_endtime,
-                         duration=self._orig_duration,
-                         #filterexpr=self.filterexpr,
-                         #ignore_cache=self.ignore_cache,
-                         table=table)
+                         duration=self._orig_duration)
 
         for k,v in self.iteritems():
             if (  (k in ['starttime', 'endtime', 'duration']) or
@@ -452,24 +449,32 @@ class Criteria(DictObject):
 
         return crit
                         
-    def compute_times(self, table):
-        if table.duration is None:
-            return
-        
-        if self.endtime is None:
-            self.endtime = time.time()
+    def compute_times(self, default_duration=None):
+        # Start with the original values not any values formerly computed
+        duration = self._orig_duration or default_duration
+        starttime = self._orig_starttime
+        endtime = self._orig_endtime
 
-        # Snap backwards based on table resolution
-        self.endtime = self.endtime - self.endtime % table.resolution
-
-        if self.starttime is None:
-            if self.duration is None:
-                self.duration = table.duration * 60
-
-            self.starttime = self.endtime - self.duration
-
-        self.starttime = self.starttime - self.starttime % table.resolution
+        if starttime is not None:
+            if endtime is not None:
+                duration = endtime - starttime
+            elif duration is not None:
+                endtime = starttime + duration
+            else:
+                raise ValueError("Cannot compute times, have starttime but not endtime or duration")
             
+        elif endtime is None:
+            endtime = datetime.datetime.now()
+            
+        if duration is not None:
+            starttime = endtime - duration
+        else:
+            raise ValueError("Cannot compute times, have endtime but not starttime or duration")
+
+        self.duration = duration
+        self.starttime = starttime
+        self.endtime = endtime
+        
     def lookup(self, key):
         """ Lookup a criteria entry by `key`. """
         if key in self:
@@ -585,9 +590,17 @@ class Job(models.Model):
 
         with LocalLock():
             with transaction.commit_on_success():
-
-                # First, compute the handle -- this will take into
-                # account cacheability
+                # Lockdown start/endtimes
+                try:
+                    logger.debug("table.duration: %s - %s" % (table, table.duration))
+                    default_duration = (None if not table.duration else
+                                        datetime.timedelta(seconds=table.duration))
+                    criteria.compute_times(default_duration)
+                except ValueError:
+                    # Ignore errors, this table may not have start/end times
+                    pass
+                
+                # Compute the handle -- this will take into account cacheability
                 handle = Job._compute_handle(table, criteria)
 
                 # Look for another job by the same handle in any state except ERROR

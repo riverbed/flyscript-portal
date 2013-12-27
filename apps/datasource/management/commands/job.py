@@ -24,7 +24,6 @@ from rvbd.common.timeutils import datetime_to_seconds
 
 from apps.datasource.models import Table, Job, Criteria, CriteriaParameter
 from apps.report.models import Report, Widget
-from apps.report.forms import create_report_criteria_form
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about

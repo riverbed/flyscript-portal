@@ -20,8 +20,8 @@ from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
 
 from apps.datasource.models import Table, Job, Criteria, CriteriaParameter
+from apps.datasource.forms import CriteriaForm
 from apps.report.models import Report, Widget
-from apps.report.forms import create_report_criteria_form
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about
@@ -62,34 +62,17 @@ class Command(BaseCommand):
                          action='store',
                          dest='table_name',
                          help='Table name to execute (use --table-list to list all tables)')
-        group.add_option('--endtime',
-                         action='store',
-                         dest='endtime',
-                         type='str',
-                         default=None,
-                         help='Criteria: optional, timestamp indicating endtime of report')
-        group.add_option('--duration',
-                         action='store',
-                         dest='duration',
-                         type='float',
-                         default=None,
-                         help='Criteria: optional, minutes for report, overrides default')
-        group.add_option('--filterexpr',
-                         action='store',
-                         dest='filterexpr',
-                         default=None,
-                         help='Criteria: optional, text filter expression')
-        group.add_option('--ignore-cache',
-                         action='store_true',
-                         dest='ignore_cache',
-                         default=False,
-                         help='Criteria: optional, if present override any existing caches')
-        group.add_option('--criteria',
+        group.add_option('-C', '--criteria',
                          action='append',
                          type='str',
                          dest='criteria',
                          default=None,
-                         help='Criteria: optional, custome criteria <key>:<value>')
+                         help='Specify criteria as <key>:<value>, repeat as necessary')
+        group.add_option('--criteria-list',
+                         action='store_true',
+                         dest='criteria_list',
+                         default=None,
+                         help='List criteria for this table')
 
         parser.add_option_group(group)
 
@@ -144,6 +127,16 @@ class Command(BaseCommand):
                         line = [table.id, report.title, widget.title, table]
                         output.append(line)
             Formatter.print_table(output, ['ID', 'Report', 'Widget', 'Table'])
+        elif options['criteria_list']:
+            if 'table_id' in options and options['table_id'] is not None:
+                table = Table.objects.get(id=options['table_id'])
+            elif 'table_name' in options:
+                table = Table.objects.get(name=options['table_name'])
+            else:
+                raise ValueError("Must specify either --table-id or --table-name to run a table")
+
+            output = [[c.keyword, c.label] for c in table.criteria.all()]
+            Formatter.print_table(output, ['Keyword', 'Label'])
         else:
             if 'table_id' in options and options['table_id'] is not None:
                 table = Table.objects.get(id=options['table_id'])
@@ -155,55 +148,23 @@ class Command(BaseCommand):
             # Django gives us a nice error if we can't find the table
             self.console('Table %s found.' % table)
 
-            # Look for a related report
-            widgets = Widget.objects.filter(tables__in=[table])
-            if len(widgets) > 0:
-                report = widgets[0].report
-                form = create_report_criteria_form(report=report)
-            else:
-                form = None
-
-            add_options = {}
+            # Parse critiria options
+            criteria_options = {}
             if 'criteria' in options and options['criteria'] is not None:
                 for s in options['criteria']:
                     (k,v) = s.split(':', 1)
-                    add_options[k] = v
+                    criteria_options[k] = v
 
-            if 'endtime' in options and options['endtime'] is not None:
-                try:
-                    endtime = form.fields['endtime'].clean(options['endtime'])
-                except ValidationError:
-                    raise ValidationError("Could not parse endtime: %s, try MM/DD/YYYY HH:MM am" % options['endtime'])
-                tz = pytz.timezone("US/Eastern")
-                endtime = endtime.replace(tzinfo=tz)
-            else:
-                endtime = datetime.datetime.now()
+            form = CriteriaForm(table.criteria.all(), use_widgets=False,
+                                data=criteria_options)
+            if not form.is_valid():
+                self.console('Invalid criteria:')
+                for k,v in form.errors.iteritems():
+                    self.console('  %s: %s' % (k,','.join(v)))
+                
+                sys.exit(1)
 
-            criteria = Criteria(endtime=datetime_to_seconds(endtime),
-                                duration=options['duration'],
-                                filterexpr=options['filterexpr'],
-                                table=table,
-                                ignore_cache=options['ignore_cache'])
-
-
-            if form:
-                for k,field in form.fields.iteritems():
-                    if not k.startswith('criteria_'): continue
-
-                    tc = CriteriaParameter.objects.get(pk=k.split('_')[1])
-
-                    if (  options['criteria'] is not None and
-                          tc.keyword in add_options):
-                        val = add_options[tc.keyword]
-                    else:
-                        val = field.initial
-
-                    # handle table criteria and generate children objects
-                    tc = CriteriaParameter.get_instance(k, val) 
-                    criteria[k] = tc
-                    for child in tc.children.all():
-                        child.value = val
-                        criteria['criteria_%d' % child.id] = child
+            criteria = form.criteria()
 
             columns = [c.name for c in table.get_columns()]
 

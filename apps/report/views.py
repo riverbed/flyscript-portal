@@ -24,11 +24,12 @@ from django.core import management
 
 from apps.datasource.models import Job, Criteria, CriteriaParameter, Table
 from apps.datasource.serializers import TableSerializer
+from apps.datasource.forms import CriteriaForm
 from apps.devices.models import Device
 from apps.report.models import Report, Widget, WidgetJob
 from apps.report.serializers import ReportSerializer
 from apps.report.utils import create_debug_zipfile
-from apps.report.forms import create_report_criteria_form
+#from apps.report.forms import create_report_criteria_form
 
 from rest_framework import generics, views
 from rest_framework.response import Response
@@ -125,7 +126,7 @@ class ReportView(views.APIView):
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
-        form = create_report_criteria_form(report, initial=form_init)
+        form = CriteriaForm(report.collect_criteria(), initial=form_init)
 
         return render_to_response('report.html',
                                   {'report': report,
@@ -151,12 +152,17 @@ class ReportView(views.APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = create_report_criteria_form(report, data=request.POST,
-                                           files=request.FILES)
+        form = CriteriaForm(report.collect_criteria(), data=request.POST,
+                            files=request.FILES)
 
         if form.is_valid():
 
             formdata = form.cleaned_data
+
+            # parse time and localize to user profile timezone
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
+            form.apply_timezone(timezone)
 
             if formdata['debug']:
                 logger.debug("Debugging report and rotating logs now ...")
@@ -165,9 +171,6 @@ class ReportView(views.APIView):
             logger.debug("Report %s validated form: %s" %
                          (report_slug, formdata))
 
-            # parse time and localize to user profile timezone
-            profile = request.user.userprofile
-            timezone = pytz.timezone(profile.timezone)
 
             # setup definitions for each Widget
             definition = []
@@ -199,7 +202,7 @@ class ReportView(views.APIView):
                                   "row": w.row,
                                   "width": w.width,
                                   "height": w.height,
-                                  "criteria": form.criteria()
+                                  "criteria": form.as_text()
                                   }
                     definition.append(widget_def)
 
@@ -239,43 +242,26 @@ class WidgetJobsList(views.APIView):
 
         req_json = json.loads(request.POST['criteria'])
 
-        criteria_form = create_report_criteria_form(report, data=req_json,
-                                                    files=request.FILES,
-                                                    jsonform=True)
+        form = CriteriaForm(report.collect_criteria(), use_widgets=False,
+                            data=req_json, files=request.FILES)
 
-        if criteria_form.is_valid():
-            logger.debug('criteria form passed validation: %s' % criteria_form)
-            form_data = criteria_form.cleaned_data
-            logger.debug('criteria cleaned data: %s' % form_data)
+        if form.is_valid():
+            logger.debug('criteria form passed validation: %s' % form)
+            formdata = form.cleaned_data
+
+            # parse time and localize to user profile timezone
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
+            form.apply_timezone(timezone)
+
+            logger.debug('criteria cleaned data: %s' % formdata)
 
             widget = Widget.objects.get(id=widget_id)
 
-            profile = request.user.userprofile
-            timezone = pytz.timezone(profile.timezone)
-            for k,v in form_data.iteritems():
-                if isinstance(v, datetime.datetime):
-                    if v.tzinfo is None:
-                        v = v.replace(tzinfo=timezone)
-                    form_data[k] = datetime_to_seconds(v)
-                
-            if (('duration' not in form_data) or (form_data['duration'] == 'Default')):
-                duration = None
-            else:
-                # py2.6 compatibility
-                td = parse_timedelta(form_data['duration'])
-                duration_sec = td.days * 24 * 3600 + td.seconds
-                duration_usec = duration_sec * 10**6 + td.microseconds
-                duration = float(duration_usec) / 10**6
-
-            filterexpr = form_data['filterexpr'] if 'filterexpr' in form_data else None
-            
-            job_criteria = Criteria(table=widget.table(),
-                                    **form_data)
-
             job = Job.create(table=widget.table(),
-                             criteria=job_criteria)
+                             criteria=form.criteria())
             job.start()
-
+            
             wjob = WidgetJob(widget=widget, job=job)
             wjob.save()
 
@@ -287,7 +273,7 @@ class WidgetJobsList(views.APIView):
                                                      widget_id,
                                                      wjob.id])})
         else:
-            logger.error("criteria_form is invalid, entering debugger")
+            logger.error("form is invalid, entering debugger")
             from IPython import embed; embed()
 
 

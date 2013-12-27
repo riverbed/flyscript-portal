@@ -6,11 +6,16 @@ import random
 import time
 import copy
 import pytz
-from apps.datasource.models import Job, Table, Column, CriteriaParameter, BatchJobRunner
-from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
-from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd.common.timeutils import *
+
+from django.core.exceptions import ObjectDoesNotExist
+from django import forms
+
+from apps.datasource.models import Job, Table, Column, CriteriaParameter, BatchJobRunner
+from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
+from apps.datasource.forms import criteria_add_time_selection
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +25,14 @@ def add_criteria(report,
                  default_timezone='US/Eastern',
                  default_weekends=False):
 
+    criteria_add_time_selection(report, initial_duration="1 week")
+    
     TIMES = ['%d:00am' % h for h in range(1, 13)]
     TIMES.extend(['%d:00pm' % h for h in range(1, 13)])
 
     business_hours_start = CriteriaParameter(keyword='business_hours_start', template='{}',
                                              label='Start Business', initial=default_start,
-                                             field_type='forms.ChoiceField',
+                                             field_cls=forms.ChoiceField,
                                              field_kwargs={'choices': zip(TIMES, TIMES)},
                                              required=True)
     business_hours_start.save()
@@ -33,7 +40,7 @@ def add_criteria(report,
 
     business_hours_end = CriteriaParameter(keyword='business_hours_end', template='{}',
                                            label='End Business', initial=default_end,
-                                           field_type='forms.ChoiceField',
+                                           field_cls=forms.ChoiceField,
                                            field_kwargs={'choices': zip(TIMES, TIMES)},
                                            required=True)
     business_hours_end.save()
@@ -41,14 +48,14 @@ def add_criteria(report,
 
     business_hours_tzname = CriteriaParameter(keyword='business_hours_tzname', template='{}',
                                               label='Business Timezone', initial=default_timezone,
-                                              field_type='forms.ChoiceField',
+                                              field_cls=forms.ChoiceField,
                                               field_kwargs={'choices': zip(pytz.common_timezones,pytz.common_timezones)},
                                               required=True)
     business_hours_tzname.save()
     report.criteria.add(business_hours_tzname)
 
     business_hours_weekends = CriteriaParameter(keyword='business_hours_weekends', template='{}',
-                                                field_type='forms.BooleanField',
+                                                field_cls=forms.BooleanField,
                                                 label='Business includes weekends', initial=default_weekends,
                                                 required=False)
     business_hours_weekends.save()
@@ -95,19 +102,13 @@ def replace_time(dt, t):
                       microsecond = 0)
 
 def compute_times(target, tables, criteria, params):
-    # Total report start/end time, in unix time
-    st_secs = int(criteria.lookup('starttime'))
-    et_secs = int(criteria.lookup('endtime'))
-
-    logger.debug("times_sec: %s - %s" % (st_secs, et_secs))
-
-    tzname = criteria.lookup('business_hours_tzname')
+    tzname = criteria.business_hours_tzname
     logger.debug("timezone: %s" % tzname)
     tz = pytz.timezone(tzname)
 
     # Convert to datetime objects in the requested timezone
-    st = force_to_utc(datetime.datetime.fromtimestamp(st_secs)).astimezone(tz)
-    et = force_to_utc(datetime.datetime.fromtimestamp(et_secs)).astimezone(tz)
+    st = criteria.starttime.astimezone(tz)
+    et = criteria.endtime.astimezone(tz)
     logger.debug("times: %s - %s" % (st, et))
 
     # Business hours start/end, as string "HH:MMam" like 8:00am
@@ -173,9 +174,9 @@ def report_business_hours(query, tables, criteria, params):
     for i, row in times.iterrows():
         t0 = row['starttime']/1000
         t1 = row['endtime']/1000
-        sub_criteria = criteria.build_for_table(deptable)
-        sub_criteria.starttime = t0
-        sub_criteria.endtime = t1
+        sub_criteria = copy.copy(criteria)
+        sub_criteria.starttime = datetime.datetime.fromtimestamp(t0)
+        sub_criteria.endtime = datetime.datetime.fromtimestamp(t1)
 
         job = Job.create(table=deptable, criteria=sub_criteria)
         logger.debug("Created %s: %s - %s" % (job, t0, t1))
