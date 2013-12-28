@@ -14,9 +14,9 @@ import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Table, CriteriaParameter
+from apps.datasource.models import Table, TableField
 from apps.devices.devicemanager import DeviceManager
-from apps.datasource.forms import criteria_add_time_selection
+from apps.datasource.forms import fields_add_time_selection
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -26,11 +26,11 @@ def new_device_instance(*args, **kwargs):
     return rvbd.profiler.Profiler(*args, **kwargs)
 
 
-def criteria_add_filterexpr(obj,
-                            keyword = 'profiler_filterexpr',
-                            initial=None
-                            ):
-    field = ( CriteriaParameter
+def fields_add_filterexpr(obj,
+                          keyword = 'profiler_filterexpr',
+                          initial=None
+                          ):
+    field = ( TableField
               (keyword = keyword,
                label = 'Profiler Filter Expression',
                help_text = ('Traffic expression using Profiler Advanced ' +
@@ -38,7 +38,7 @@ def criteria_add_filterexpr(obj,
                initial = initial,
                required = False))
     field.save()
-    obj.criteria.add(field)
+    obj.fields.add(field)
 
 class TableOptions(JsonDict):
     _default = {'groupby': None,
@@ -69,9 +69,9 @@ class TimeSeriesTable:
         t.save()
 
         if add_time_selection:
-            criteria_add_time_selection(t, initial_duration="%d min" % duration)
+            fields_add_time_selection(t, initial_duration="%d min" % duration)
         if add_filterexpr:
-            criteria_add_filterexpr(t)
+            fields_add_filterexpr(t)
         return t
         
 
@@ -97,9 +97,9 @@ class GroupByTable:
                   filterexpr=filterexpr, options=options, **kwargs)
         t.save()
         if add_time_selection:
-            criteria_add_time_selection(t, initial_duration="%d min" % duration)
+            fields_add_time_selection(t, initial_duration="%d min" % duration)
         if add_filterexpr:
-            criteria_add_filterexpr(t)
+            fields_add_filterexpr(t)
         return t
         
 

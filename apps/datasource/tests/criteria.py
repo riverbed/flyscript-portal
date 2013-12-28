@@ -11,10 +11,10 @@ import dateutil.parser
 
 from django.test import TestCase
 from apps.datasource.models import Table, Column
-from apps.datasource.forms import CriteriaForm
+from apps.datasource.forms import TableFieldForm
 from apps.datasource.modules.analysis import AnalysisTable
 from apps.report.models import Report
-from apps.datasource.forms import criteria_add_time_selection
+from apps.datasource.forms import fields_add_time_selection
 
 from rvbd.common import datetime_to_seconds
 
@@ -25,10 +25,10 @@ class Criteria(TestCase):
         report = Report(title="Test Criteria", position=0)
         report.save()
         
-        criteria_add_time_selection(report, initial_duration="1 day")
+        fields_add_time_selection(report, initial_duration="1 day")
 
         data = {'endtime': '12/21/2013 9:00 am'}
-        form = CriteriaForm(report.criteria.all(), use_widgets=False, data=data)
+        form = TableFieldForm(report.criteria.all(), use_widgets=False, data=data)
         
         self.assertTrue(form.is_valid(), "form.errors: %s" % form.errors)
 

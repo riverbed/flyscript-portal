@@ -78,20 +78,30 @@ class AnalysisTable:
     """
 
     @classmethod
-    def create(cls, name, tables, func, duration=None, columns=[], params=None, **kwargs):
+    def create(cls, name, tables, func,
+               duration=None, columns=[], params=None,
+               copy_fields=True,
+               **kwargs):
+        """ Class method to create an AnalysisTable.
         """
-        Class method to create an AnalysisTable.
-        """
-        options = TableOptions(tables=tables, func=func, params=params)
-        t = Table(name=name, module=__name__, device=None, duration=duration,
-                  options=options, **kwargs)
-        t.save()
-
+        options = TableOptions(tables=tables, func=func,
+                               params=params)
+        table = Table (name=name, module=__name__, device=None, duration=duration,
+                       options=options, **kwargs)
+        table.save()
+        
         if columns:
             for c in columns:
-                Column.create(t, c)
-                
-        return t
+                Column.create(table, c)
+
+        keywords = []
+        if tables and copy_fields:
+            for table_id in tables.values():
+                for f in Table.objects.get(id=table_id).fields.all():
+                    if f.keyword not in keywords:
+                        table.fields.add(f)
+                        keywords.append(f.keyword)
+        return table
 
 class TableQuery:
     def __init__(self, table, job):

@@ -19,8 +19,8 @@ from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
 
-from apps.datasource.models import Column, Table, CriteriaParameter
-from apps.datasource.forms import criteria_add_time_selection
+from apps.datasource.models import Column, Table, TableField
+from apps.datasource.forms import fields_add_time_selection
 from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
@@ -45,18 +45,18 @@ class ColumnOptions(JsonDict):
                 'default_value': None}
 
 
-def criteria_add_filterexpr(obj,
+def fields_add_filterexpr(obj,
                             keyword = 'shark_filterexpr',
                             initial=None
                             ):
-    field = ( CriteriaParameter
+    field = ( TableField
               (keyword = keyword,
                label = 'Shark Filter Expression',
                help_text = 'Traffic expression using Shark filter syntax',
                initial = initial,
                required = False))
     field.save()
-    obj.criteria.add(field)
+    obj.fields.add(field)
 
 class SharkTable:
     @classmethod
@@ -64,19 +64,19 @@ class SharkTable:
                aggregated=False, filterexpr=None, resolution=60, sortcol=None):
         """ Create a Shark table.
 
-        `duration` is in seconds
+        `duration` is in minutes
 
         """
         logger.debug('Creating Shark table %s (%s, %d)' % (name, view, duration))
         options = TableOptions(view=view,
                                view_size=view_size,
                                aggregated=aggregated)
-        t = Table(name=name, module=__name__, device=device, duration=duration,
+        t = Table(name=name, module=__name__, device=device, duration=duration * 60,
                   filterexpr=filterexpr, options=options, resolution=resolution,
                   sortcol=sortcol)
         t.save()
-        criteria_add_time_selection(t, initial_duration="%d sec" % duration)
-        criteria_add_filterexpr(t)
+        fields_add_time_selection(t, initial_duration="%d min" % duration)
+        fields_add_filterexpr(t)
         return t
 
 

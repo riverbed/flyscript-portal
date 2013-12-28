@@ -19,8 +19,8 @@ from django.forms import ValidationError
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
 
-from apps.datasource.models import Table, Job, Criteria, CriteriaParameter
-from apps.datasource.forms import CriteriaForm
+from apps.datasource.models import Table, Job, Criteria, TableField
+from apps.datasource.forms import TableFieldForm
 from apps.report.models import Report, Widget
 
 # not pretty, but pandas insists on warning about
@@ -155,8 +155,8 @@ class Command(BaseCommand):
                     (k,v) = s.split(':', 1)
                     criteria_options[k] = v
 
-            form = CriteriaForm(table.criteria.all(), use_widgets=False,
-                                data=criteria_options)
+            form = TableFieldForm(table.criteria.all(), use_widgets=False,
+                                  data=criteria_options)
             if not form.is_valid():
                 self.console('Invalid criteria:')
                 for k,v in form.errors.iteritems():

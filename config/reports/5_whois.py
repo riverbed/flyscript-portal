@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
 from apps.devices.models import Device
-from apps.report.models import Report
+from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.analysis import AnalysisTable
@@ -25,6 +25,8 @@ PROFILER = Device.objects.get(name="profiler")
 
 report = Report(title="Whois", position=5)
 report.save()
+
+section = Section.create(report)
 
 # Define a Table that gets external hosts by avg bytes
 table = GroupByTable.create('5-hosts', PROFILER, 'host', duration=60*10,
@@ -44,5 +46,5 @@ Column.create(whoistable, 'host_ip', label="IP Addr", iskey=True)
 Column.create(whoistable, 'avg_bytes', 'Avg Bytes', datatype='bytes', issortcol=True)
 Column.create(whoistable, 'whois', label="Whois link", datatype='html')
 
-yui3.TableWidget.create(report, whoistable, "Link table", width=12)
+yui3.TableWidget.create(section, whoistable, "Link table", width=12)
 

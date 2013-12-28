@@ -11,8 +11,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from django import forms
 
-from apps.report.models import Report
-from apps.datasource.models import Table, Column, CriteriaParameter
+from apps.report.models import Report, Section
+from apps.datasource.models import Table, Column, TableField
 import apps.report.modules.yui3 as yui3
 
 from apps.datasource.modules.tshark import TSharkTable, TableOptions
@@ -26,15 +26,12 @@ logger = logging.getLogger(__name__)
 # Financial: App vs Packet
 #
 
-report = Report(title="PCAP Analysis (FileField)")
+report = Report(title="PCAP Analysis (FileField)", position=8)
 report.save()
 
-filefield = CriteriaParameter(keyword='pcapfile',
-                              template='{}',
-                              label='PCAP File',
-                              field_cls=forms.FileField)
-filefield.save()
-report.criteria.add(filefield)
+section = Section.create(report)
+
+
 #
 # Table: Process Internal.pcap
 #
@@ -50,6 +47,12 @@ options = TableOptions()
 
 table = TSharkTable.create('pcap', resolution=60, resample=True,
                            options=options)
+filefield = TableField(keyword='pcapfile',
+                       template='{}',
+                       label='PCAP File',
+                       field_cls=forms.FileField)
+filefield.save()
+table.fields.add(filefield)
 
 Column.create(table, 'pkttime', datatype='time', iskey=True,
               options=TSharkColumnOptions(field='frame.time_epoch'))
@@ -84,5 +87,5 @@ Column.create(table, 'iplen_ewma', synthetic=True, label="Moving Avg",
               compute_expression='pandas.stats.moments.ewma({iplen}, span=20)',
               compute_post_resample=True)
 
-yui3.TimeSeriesWidget.create(report, table, "IP Bytes over Time", width=12, height=400,
+yui3.TimeSeriesWidget.create(section, table, "IP Bytes over Time", width=12, height=400,
                              cols=['iplen', 'iplen_95', 'iplen_80', 'iplen_ewma'])

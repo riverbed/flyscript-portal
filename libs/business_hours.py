@@ -12,54 +12,54 @@ from rvbd.common.timeutils import *
 from django.core.exceptions import ObjectDoesNotExist
 from django import forms
 
-from apps.datasource.models import Job, Table, Column, CriteriaParameter, BatchJobRunner
+from apps.datasource.models import Job, Table, Column, TableField, BatchJobRunner
 from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
-from apps.datasource.forms import criteria_add_time_selection
+from apps.datasource.forms import fields_add_time_selection
 
 
 logger = logging.getLogger(__name__)
 
-def add_criteria(report,
-                 default_start='8:00am',
-                 default_end='5:00pm',
-                 default_timezone='US/Eastern',
-                 default_weekends=False):
+def fields_add_business_hour_fields(report,
+                                    default_start='8:00am',
+                                    default_end='5:00pm',
+                                    default_timezone='US/Eastern',
+                                    default_weekends=False):
 
-    criteria_add_time_selection(report, initial_duration="1 week")
+    fields_add_time_selection(report, initial_duration="1 week")
     
     TIMES = ['%d:00am' % h for h in range(1, 13)]
     TIMES.extend(['%d:00pm' % h for h in range(1, 13)])
 
-    business_hours_start = CriteriaParameter(keyword='business_hours_start', template='{}',
-                                             label='Start Business', initial=default_start,
-                                             field_cls=forms.ChoiceField,
-                                             field_kwargs={'choices': zip(TIMES, TIMES)},
-                                             required=True)
+    business_hours_start = TableField(keyword='business_hours_start', template='{}',
+                                      label='Start Business', initial=default_start,
+                                      field_cls=forms.ChoiceField,
+                                      field_kwargs={'choices': zip(TIMES, TIMES)},
+                                      required=True)
     business_hours_start.save()
-    report.criteria.add(business_hours_start)
+    report.fields.add(business_hours_start)
 
-    business_hours_end = CriteriaParameter(keyword='business_hours_end', template='{}',
-                                           label='End Business', initial=default_end,
-                                           field_cls=forms.ChoiceField,
-                                           field_kwargs={'choices': zip(TIMES, TIMES)},
-                                           required=True)
+    business_hours_end = TableField(keyword='business_hours_end', template='{}',
+                                    label='End Business', initial=default_end,
+                                    field_cls=forms.ChoiceField,
+                                    field_kwargs={'choices': zip(TIMES, TIMES)},
+                                    required=True)
     business_hours_end.save()
-    report.criteria.add(business_hours_end)
+    report.fields.add(business_hours_end)
 
-    business_hours_tzname = CriteriaParameter(keyword='business_hours_tzname', template='{}',
-                                              label='Business Timezone', initial=default_timezone,
-                                              field_cls=forms.ChoiceField,
-                                              field_kwargs={'choices': zip(pytz.common_timezones,pytz.common_timezones)},
-                                              required=True)
+    business_hours_tzname = TableField(keyword='business_hours_tzname', template='{}',
+                                       label='Business Timezone', initial=default_timezone,
+                                       field_cls=forms.ChoiceField,
+                                       field_kwargs={'choices': zip(pytz.common_timezones,pytz.common_timezones)},
+                                       required=True)
     business_hours_tzname.save()
-    report.criteria.add(business_hours_tzname)
+    report.fields.add(business_hours_tzname)
 
-    business_hours_weekends = CriteriaParameter(keyword='business_hours_weekends', template='{}',
-                                                field_cls=forms.BooleanField,
-                                                label='Business includes weekends', initial=default_weekends,
-                                                required=False)
+    business_hours_weekends = TableField(keyword='business_hours_weekends', template='{}',
+                                         field_cls=forms.BooleanField,
+                                         label='Business includes weekends', initial=default_weekends,
+                                         required=False)
     business_hours_weekends.save()
-    report.criteria.add(business_hours_weekends)
+    report.fields.add(business_hours_weekends)
 
 def timestable():
     name = 'business_hours.timestable'
@@ -81,6 +81,8 @@ def create(name, basetable, aggregate, other_tables=None, **kwargs):
                                  **kwargs)
     
     table.copy_columns(basetable)
+    [table.fields.add(f) for f in basetable.fields.all()]
+
     return table
 
 def parse_time(t_str):
@@ -112,10 +114,10 @@ def compute_times(target, tables, criteria, params):
     logger.debug("times: %s - %s" % (st, et))
 
     # Business hours start/end, as string "HH:MMam" like 8:00am
-    sb = parse_time(criteria.lookup('business_hours_start'))
-    eb = parse_time(criteria.lookup('business_hours_end'))
+    sb = parse_time(criteria.business_hours_start)
+    eb = parse_time(criteria.business_hours_end)
 
-    weekends = criteria.lookup('business_hours_weekends')
+    weekends = criteria.business_hours_weekends
     
     # Iterate from st to et until
     times = []

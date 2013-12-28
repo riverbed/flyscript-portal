@@ -18,7 +18,7 @@ from django.core.files.uploadedfile import UploadedFile
 from rvbd.common import datetime_to_seconds
 
 from apps.report.models import Report, Widget
-from apps.datasource.models import Criteria, CriteriaParameter
+from apps.datasource.models import Criteria, TableField
 
 import logging
 logger = logging.getLogger(__name__)

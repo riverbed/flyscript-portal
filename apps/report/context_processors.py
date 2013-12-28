@@ -9,4 +9,4 @@ from apps.report.models import Report
 
 
 def report_list_processor(request):
-    return {'reports': Report.objects.order_by('slug')}
+    return {'reports': Report.objects.order_by('position')}

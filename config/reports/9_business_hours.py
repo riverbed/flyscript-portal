@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
 from apps.devices.models import Device
-from apps.report.models import Report
+from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.analysis import  AnalysisTable
@@ -21,10 +21,12 @@ import libs.profiler_tools as protools
 
 PROFILER = Device.objects.get(name="profiler")
 
-report = Report(title="Business Hour Reporting - Profiler Interfaces", position=0)
+report = Report(title="Business Hour Reporting - Profiler Interfaces", position=9)
 report.save()
 
-bizhours.add_criteria(report)
+section = Section.create(report)
+
+bizhours.fields_add_business_hour_fields(section)
 
 #
 # Define by-interface table from Profiler
@@ -83,8 +85,8 @@ bustable = AnalysisTable.create('bh-bustable', tables={'devices': devtable.id,
 Column.create(bustable, 'interface_name', 'Interface', iskey=True, isnumeric=False)
 bustable.copy_columns(bustable_pre, except_columns=['interface_dns'])
 
-yui3.TableWidget.create(report, bustable, "Interface", height=600)
-yui3.BarWidget.create(report, bustable, "Interface Utilization", height=600,
+yui3.TableWidget.create(section, bustable, "Interface", height=600)
+yui3.BarWidget.create(section, bustable, "Interface Utilization", height=600,
                       keycols=['interface_name'], valuecols=['avg_util'])
-yui3.TableWidget.create(report, bizhours.timestable(), "Covered times", width=12, height=200)
+yui3.TableWidget.create(section, bizhours.timestable(), "Covered times", width=12, height=200)
 

@@ -12,6 +12,7 @@ import optparse
 
 from django.core.management.base import BaseCommand
 from django.core import management
+from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd.common.exceptions import RvbdHTTPException, RvbdException
 from apps.report.models import Report
@@ -33,6 +34,12 @@ class Command(BaseCommand):
                              dest='report_id',
                              default=None,
                              help='Reload single report.'),
+
+        optparse.make_option('--report-name',
+                             action='store',
+                             dest='report_name',
+                             default=None,
+                             help='Reload single report by name.'),
 
         optparse.make_option('--report-dir',
                              action='store',
@@ -110,6 +117,19 @@ class Command(BaseCommand):
                                     report_id=options['report_id'],
                                     clear_cache=True,
                                     clear_logs=False)
+        elif options['report_name']:
+            # single report
+            report_name = options['report_name']
+            try:
+                report_id = Report.objects.get(sourcefile=report_name).id
+                management.call_command('clean',
+                                        applications=False,
+                                        report_id=report_id,
+                                        clear_cache=True,
+                                        clear_logs=False)
+            except ObjectDoesNotExist:
+                pass
+                
         else:
             # clear all data
             report_name = None

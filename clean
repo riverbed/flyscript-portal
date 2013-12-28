@@ -13,5 +13,5 @@ if [[ $1 == "--reset" ]]; then
     shift
     python manage.py reset_portal $*
 else
-    python manage.py reload
+    python manage.py reload $*
 fi

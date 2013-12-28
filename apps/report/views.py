@@ -21,15 +21,15 @@ from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
+from django.utils.datastructures import SortedDict
 
-from apps.datasource.models import Job, Criteria, CriteriaParameter, Table
+from apps.datasource.models import Job, Criteria, TableField, Table
 from apps.datasource.serializers import TableSerializer
-from apps.datasource.forms import CriteriaForm
+from apps.datasource.forms import TableFieldForm
 from apps.devices.models import Device
-from apps.report.models import Report, Widget, WidgetJob
+from apps.report.models import Report, Section, Widget, WidgetJob
 from apps.report.serializers import ReportSerializer
 from apps.report.utils import create_debug_zipfile
-#from apps.report.forms import create_report_criteria_form
 
 from rest_framework import generics, views
 from rest_framework.response import Response
@@ -99,7 +99,7 @@ class ReportView(views.APIView):
         # handle HTML calls
         try:
             if report_slug is None:
-                reports = Report.objects.order_by('slug')
+                reports = Report.objects.order_by('position')
                 return HttpResponseRedirect(reverse('report-view',
                                                     args=[reports[0].slug]))
             else:
@@ -125,8 +125,18 @@ class ReportView(views.APIView):
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
-        form = CriteriaForm(report.collect_criteria(), initial=form_init)
+        section_fields = report.collect_fields()
+        all_fields = SortedDict()
+        [all_fields.update(c) for c in section_fields.values()]
+        form = TableFieldForm(all_fields, initial=form_init)
 
+        section_map = []
+        if section_fields[0]:
+            section_map.append({'title': 'Common', 'parameters': section_fields[0]})
+        for s in Section.objects.filter(report=report).order_by('position'):
+            if section_fields[s.id]:
+                section_map.append({'title': s.title, 'parameters': section_fields[s.id]})
+        
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': profile.developer,
@@ -134,7 +144,9 @@ class ReportView(views.APIView):
                                    'maps_api_key': profile.maps_api_key,
                                    'endtime' : 'endtime' in form.fields,
                                    'formstyle': FORMSTYLE,
-                                   'form': form},
+                                   'form': form,
+                                   'section_map': section_map,
+                                   'show_sections': (len(section_map) > 1) },
                                   context_instance=RequestContext(request))
 
     def post(self, request, report_slug=None):
@@ -151,12 +163,17 @@ class ReportView(views.APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        form = CriteriaForm(report.collect_criteria(), data=request.POST,
-                            files=request.FILES)
+        section_fields = report.collect_fields()
+        all_fields = SortedDict()
+        [all_fields.update(c) for c in section_fields.values()]
+        form = TableFieldForm(all_fields, data=request.POST,
+                              files=request.FILES)
 
         if form.is_valid():
 
+            logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data
+            logger.debug('Form cleaned data: %s' % formdata)
 
             # parse time and localize to user profile timezone
             profile = request.user.userprofile
@@ -184,7 +201,7 @@ class ReportView(views.APIView):
             # create matrix of Widgets
             lastrow = -1
             rows = []
-            for w in Widget.objects.filter(report=report).order_by('row', 'col'):
+            for w in report.widgets().order_by('row', 'col'):
                 if w.row != lastrow:
                     lastrow = w.row
                     rows.append([])
@@ -201,7 +218,7 @@ class ReportView(views.APIView):
                                   "row": w.row,
                                   "width": w.width,
                                   "height": w.height,
-                                  "criteria": form.as_text()
+                                  "criteria": w.criteria_from_form(form)
                                   }
                     definition.append(widget_def)
 
@@ -211,7 +228,7 @@ class ReportView(views.APIView):
             return HttpResponse(json.dumps(definition))
         else:
             # return form with errors attached in a HTTP 200 Error response
-            return HttpResponse(str(form), status=400)
+            return HttpResponse(str(form.errors), status=400)
 
 
 class ReportTableList(generics.ListAPIView):
@@ -236,26 +253,26 @@ class WidgetJobsList(views.APIView):
 
         try:
             report = Report.objects.get(slug=report_slug)
+            widget = Widget.objects.get(id=widget_id)
         except:
             raise Http404
 
         req_json = json.loads(request.POST['criteria'])
 
-        form = CriteriaForm(report.collect_criteria(), use_widgets=False,
-                            data=req_json, files=request.FILES)
+        (fields, _) = widget.section.collect_fields(sections=False)
+        form = TableFieldForm(fields, 
+                              use_widgets=False,
+                              data=req_json, files=request.FILES)
 
         if form.is_valid():
-            logger.debug('criteria form passed validation: %s' % form)
+            logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data
+            logger.debug('Form cleaned data: %s' % formdata)
 
             # parse time and localize to user profile timezone
             profile = request.user.userprofile
             timezone = pytz.timezone(profile.timezone)
             form.apply_timezone(timezone)
-
-            logger.debug('criteria cleaned data: %s' % formdata)
-
-            widget = Widget.objects.get(id=widget_id)
 
             job = Job.create(table=widget.table(),
                              criteria=form.criteria())

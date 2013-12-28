@@ -22,7 +22,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
 
-from apps.datasource.models import Table, Job, Criteria, CriteriaParameter
+from apps.datasource.models import Table, Job, Criteria, TableField
 from apps.report.models import Report, Widget
 
 # not pretty, but pandas insists on warning about

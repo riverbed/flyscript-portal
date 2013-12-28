@@ -59,8 +59,8 @@ class LocalLock(object):
             lock.release()
         return False
 
-class CriteriaParameter(models.Model):
-    """ Defines a single criteria parameter associated with a table.
+class TableField(models.Model):
+    """ Defines a single field associated with a table.
 
         Primarily used to parameterize reports with values that may change
         from time to time, such as interfaces, thresholds, QOS types, etc.
@@ -75,11 +75,11 @@ class CriteriaParameter(models.Model):
         optional:
         field_cls    -- form field class, defaults to forms.CharField.
         field_kwargs -- additional keywords to pass to field initializer
-        parent       -- reference to another CriteriaParameter object which
+        parent       -- reference to another TableField object which
                         provides values to inherit from.  This allows
-                        multiple criteria to be enumerated while only
+                        multiple fields to be enumerated while only
                         displaying/filling out a single form field.
-                        CriteriaParameter which have a parent object identified
+                        TableField which have a parent object identified
                         will not be included in the HTML form output.
     """
     keyword = models.CharField(max_length=100)
@@ -101,15 +101,15 @@ class CriteriaParameter(models.Model):
     value = PickledObjectField(null=True, blank=True)
 
     def __repr__(self):
-        return "<CriteriaParameter %s (%s)>" % (self.keyword, self.id)
+        return "<TableField %s (%s)>" % (self.keyword, self.id)
 
     def __unicode__(self):
-        return "<CriteriaParameter %s (%s)>" % (self.keyword, self.id)
+        return "<TableField %s (%s)>" % (self.keyword, self.id)
 
     def save(self, *args, **kwargs):
         #if not self.field_type:
         #    self.field_type = 'forms.CharField'
-        super(CriteriaParameter, self).save(*args, **kwargs)
+        super(TableField, self).save(*args, **kwargs)
 
     def is_report_criteria(self, table):
         """ Runs through intersections of widgets to determine if this criteria
@@ -117,7 +117,7 @@ class CriteriaParameter(models.Model):
 
             report  <-->  widgets  <-->  table
                 |
-                L- CriteriaParameter (self)
+                L- TableField (self)
         """
         wset = set(table.widget_set.all())
         rset = set(self.report_set.all())
@@ -126,11 +126,11 @@ class CriteriaParameter(models.Model):
     @classmethod
     def find_instance(cls, key):
         """ Return instance given a keyword. """
-        params = CriteriaParameter.objects.filter(keyword=key)
+        params = TableField.objects.filter(keyword=key)
         if len(params) == 0:
             return None
         elif len(params) > 1:
-            raise KeyError("Multiple CriteriaParameter matches found for %s"
+            raise KeyError("Multiple TableField matches found for %s"
                            % key)
         param = param[0]
         return param
@@ -167,10 +167,11 @@ class Table(models.Model):
     # options are typically fixed attributes defined at Table creation
     options = PickledObjectField()                          
 
-    # criteria are used to override instance values at run time
-    criteria = models.ManyToManyField(CriteriaParameter, null=True)
+    # list of fields that must be bound to values in criteria
+    # that this table needs to run
+    fields = models.ManyToManyField(TableField, null=True)
     
-    # indicate if data can be cached based on criteria
+    # indicate if data can be cached 
     cacheable = models.BooleanField(default=True)
 
     @classmethod
@@ -421,7 +422,7 @@ class Criteria(DictObject):
         elif key in ['starttime', 'endtime', 'duration']:
             self['_orig_%s' % key] = value
         else:
-            param = CriteriaParameter.find_instance(key)
+            param = TableField.find_instance(key)
             if param.initial != value:
                 param.initial = value
                 param.save()
@@ -478,19 +479,6 @@ class Criteria(DictObject):
         self.starttime = starttime
         self.endtime = endtime
         
-    def lookup(self, key):
-        """ Lookup a criteria entry by `key`. """
-        if key in self:
-            return self[key]
-        
-        for k, v in self.iteritems():
-            if not k.startswith('criteria_'): continue
-        
-            if v.keyword == key:
-                return v.value
-
-        raise KeyError("No such criteria key '%s'" % key)
-
 class Job(models.Model):
 
     # Timestamp when the job was created
@@ -511,7 +499,7 @@ class Job(models.Model):
     # Table assocaited with this job
     table = models.ForeignKey(Table)
 
-    # Criteria used to start this job
+    # Criteria used to start this job - an instance of the Criteria class
     criteria = PickledObjectField(null=True)
 
     # Actual criteria as returned by the job after running
@@ -679,9 +667,8 @@ class Job(models.Model):
             # files when we don't want it to
             h.update('.'.join([c.name for c in table.get_columns(ephemeral=False)]))
             for k, v in criteria.iteritems():
-                if not k.startswith('criteria_'):
-                    #logger.debug("Updating hash from %s -> %s" % (k,v))
-                    h.update('%s:%s' % (k, v))
+                #logger.debug("Updating hash from %s -> %s" % (k,v))
+                h.update('%s:%s' % (k, v))
         else:
             # Table is not cacheable, instead use current time plus a random value
             # just to get a unique hash
@@ -919,7 +906,8 @@ class AsyncWorker(threading.Thread):
                                 # This may incorrectly be tagged as numeric
                                 pass
 
-                elif query.data is not None and len(query.data) == 0:
+                elif ((query.data is None) or
+                      (isinstance (query.data, list) and len(query.data) == 0)):
                     df = None
                 elif isinstance(query.data, pandas.DataFrame):
                     df = query.data

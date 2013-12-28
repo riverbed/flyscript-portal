@@ -18,9 +18,10 @@ from django.db import transaction
 from django.db.models.signals import pre_delete 
 from django.dispatch import receiver
 from django.utils.datastructures import SortedDict
+from django.core.exceptions import ObjectDoesNotExist
 
 from model_utils.managers import InheritanceManager
-from apps.datasource.models import Table, Job, CriteriaParameter
+from apps.datasource.models import Table, Job, TableField
 
 from libs.fields import PickledObjectField
 
@@ -51,11 +52,9 @@ def get_caller_name(match='config.'):
     return ''
 
 class Report(models.Model):
-    """ Defines the collection of Widgets and criteria for a Report view
-    """
+    """ Defines a Report as a collection of Sections and their Widgets. """
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
-    criteria = models.ManyToManyField(CriteriaParameter, null=True)
     sourcefile = models.CharField(max_length=200, default=get_caller_name)
     slug = models.SlugField()
 
@@ -67,23 +66,152 @@ class Report(models.Model):
     def __unicode__(self):
         return self.title
 
-    def collect_criteria(self):
-        criteria = [c for c in self.criteria.all()]
-        criteria_keywords = [c.keyword for c in criteria]
-        widgets = Widget.objects.filter(report=self)
-        for w in widgets:
-            for t in w.tables.all():
-                for c in t.criteria.all():
-                    if c.keyword not in criteria_keywords:
-                        criteria.append(c)
+    def collect_fields(self):
+        # map of section id to field dict
+        section_fields = {}
 
-        return criteria
+        # section id=0 is the "common" section
+        section_fields[0] = SortedDict()
+
+        for s in Section.objects.filter(report=self):
+            ( common, section ) = s.collect_fields()
+            section_fields[0].update(common)
+            section_fields[s.id] = section
+        return section_fields
+
+    def widgets(self):
+        return Widget.objects.filter(section__in=Section.objects.filter(report=self))
         
+class Section(models.Model):
+    """ Define a section of a report.
+
+    Sections provide a means to control how fields and criteria are
+    handled.  The critieria is a Criteria object filled in with values
+    provided by the end user based on a set of TableFields.  
+
+    All tables (via Widgets) in the same section will all be passed
+    the same run-time criteria.  The set of fields that a user may
+    fill in for a section is a union of all TableFields of all tables
+    in that section.  The union is based on the TableField keyword
+    attribute, thus two tables that each define a TableField with the
+    same keyword will share the same value in the resulting criteria
+    object at run time.  The first TableField instance found for a
+    given keyword is the actual object instance used for generating
+    the UI form.
+
+    If there are multiple sections, the section may be configured to
+    either inherit fields from the report (SectionFieldMode.INHERIT)
+    or to make the field specific to the section
+    (SectionFieldMode.SECTION).
+
+    Each section has a default mode that applies to all field
+    keywords that are not called out explicitly.  If the section
+    default mode is INHERIT, specific keywords can be set to SECTION
+    by createing SectionFieldMode entries.
+
+    """
+
+    report = models.ForeignKey(Report)
+    title = models.CharField(max_length=200, blank=True)
+    position = models.IntegerField(default=0)
+    fields = models.ManyToManyField(TableField, null=True)
+
+    @classmethod
+    def create(cls, report, title='', position=0,
+               default_field_mode = None,
+               keyword_field_modes = None):
+        """ Create a Section of a report and define field modes.
+
+        :param report: the report this section applies to
+
+        :param title: section title to display
+
+        :param position: relative position for ordering on display,
+            if 0 (default), this will be added as the last
+            section of the current report
+
+        :param default_field_mode: the default mode for how to
+            handle fields.  If None (default), INHERIT will be used
+
+        :param keyword_field_modes: dict of keyword to mode to
+            override the `default_field_mode`.  Each entry in this
+            dict will result in a SectionFieldMode object
+
+        """
+        if position == 0:
+            posmax = Section.objects.filter(report=report).aggregate(Max('position'))
+            pos = (posmax['position__max'] or 0) + 1
+            
+        section = Section(report=report, title=title, position=position)
+        section.save()
+
+        critmode = SectionFieldMode(section=section,
+                                    keyword='',
+                                    mode=default_field_mode or SectionFieldMode.INHERIT)
+        critmode.save()
+
+        if keyword_field_modes:
+            for keyword, mode in keyword_field_modes.iteritems():
+                critmode = SectionFieldMode(section=section,
+                                            keyword=keyword,
+                                            mode=mode)
+                critmode.save()
+                
+        return section
+    
+    def collect_fields(self, sections=True):
+        common_fields = SortedDict()
+        section_fields = SortedDict()
+
+        all_fields = []
+        
+        for w in Widget.objects.filter(section=self):
+            for t in w.tables.all():
+                for f in t.fields.all():
+                    all_fields.append(f)
+
+        [all_fields.append(f) for f in self.fields.all()]
+        
+        for f in all_fields:
+            if sections and self.fields_mode(f.keyword) is SectionFieldMode.SECTION:
+                id = "s%s_%s" % (self.id, f.keyword)
+                if id not in section_fields:
+                    section_fields[id] = f
+            else:
+                id = f.keyword
+                if id not in common_fields:
+                    common_fields[id] = f
+
+        return (common_fields, section_fields)
+
+    def fields_mode(self, keyword):
+        try:
+            m = self.sectionfieldmode_set.get(keyword=keyword)
+            return m.mode
+        except ObjectDoesNotExist: pass
+        
+        try:
+            m = self.sectionfieldmode_set.get(keyword='')
+            return m.mode
+        except ObjectDoesNotExist: pass
+        
+        return SectionFieldMode.INHERIT
+        
+class SectionFieldMode(models.Model):
+    section = models.ForeignKey(Section)
+    keyword = models.CharField(blank=True, max_length=200)
+
+    INHERIT = 0
+    SECTION = 1
+    mode = models.IntegerField(default=INHERIT,
+                               choices=((INHERIT, "Inherit"),
+                                        (SECTION, "Section")))
+
 class Widget(models.Model):
     """ Defines a UI widget and the source datatables
     """
     tables = models.ManyToManyField(Table)
-    report = models.ForeignKey(Report)
+    section = models.ForeignKey(Section)
     title = models.CharField(max_length=100)
     row = models.IntegerField()
     col = models.IntegerField()
@@ -108,13 +236,13 @@ class Widget(models.Model):
         return self.tables.all()[i]
 
     def compute_row_col(self):
-        rowmax = Widget.objects.filter(report=self.report).aggregate(Max('row'))
+        rowmax = self.section.report.widgets().aggregate(Max('row'))
         row = rowmax['row__max']
         if row is None:
             row = 1
             col = 1
         else:
-            widthsum = Widget.objects.filter(report=self.report, row=row).aggregate(Sum('width'))
+            widthsum = self.section.report.widgets().filter(row=row).aggregate(Sum('width'))
             width = widthsum['width__sum']
             if width + self.width > 12:
                 row = row + 1
@@ -124,6 +252,17 @@ class Widget(models.Model):
         self.row = row
         self.col = col
 
+    def criteria_from_form(self, form):
+        (common_fields, section_fields) = self.section.collect_fields()
+        fields = {}
+        for k,v in form.as_text().iteritems():
+            if (k in common_fields):
+                fields[common_fields[k].keyword] = v
+            elif (k in section_fields):
+                fields[section_fields[k].keyword] = v
+
+        return fields
+        
 
 class WidgetJob(models.Model):
     """ Query point for status of Jobs for each Widget.

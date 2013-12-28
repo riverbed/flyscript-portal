@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError
 
 from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
 
-from apps.datasource.models import Criteria, CriteriaParameter
+from apps.datasource.models import Criteria, TableField
 
 import logging
 logger = logging.getLogger(__name__)
@@ -30,7 +30,12 @@ DURATIONS = ('Default', '1 min', '15 min', '1 hour',
              '1 day', '1 week', '4 weeks')
 
 # Map of all possible timezone names to tzinfo structures
-ALL_TIMEZONES_MAP = dict((n,pytz.timezone(n)) for n in pytz.all_timezones)
+ALL_TIMEZONES_MAP = None
+def all_timezones_map():
+    global ALL_TIMEZONES_MAP
+    if ALL_TIMEZONES_MAP is None:
+        ALL_TIMEZONES_MAP = dict((n,pytz.timezone(n)) for n in pytz.all_timezones)
+    return ALL_TIMEZONES_MAP
 
 class DateWidget(forms.DateInput):
     """ Custom DateWidget
@@ -113,9 +118,9 @@ class DateTimeField(forms.DateTimeField):
         if value in validators.EMPTY_VALUES:
             return None
         try:
-            v = dateutil.parser.parse(value, tzinfos=ALL_TIMEZONES_MAP)
+            v = dateutil.parser.parse(value, tzinfos=all_timezones_map())
         except:
-            raise ValidationError('Invalid date/time string')
+            raise ValidationError('Invalid date/time string: %s' % value)
             
         return v
             
@@ -138,8 +143,8 @@ class DurationField(forms.ChoiceField):
         logger.debug("DurationField.validate: %s" % value)
         pass
     
-def criteria_add_time_selection(obj, initial_duration=None):
-    #starttime = CriteriaParameter(keyword = 'starttime',
+def fields_add_time_selection(obj, initial_duration=None):
+    #starttime = TableField(keyword = 'starttime',
     #                            template = {},
     #                            label = 'Start Time',
     #                            field_cls = DateTimeField,
@@ -148,28 +153,32 @@ def criteria_add_time_selection(obj, initial_duration=None):
     #starttime.save()
     #obj.criteria.add(starttime)
 
-    endtime = CriteriaParameter(keyword = 'endtime',
-                                template = {},
-                                label = 'End Time',
-                                field_cls = DateTimeField,
-                                field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
-                                required=False)
+    endtime = TableField(keyword = 'endtime',
+                         template = {},
+                         label = 'End Time',
+                         field_cls = DateTimeField,
+                         field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
+                         required=False)
     endtime.save()
-    obj.criteria.add(endtime)
+    obj.fields.add(endtime)
 
-    duration = CriteriaParameter(keyword = 'duration',
-                                 template = {},
-                                 label = 'Duration',
-                                 initial = initial_duration,
-                                 field_cls = DurationField,
-                                 field_kwargs = { 'choices': zip(DURATIONS, DURATIONS) },
-                                 required=False)
+    duration = (
+        TableField
+        (keyword = 'duration',
+         template = {},
+         label = 'Duration',
+         initial = initial_duration,
+         field_cls = DurationField,
+         field_kwargs = { 'choices': zip(DURATIONS, DURATIONS) },
+         help_text = ("Report duration.  A value of 'Default' means use the " +
+                      "default duration defined for each embedded table.  "),
+         required=False))
     duration.save()
-    obj.criteria.add(duration)
+    obj.fields.add(duration)
 
 
-class CriteriaForm(forms.Form):
-    """ Form built from a list of criteria parameters
+class TableFieldForm(forms.Form):
+    """ Form built from a set of TableFields.
     """
     # css definitions
     error_css_class = 'text-error'
@@ -178,11 +187,16 @@ class CriteriaForm(forms.Form):
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
     
-    def __init__(self, parameters, use_widgets=True, **kwargs):
-        """ Initialize a CriteriaForm for the given set of table.
+    def __init__(self, fields, use_widgets=True, **kwargs):
+        """ Initialize a TableFieldForm for the given set of table.
 
-        Standard Form criteria options `data` and `files` should be used
-        as kwargs instead of args.
+        :param fields: dict of id to TableField
+
+        :param use_widgets: if True (default) include UI-style widgets,
+            otherwise (False) use only CharField (suitable for command-line)
+
+        Standard Form arguments `data` and `files` should be used
+        as kwargs instead of passing as positional args.
             
         """
 
@@ -190,21 +204,20 @@ class CriteriaForm(forms.Form):
             # Make a copy of data as we may change it below
             kwargs['data'] = copy.copy(kwargs['data'])
 
-        super(CriteriaForm, self).__init__(**kwargs)
+        super(TableFieldForm, self).__init__(**kwargs)
 
-        self._parameters = dict((p.keyword, p) for p in parameters)
+        self._fields = fields
 
-        for param in parameters:
-            field_id = param.keyword
+        for field_id, field in fields.iteritems():
 
             if field_id in self.fields:
                 # Already added this field
                 continue
 
-            field_cls = param.field_cls or forms.CharField
+            field_cls = field.field_cls or forms.CharField
 
-            if param.field_kwargs is not None:
-                fkwargs = param.field_kwargs
+            if field.field_kwargs is not None:
+                fkwargs = field.field_kwargs
             else:
                 fkwargs = {}
 
@@ -212,13 +225,13 @@ class CriteriaForm(forms.Form):
                 fkwargs = copy.copy(fkwargs)
                 del fkwargs['widget']
                 
-            self.fields[field_id] = field_cls(label=param.label,
-                                              required=param.required,
-                                              initial=param.initial,
-                                              help_text=param.help_text,
+            self.fields[field_id] = field_cls(label=field.label,
+                                              required=field.required,
+                                              initial=field.initial,
+                                              help_text=field.help_text,
                                               **fkwargs)
 
-            self.initial[field_id] = param.initial
+            self.initial[field_id] = field.initial
 
 
     def as_text(self):
@@ -227,6 +240,7 @@ class CriteriaForm(forms.Form):
         result = {}
 
         for k, v in self.cleaned_data.iteritems():
+            
             if isinstance(v, datetime.datetime):
                 result[k] = v.isoformat()
             elif isinstance(v, datetime.timedelta):
@@ -256,6 +270,7 @@ class CriteriaForm(forms.Form):
         return Criteria(**self.cleaned_data)
 
     def apply_timezone(self, tzinfo):
+        """ Apply `tzinfo` as the timezone of any naive datetime objects. """
         if not self.is_valid():
             raise ValidationError("Form data is not valid")
 

@@ -139,6 +139,7 @@
               return;
           runRequested = false;
           $("#id_debug").val(debugFlag ? "on" : "");
+          $("#form-error-info").html("");
           form = $('form#criteriaform');
           form.ajaxSubmit({
               dataType:"json",
@@ -151,7 +152,7 @@
                   // we receive a 400 error on form validation problems
                   if (jqXHR.status == 400) {
                       $("#criteria").collapse('show');
-                      form.html(jqXHR.responseText);
+                      $("#form-error-info").html(jqXHR.responseText);
                   }
                   if (jqXHR.status == 500) {
                       alert("an error occurred: " + textStatus + " : " + errorThrown);
@@ -190,10 +191,6 @@
                 <form class="form-inline" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
-                    {% if form.errors %}
-                        <p class="text-error">Please correct the errors below.</p>
-                    {% endif %}
-
                     {% for field in form.visible_fields %}
                         {{ field.label_tag }}: {{ field }}
                         {% if field.help_text %} 
@@ -214,25 +211,41 @@
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
                     <fieldset>
+                        <div id="form-error-info" class="text-error"></div>
                         {% if form.errors %}
                             <p class="text-error">Please correct the errors below.</p>
                         {% endif %}
 
-                        {% for field in form.visible_fields %}
-                            <div class="control-group">
-                                <div class="control-label">
-                                    {{ field.label_tag }} 
-                                </div>
-                                <div class="controls">
-                                    {{ field }}
-                                    {% if field.errors %}
-                                        {% for err in field.errors %}
-                                            <p class="text-error">{{ err }}</p>
-                                        {% endfor %}
-                                    {% endif %}
-                                    {% if field.help_text %} 
-                                        <span class="icon-info-sign" title="{{ field.help_text }}"></span>
-                                    {% endif %}
+                        {% if form.errors %}
+                            <p class="text-error">Please correct the errors below.</p>
+                        {% endif %}
+
+                        {% for s in section_map %}
+                            <div class="criteria-group">
+                                {% if show_sections %}
+                                    <div class="criteria-group-title"> {{ s.title }} </div>
+                                {% endif %}
+                                <div class="criteria-group-contents">
+                                    {% for field in form.visible_fields %}
+                                        {% if field.name in s.parameters %}
+                                        <div class="control-group">
+                                            <div class="control-label">
+                                                {{ field.label_tag }} 
+                                            </div>
+                                            <div class="controls">
+                                                {{ field }}
+                                                {% if field.errors %}
+                                                    {% for err in field.errors %}
+                                                        <p class="text-error">{{ err }}</p>
+                                                    {% endfor %}
+                                                {% endif %}
+                                                {% if field.help_text %} 
+                                                    <span class="icon-info-sign" title="{{ field.help_text }}"></span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
                             </div>
                         {% endfor %}
