@@ -125,17 +125,24 @@ class ReportView(views.APIView):
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
-        section_fields = report.collect_fields()
+
+        # Collect all fields organized by section, with section id 0
+        # representing common report level fields
+        fields_by_section = report.collect_fields_by_section()
+
+        # Merge all the fields into a single dict for use by the Django Form # logic
         all_fields = SortedDict()
-        [all_fields.update(c) for c in section_fields.values()]
+        [all_fields.update(c) for c in fields_by_section.values()]
         form = TableFieldForm(all_fields, initial=form_init)
 
+        # Build a section map that indicates which section each field
+        # belongs in when displayed
         section_map = []
-        if section_fields[0]:
-            section_map.append({'title': 'Common', 'parameters': section_fields[0]})
+        if fields_by_section[0]:
+            section_map.append({'title': 'Common', 'parameters': fields_by_section[0]})
         for s in Section.objects.filter(report=report).order_by('position'):
-            if section_fields[s.id]:
-                section_map.append({'title': s.title, 'parameters': section_fields[s.id]})
+            if fields_by_section[s.id]:
+                section_map.append({'title': s.title, 'parameters': fields_by_section[s.id]})
         
         return render_to_response('report.html',
                                   {'report': report,
@@ -163,9 +170,9 @@ class ReportView(views.APIView):
         logger.debug("Received POST for report %s, with params: %s" %
                      (report_slug, request.POST))
 
-        section_fields = report.collect_fields()
+        fields_by_section = report.collect_fields_by_section()
         all_fields = SortedDict()
-        [all_fields.update(c) for c in section_fields.values()]
+        [all_fields.update(c) for c in fields_by_section.values()]
         form = TableFieldForm(all_fields, data=request.POST,
                               files=request.FILES)
 
@@ -259,7 +266,7 @@ class WidgetJobsList(views.APIView):
 
         req_json = json.loads(request.POST['criteria'])
 
-        (fields, _) = widget.section.collect_fields(sections=False)
+        fields = widget.section.collect_fields()
         form = TableFieldForm(fields, 
                               use_widgets=False,
                               data=req_json, files=request.FILES)

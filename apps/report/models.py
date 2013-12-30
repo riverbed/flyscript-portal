@@ -57,6 +57,7 @@ class Report(models.Model):
     position = models.IntegerField(default=0)
     sourcefile = models.CharField(max_length=200, default=get_caller_name)
     slug = models.SlugField()
+    fields = models.ManyToManyField(TableField, null=True)
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -66,18 +67,28 @@ class Report(models.Model):
     def __unicode__(self):
         return self.title
 
-    def collect_fields(self):
+    def collect_fields_by_section(self):
+        """ Return a dict of all fields related to this report by section id. """
+
         # map of section id to field dict
-        section_fields = {}
+        fields_by_section = {}
 
         # section id=0 is the "common" section
-        section_fields[0] = SortedDict()
+        fields_by_section[0] = SortedDict()
+        if self.fields:
+            report_fields = {}
+            for f in self.fields.all():
+                if not f.hidden:
+                    report_fields[f.keyword] = f
+                                           
+            fields_by_section[0].update(report_fields)
 
+        # Pull in fields from each section (which may add fields to
+        # the common as well)
         for s in Section.objects.filter(report=self):
-            ( common, section ) = s.collect_fields()
-            section_fields[0].update(common)
-            section_fields[s.id] = section
-        return section_fields
+            s.collect_fields_by_section(fields_by_section)
+
+        return fields_by_section
 
     def widgets(self):
         return Widget.objects.filter(section__in=Section.objects.filter(report=self))
@@ -158,31 +169,56 @@ class Section(models.Model):
                 critmode.save()
                 
         return section
-    
-    def collect_fields(self, sections=True):
-        common_fields = SortedDict()
-        section_fields = SortedDict()
 
+    def _all_fields(self, include_report=False, include_hidden=False):
+        # Gather up all fields
         all_fields = []
-        
+
+        # All fields attached to the section's report
+        if include_report:
+            for f in self.report.fields.all():
+                if include_hidden or not f.hidden:
+                    all_fields.append(f)
+
+        # All fields attached to the section
+        [all_fields.append(f)
+         for f in self.fields.all()
+         if include_hidden or not f.hidden]
+
+        # All fields attached to any Widget's Tables
         for w in Widget.objects.filter(section=self):
             for t in w.tables.all():
                 for f in t.fields.all():
-                    all_fields.append(f)
+                    if include_hidden or not f.hidden:
+                        all_fields.append(f)
 
-        [all_fields.append(f) for f in self.fields.all()]
-        
-        for f in all_fields:
-            if sections and self.fields_mode(f.keyword) is SectionFieldMode.SECTION:
+        return all_fields
+    
+    def collect_fields_by_section(self, fields_by_section):
+        fields_by_section[self.id] = {}
+        for f in self._all_fields():
+            # Split fields into section vs common based on the field_mode
+            # for each keyword
+            if self.fields_mode(f.keyword) is SectionFieldMode.SECTION:
+                # Section fields are prefixed with the section id
+                # in the field map
                 id = "s%s_%s" % (self.id, f.keyword)
-                if id not in section_fields:
-                    section_fields[id] = f
+                if id not in fields_by_section[self.id]:
+                    fields_by_section[self.id][id] = f
             else:
                 id = f.keyword
-                if id not in common_fields:
-                    common_fields[id] = f
+                if id not in fields_by_section[0]:
+                    fields_by_section[0][id] = f
 
-        return (common_fields, section_fields)
+    def collect_fields(self):
+        fields = SortedDict()
+
+        for f in self._all_fields(include_report=True, include_hidden=True):
+            id = f.keyword
+            if id not in fields:
+                fields[id] = f
+
+        return fields
 
     def fields_mode(self, keyword):
         try:
@@ -253,7 +289,15 @@ class Widget(models.Model):
         self.col = col
 
     def criteria_from_form(self, form):
-        (common_fields, section_fields) = self.section.collect_fields()
+        """ Extract POST style criteria data from form. """
+        fields_by_section = self.section.report.collect_fields_by_section()
+
+        common_fields = fields_by_section[0]
+        section_fields = fields_by_section[self.section.id]
+
+        # Reverse the process of adding the prefix to SECTION-level criteria.
+        # If a field is in section_fields, the id has the prefix, just use
+        # the original keyword in the returned fields
         fields = {}
         for k,v in form.as_text().iteritems():
             if (k in common_fields):

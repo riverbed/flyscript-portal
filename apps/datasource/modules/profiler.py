@@ -17,6 +17,7 @@ from rvbd.common.jsondict import JsonDict
 from apps.datasource.models import Table, TableField
 from apps.devices.devicemanager import DeviceManager
 from apps.datasource.forms import fields_add_time_selection
+from libs.fields import Function
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -39,6 +40,35 @@ def fields_add_filterexpr(obj,
                required = False))
     field.save()
     obj.fields.add(field)
+
+def fields_add_combine_filterexprs(obj, 
+                                   keyword = 'profiler_filterexpr',
+                                   parents = None):
+    field = obj.fields.get(keyword = keyword)
+    field.post_process_func = Function(function=fields_combine_filterexprs)
+    field.save()
+
+    for parent in parents:
+        field.parents.add(parent)
+
+    return field
+    
+def fields_combine_filterexprs(field, criteria, params):
+    exprs = []
+    if (  'profiler_filterexpr' in criteria and
+          criteria.profiler_filterexpr != ''):
+        exprs.append(criteria.profiler_filterexpr)
+    for parent in field.parents.all():
+        expr = criteria[parent.keyword]
+        if expr is not None and expr != '':
+            exprs.append(expr)
+
+    if len(exprs) == 0:
+        return ""
+    elif len(exprs) == 1:
+        return exprs[0]
+    else:
+        return "(" + (") and (").join(exprs) + ")"
 
 class TableOptions(JsonDict):
     _default = {'groupby': None,

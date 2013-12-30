@@ -153,3 +153,29 @@ class PickledObjectField(models.Field):
             raise TypeError('Lookup type %s is not supported.' % lookup_type)
         return self.get_prep_value(value)
 
+class Function(object):
+    def __init__(self, function, params=None):
+        self.function = function
+        self.params = params
+
+class FunctionField(PickledObjectField):
+
+    __metaclass__ = models.SubfieldBase
+    
+    def to_python(self, value):
+        if isinstance(value, Function):
+            return value
+        
+        value = super(FunctionField, self).to_python(value)
+        if value is not None:
+            return Function(value['function'], value['params'])
+        else:
+            return None
+
+    def get_prep_value(self, value):
+        if value is not None:
+            d = {'function': value.function,
+                 'params': value.params}
+
+            value = super(FunctionField, self).get_prep_value(d)
+        return value

@@ -145,7 +145,6 @@ class DurationField(forms.ChoiceField):
     
 def fields_add_time_selection(obj, initial_duration=None):
     #starttime = TableField(keyword = 'starttime',
-    #                            template = {},
     #                            label = 'Start Time',
     #                            field_cls = DateTimeField,
     #                            field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
@@ -154,7 +153,6 @@ def fields_add_time_selection(obj, initial_duration=None):
     #obj.criteria.add(starttime)
 
     endtime = TableField(keyword = 'endtime',
-                         template = {},
                          label = 'End Time',
                          field_cls = DateTimeField,
                          field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
@@ -165,7 +163,6 @@ def fields_add_time_selection(obj, initial_duration=None):
     duration = (
         TableField
         (keyword = 'duration',
-         template = {},
          label = 'Duration',
          initial = initial_duration,
          field_cls = DurationField,
@@ -206,32 +203,39 @@ class TableFieldForm(forms.Form):
 
         super(TableFieldForm, self).__init__(**kwargs)
 
-        self._fields = fields
-
+        self._tablefields = fields
+        self._use_widgets = use_widgets
+        
         for field_id, field in fields.iteritems():
-
-            if field_id in self.fields:
-                # Already added this field
-                continue
-
-            field_cls = field.field_cls or forms.CharField
-
-            if field.field_kwargs is not None:
-                fkwargs = field.field_kwargs
-            else:
-                fkwargs = {}
-
-            if not use_widgets and 'widget' in fkwargs:
-                fkwargs = copy.copy(fkwargs)
-                del fkwargs['widget']
+            if not field.hidden:
+                self.add_field(field_id, field)
                 
-            self.fields[field_id] = field_cls(label=field.label,
-                                              required=field.required,
-                                              initial=field.initial,
-                                              help_text=field.help_text,
-                                              **fkwargs)
+    def add_field(self, field_id, field):
+        if field_id in self.fields:
+            # Already added this field
+            return
 
-            self.initial[field_id] = field.initial
+        field_cls = field.field_cls or forms.CharField
+
+        if field.field_kwargs is not None:
+            fkwargs = copy.copy(field.field_kwargs)
+        else:
+            fkwargs = {}
+
+        if not self._use_widgets and 'widget' in fkwargs:
+            del fkwargs['widget']
+
+        f = field.pre_process_func
+        if f is not None:
+            f.function(field, fkwargs, f.params)
+
+        self.fields[field_id] = field_cls(label=field.label,
+                                          required=field.required,
+                                          initial=field.initial,
+                                          help_text=field.help_text,
+                                          **fkwargs)
+
+        self.initial[field_id] = field.initial
 
 
     def as_text(self):
@@ -263,11 +267,39 @@ class TableFieldForm(forms.Form):
 
     def criteria(self):
         """ Return a Criteria object based on this form data. """
-
+        
         if not self.is_valid():
             raise ValidationError("Form data is not valid")
 
-        return Criteria(**self.cleaned_data)
+        criteria = Criteria(**self.cleaned_data)
+
+        # Since the form is valid, propagate values down from
+        # parent TableFields down to thier children
+
+        fieldset = self._tablefields.values()
+        while fieldset:
+            field = fieldset.pop()
+                
+            for parent in field.parents.all():
+                if not parent.keyword in criteria:
+                    # this parent's keyword hasn't been computed yet -- make sure
+                    # we didn't get an invalid relationship
+                    if parent.keyword not in fieldset:
+                        raise KeyError("Child field %s depends on parent %s, " +
+                                       "but parent didn't show up in fieldset" %
+                                       (child.keyword, parent.keyword))
+                    # add this on to the end for reprocessing
+                    fieldset.append(field)
+                    continue
+
+            if field.template:
+                criteria[field.keyword] = field.template.format(**criteria)
+            else:
+                f = field.post_process_func
+                if f is not None:
+                    criteria[field.keyword] = f.function(field, criteria, f.params)
+                
+        return criteria
 
     def apply_timezone(self, tzinfo):
         """ Apply `tzinfo` as the timezone of any naive datetime objects. """

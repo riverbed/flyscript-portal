@@ -33,7 +33,7 @@ from django import forms
 from rvbd.common.utils import DictObject
 
 from apps.devices.models import Device
-from libs.fields import PickledObjectField
+from libs.fields import PickledObjectField, FunctionField
 from project import settings
 
 logger = logging.getLogger(__name__)
@@ -75,30 +75,34 @@ class TableField(models.Model):
         optional:
         field_cls    -- form field class, defaults to forms.CharField.
         field_kwargs -- additional keywords to pass to field initializer
-        parent       -- reference to another TableField object which
-                        provides values to inherit from.  This allows
+
+        parents      -- reference to other TableField objects which
+                        provide values to inherit from.  This allows
                         multiple fields to be enumerated while only
                         displaying/filling out a single form field.
                         TableField which have a parent object identified
                         will not be included in the HTML form output.
+
+        pre_process_func 
+        post_process_func 
     """
     keyword = models.CharField(max_length=100)
     template = models.CharField(max_length=100)
     label = models.CharField(max_length=100)
     help_text = models.CharField(blank=True, null=True, default=None, max_length=400)
     initial = PickledObjectField(blank=True, null=True)
+    required = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False)
 
     field_cls = PickledObjectField(null=True)
     field_kwargs = PickledObjectField(blank=True, null=True)
 
-    parent = models.ForeignKey("self", blank=True, null=True,
-                               related_name="children")
+    parents = models.ManyToManyField("self", null=True,
+                                     symmetrical=False,
+                                     related_name="children")
 
-    # whether a value must be provided by the user
-    required = models.BooleanField(default=False)
-
-    # instance placeholder for form return values, not for database storage
-    value = PickledObjectField(null=True, blank=True)
+    pre_process_func = FunctionField(null=True)
+    post_process_func = FunctionField(null=True)
 
     def __repr__(self):
         return "<TableField %s (%s)>" % (self.keyword, self.id)
@@ -734,7 +738,6 @@ class Job(models.Model):
         
         with transaction.commit_on_success():
             logger.debug("%s: Starting job" % str(self))
-            
             if self.table.device and not self.table.device.enabled:
                 # User has disabled the device so lets wrap up here
                 
