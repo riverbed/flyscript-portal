@@ -161,14 +161,13 @@ class ReportView(views.APIView):
         if report_slug is None:
             return self.http_method_not_allowed(request)
 
-        # handle HTML calls
+        logger.debug("Received POST for report %s, with params: %s" %
+                     (report_slug, request.POST))
+
         try:
             report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
-
-        logger.debug("Received POST for report %s, with params: %s" %
-                     (report_slug, request.POST))
 
         fields_by_section = report.collect_fields_by_section()
         all_fields = SortedDict()
@@ -271,6 +270,9 @@ class WidgetJobsList(views.APIView):
                               use_widgets=False,
                               data=req_json, files=request.FILES)
 
+        if not form.is_valid():
+            raise ValueError("Widget internal criteria form is invalid:\n%s" % (form.errors.as_text()))
+            
         if form.is_valid():
             logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data

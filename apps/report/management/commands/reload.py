@@ -39,7 +39,7 @@ class Command(BaseCommand):
                              action='store',
                              dest='report_name',
                              default=None,
-                             help='Reload single report by name.'),
+                             help='Reload single report by fully qualified name.'),
 
         optparse.make_option('--report-dir',
                              action='store',
@@ -48,6 +48,33 @@ class Command(BaseCommand):
                              help='Reload reports from this directory.'),
 )
 
+    def import_file(self, f, name):
+        try:
+            if name in sys.modules:
+                self.stdout.write('reloading %s as %s' % (f, name))
+                reload(sys.modules[name])
+            else:
+                self.stdout.write('importing %s as %s' % (f, name))
+                __import__(name)
+
+        except RvbdHTTPException as e:
+            instance = RvbdException('From config file "%s": %s' %
+                                     (name, e.message))
+            raise RvbdException, instance, sys.exc_info()[2]
+
+        except SyntaxError as e:
+            msg_format = '%s: (file: %s, line: %s, offset: %s)\n%s'
+            message = msg_format % (e.msg, e.filename,
+                                    e.lineno, e.offset, e.text)
+            instance = type(e)('From config file "%s": %s' % (name,
+                                                              message))
+            raise type(e), instance, sys.exc_info()[2]
+
+        except Exception as e:
+            instance = type(e)('From config file "%s": %s' % (name,
+                                                              str(e)))
+            raise type(e), instance, sys.exc_info()[2]
+        
     def import_directory(self, root, report_name=None, ignore_list=None):
         """ Recursively imports all python files in a directory
         """
@@ -76,31 +103,7 @@ class Command(BaseCommand):
                     self.stdout.write('skipping %s (%s) ...' % (f, name))
                     continue
 
-                try:
-                    if name in sys.modules:
-                        self.stdout.write('reloading %s as %s' % (f, name))
-                        reload(sys.modules[name])
-                    else:
-                        self.stdout.write('importing %s as %s' % (f, name))
-                        __import__(name)
-
-                except RvbdHTTPException as e:
-                    instance = RvbdException('From config file "%s": %s' %
-                                             (name, e.message))
-                    raise RvbdException, instance, sys.exc_info()[2]
-
-                except SyntaxError as e:
-                    msg_format = '%s: (file: %s, line: %s, offset: %s)\n%s'
-                    message = msg_format % (e.msg, e.filename,
-                                            e.lineno, e.offset, e.text)
-                    instance = type(e)('From config file "%s": %s' % (name,
-                                                                      message))
-                    raise type(e), instance, sys.exc_info()[2]
-
-                except Exception as e:
-                    instance = type(e)('From config file "%s": %s' % (name,
-                                                                      str(e)))
-                    raise type(e), instance, sys.exc_info()[2]
+                self.import_file(f, name)
 
     def handle(self, *args, **options):
         self.stdout.write('Reloading report objects ... ')
@@ -129,7 +132,11 @@ class Command(BaseCommand):
                                         clear_logs=False)
             except ObjectDoesNotExist:
                 pass
-                
+
+            DeviceManager.clear()
+            self.import_file(report_name, report_name)
+            return
+        
         else:
             # clear all data
             report_name = None

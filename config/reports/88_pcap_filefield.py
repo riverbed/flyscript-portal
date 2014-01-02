@@ -48,7 +48,6 @@ options = TableOptions()
 table = TSharkTable.create('pcap', resolution=60, resample=True,
                            options=options)
 filefield = TableField(keyword='pcapfile',
-                       template='{}',
                        label='PCAP File',
                        field_cls=forms.FileField)
 filefield.save()

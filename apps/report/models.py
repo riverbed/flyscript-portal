@@ -34,33 +34,31 @@ class WidgetOptions(JsonDict):
                 'axes': None}
 
 
-def get_caller_name(match='config.'):
+def get_caller_name(current_module):
     """ Determine filename of calling function.
         Used to determine source of Report class definition.
     """
-    frame = inspect.stack()[1]
+    frame = inspect.stack()[2]
     frm = frame[0]
     mod = inspect.getmodule(frm)
-    while frm:
-        if mod and mod.__name__.startswith(match):
-            return mod.__name__
-        else:
-            old_frm, frm = frm, frm.f_back
-            mod = inspect.getmodule(frm)
-            del old_frm         # avoid reference cycles and leaks
-    del frm
-    return ''
+    return mod.__name__
 
 class Report(models.Model):
     """ Defines a Report as a collection of Sections and their Widgets. """
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
-    sourcefile = models.CharField(max_length=200, default=get_caller_name)
-    slug = models.SlugField()
+    sourcefile = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
     fields = models.ManyToManyField(TableField, null=True)
 
+    def __init__(self, *args, **kwargs):
+        if 'sourcefile' not in kwargs:
+            kwargs['sourcefile'] = get_caller_name(self)
+
+        super(Report, self).__init__(*args, **kwargs)
+        
     def save(self, *args, **kwargs):
-        if not self.id:
+        if not self.slug:
             self.slug = slugify(self.sourcefile.split('.')[-1])
         super(Report, self).save(*args, **kwargs)
 
@@ -262,8 +260,11 @@ class Widget(models.Model):
     
     objects = InheritanceManager()
     
+    def __repr__(self):
+        return '<Widget %s (%s)>' % (self.title, self.id)
+    
     def __unicode__(self):
-        return self.title
+        return '<Widget %s (%s)>' % (self.title, self.id)
 
     def widgettype(self):
         return 'rvbd_%s.%s' % (self.module.split('.')[-1], self.uiwidget)

@@ -179,3 +179,4 @@ class FunctionField(PickledObjectField):
 
             value = super(FunctionField, self).get_prep_value(d)
         return value
+

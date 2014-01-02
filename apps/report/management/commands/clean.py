@@ -90,10 +90,8 @@ class Command(BaseCommand):
             rid = options['report_id']
 
             def del_table(table):
-                for column in Column.objects.filter(table=table.id):
-                    column.delete()
-                for job in Job.objects.filter(table=table.id):
-                    job.delete()
+                Column.objects.filter(table=table.id).delete()
+                Job.objects.filter(table=table.id).delete()
 
                 if (table.options is not None) and ('tables' in table.options):
                     for (name, tid) in table.options.tables.items():

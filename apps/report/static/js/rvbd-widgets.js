@@ -46,15 +46,16 @@ function Widget (posturl, divid, options, criteria) {
         dataType: "json",
         type: "POST",
         url: self.posturl,
-        data : { widget_id: self.widget_id,
-                 criteria: JSON.stringify(criteria) },
+        data : { criteria: JSON.stringify(criteria) },
         success: function(data, textStatus) {
             self.joburl = data.joburl,
             setTimeout(function() { self.getData(criteria) }, 1000);
         },
         error: function(jqXHR, textStatus, errorThrown) { 
-            alert("an error occured: " + textStatus + " : " + errorThrown); 
             $('#' + self.divid).hideLoading();
+            var message = $("<div/>").html(textStatus + " : " + errorThrown).text()
+            $('#' + self.divid).html("<p>Server error: <pre>" + message + "</pre></p>");
+            rvbd_status[self.posturl] = 'error';
         }
     });
 }
@@ -65,10 +66,14 @@ Widget.prototype.getData = function(criteria) {
         dataType: "json",
         url: self.joburl, 
         data: null,
-        success: function(data, textStatus) { self.processResponse(criteria, data, textStatus); },
+        success: function(data, textStatus) { 
+            self.processResponse(criteria, data, textStatus); 
+        },
         error: function(jqXHR, textStatus, errorThrown) { 
-            alert("an error occurred: " + textStatus + " : " + errorThrown);
             $('#' + self.divid).hideLoading();
+            var message = $("<div/>").html(textStatus + " : " + errorThrown).text()
+            $('#' + self.divid).html("<p>Server error: <pre>" + message + "</pre></p>");
+            rvbd_status[self.posturl] = 'error';
         }
     });
 }
@@ -145,3 +150,42 @@ Widget.prototype.formatPct = function(num, precision) {
     }
     return vs;
 }
+
+var rvbd_raw = {};
+
+rvbd_raw.TableWidget = function (dataurl, divid, options, criteria) {
+    Widget.apply(this, [dataurl, divid, options, criteria]);
+};
+rvbd_raw.TableWidget.prototype = inherit(Widget.prototype)
+rvbd_raw.TableWidget.prototype.constructor = rvbd_raw.TableWidget;
+
+rvbd_raw.TableWidget.prototype.render = function(data)
+{
+    var contentid = this.divid + "_content";
+    $('#' + this.divid).
+        html('').
+        append('<table id="' + contentid + '-table" border=1></table>')
+
+    var div= $('#' + this.divid)
+    
+    $('#' + contentid + '-title')
+        .height(20)
+        .css({"text-align" : "center"});
+
+    $('#' + contentid).
+        css({"margin": 10}).
+        width(div.width()-22).
+        height(div.height()-42)
+
+    var table = $('#' + contentid + '-table')
+
+    $.each(data, function(i,row) {
+        rowstr = '<tr>'
+        $.each(row, function(i,col) {
+            rowstr = rowstr + '<td>' + col + '</td>';
+        });
+        rowstr = rowstr + '</tr>'
+        table.append(rowstr);
+        });
+}
+

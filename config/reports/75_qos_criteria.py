@@ -37,22 +37,21 @@ PROFILER = Device.objects.get(name="profiler")
 report = Report(title="QoS Criteria Report", position=55)
 report.save()
 
-wan_interface = TableField(keyword='wan_interface',
-                           label='WAN Interface')
-wan_interface.save()
-report.fields.add(wan_interface)
+wan_interface = TableField.create(keyword='wan_interface',
+                                  label='WAN Interface',
+                                  obj=report)
 
 section = Section.create(report)
 
 if 0:
     table_criteria_inbound = TableField(keyword='filterexpr',
-                                        template='inbound interface {0}',
+                                        post_process_template='inbound interface {0}',
                                         label='WAN Inbound Interface',
                                         initial=INTERFACE)
     table_criteria_inbound.save()
 
     table_criteria_outbound = TableField(keyword='filterexpr',
-                                         template='outbound interface {0}',
+                                         post_process_template='outbound interface {0}',
                                          label='WAN Outbound Interface',
                                          initial=INTERFACE)
     table_criteria_outbound.save()
@@ -63,7 +62,7 @@ table = TimeSeriesTable.create('qos-overall-util', PROFILER,
                                interface=True)
 
 wan_inbound = TableField(keyword='wan_filterexpr',
-                         template='inbound interface {wan_interface}',
+                         post_process_template='inbound interface {wan_interface}',
                          label='WAN Inbound Interface',
                          hidden=True)
 wan_inbound.save()
@@ -124,7 +123,7 @@ if 0:
                                    filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
 
     table_criteria_inbound_qos = TableField(keyword='filterexpr',
-                                                   template='inbound interface {0} and qos %s' % QOS,
+                                                   post_process_template='inbound interface {0} and qos %s' % QOS,
                                                    label='WAN %s Inbound Interface' % QOS,
                                                    initial=INTERFACE)
     table_criteria_inbound_qos.save()
@@ -144,9 +143,9 @@ if 0:
                                    filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
 
     table_criteria_outbound_qos = TableField(keyword='filterexpr',
-                                                    template='outbound interface {0} and qos %s' % QOS,
-                                                    label='WAN %s Outbound Interface' % QOS,
-                                                    initial=INTERFACE)
+                                             post_process_template='outbound interface {0} and qos %s' % QOS,
+                                             label='WAN %s Outbound Interface' % QOS,
+                                             initial=INTERFACE)
     table_criteria_outbound_qos.save()
     table.criteria.add(table_criteria_outbound_qos)
 

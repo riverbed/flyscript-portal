@@ -64,11 +64,13 @@ def fields_combine_filterexprs(field, criteria, params):
             exprs.append(expr)
 
     if len(exprs) == 0:
-        return ""
+        val = ""
     elif len(exprs) == 1:
-        return exprs[0]
+        val = exprs[0]
     else:
-        return "(" + (") and (").join(exprs) + ")"
+        val = "(" + (") and (").join(exprs) + ")"
+
+    criteria['profiler_filterexpr'] = val
 
 class TableOptions(JsonDict):
     _default = {'groupby': None,

@@ -60,34 +60,57 @@ class LocalLock(object):
         return False
 
 class TableField(models.Model):
-    """ Defines a single field associated with a table.
+    """
+    Defines a single field associated with a table.
 
-        Primarily used to parameterize reports with values that may change
-        from time to time, such as interfaces, thresholds, QOS types, etc.
+    TableFields define the the parameters that are used by a Table
+    at run time.  The Table.fields attribute associates one
+    or more fields with the table.
 
-        keyword  -- text name of table field or TableOption field
-        template -- python string template to use for replacement, e.g.
-                    'inbound interface {} and qos EF', where the {} would
-                    be replaced with the value provided in the form field
-        label    -- text label shown in the HTML form
-        initial  -- starting or default value to include in the form
+    At run time, a Criteria object binds values to each field.  The
+    Criteria object has an attribute matching each associated TableField
+    keyword.
 
-        optional:
-        field_cls    -- form field class, defaults to forms.CharField.
-        field_kwargs -- additional keywords to pass to field initializer
+    When defining a TableField, the following model attributes
+    may be specified:
 
-        parents      -- reference to other TableField objects which
-                        provide values to inherit from.  This allows
-                        multiple fields to be enumerated while only
-                        displaying/filling out a single form field.
-                        TableField which have a parent object identified
-                        will not be included in the HTML form output.
+    :param keyword: short identifier used like a variable name, this must
+        be unique per table
+    
+    :param label: text label displayed in user interfaces
 
-        pre_process_func 
-        post_process_func 
+    :param help_text: descriptive help text associated with this field
+
+    :param initial: starting or default value to use in user interfaces
+    
+    :param required: boolean indicating if a non-null values must be provided
+
+    :param hidden: boolean indicating if this field should be hidden in
+        user interfaces, usually true when the value is computed from
+        other fields via post_process_func or post_process_template
+
+    :param field_cls: Django Form Field class to use for rendering.
+        If not specified, this defaults to CharField
+
+    :param field_kwargs: Dictionary of additional field specific
+        kwargs to pass to the field_cls constructor.
+
+    :param parants: Reference to other TableField objects which
+        this field depends on for a final value.  Used in conjunction
+        with either post_process_func or post_process_template.
+
+    :param pre_process_func: Function to call to perform any necessary
+        preprocessing before rendering a form field or accepting
+        user input.
+
+    :param post_process_func: Function to call to perform any post
+        submit processing.  This may be additional value cleanup
+        or computation based on other form data.
+
+    :param post_process_template: Simple string format style template
+        to fill in based on other form criteria.
     """
     keyword = models.CharField(max_length=100)
-    template = models.CharField(max_length=100)
     label = models.CharField(max_length=100)
     help_text = models.CharField(blank=True, null=True, default=None, max_length=400)
     initial = PickledObjectField(blank=True, null=True)
@@ -103,7 +126,23 @@ class TableField(models.Model):
 
     pre_process_func = FunctionField(null=True)
     post_process_func = FunctionField(null=True)
+    post_process_template = models.CharField(null=True, max_length=500)
 
+    @classmethod
+    def create(cls, keyword, label, obj, **kwargs):
+        parents = kwargs.pop('parents', None)
+        field = cls(keyword=keyword, label=label, **kwargs)
+        field.save()
+
+        if parents:
+            for parent in parents:
+                parent_field = obj.fields.get(keyword=parent)
+                field.parents.add(parent_field)
+                
+        if obj is not None:
+            obj.fields.add(field)
+        return field
+    
     def __repr__(self):
         return "<TableField %s (%s)>" % (self.keyword, self.id)
 
@@ -248,7 +287,7 @@ class Table(models.Model):
 
             Changes are only applied to instance, not saved to database
         """
-        # XXXCJ - needs to be revamped
+        # XXXCJ - I think this function is now obsolete...
         return
     
         for k, v in criteria.iteritems():
@@ -751,13 +790,13 @@ class Job(models.Model):
             else:
                 self.mark_progress(0)
 
-                logger.debug("%s: Spawning AsyncWorker to run report" % str(self))
+                logger.debug("%s: Worker to run report" % str(self))
                 # Lookup the query class for this table
                 i = importlib.import_module(self.table.module)
                 queryclass = i.TableQuery
 
-                # Create an asynchronous worker to do the work
-                worker = AsyncWorker(self, queryclass)
+                # Create an worker to do the work
+                worker = Worker(self, queryclass)
                 worker.start()
 
     def mark_error(self, message):
@@ -864,7 +903,8 @@ class Job(models.Model):
 def _my_job_delete(sender, instance, **kwargs):
     if instance.parent is not None:
         instance.parent.dereference(str(instance))
-        
+
+
 class AsyncWorker(threading.Thread):
     def __init__(self, job, queryclass):
         threading.Thread.__init__(self)
@@ -885,6 +925,34 @@ class AsyncWorker(threading.Thread):
         return "<AsyncWorker %s>" % (self.job)
 
     def run(self):
+        self.do_run()
+        sys.exit(0)
+        
+class SyncWorker(object):
+    def __init__(self, job, queryclass):
+        self.job = job
+        self.queryclass = queryclass
+
+    def __unicode__(self):
+        return "<SyncWorker %s>" % (self.job)
+
+    def __str__(self):
+        return "<SyncWorker %s>" % (self.job)
+
+    def start(self):
+        self.do_run()
+        
+if settings.APPS_DATASOURCE['threading'] and not settings.TESTING:
+    base_worker_class = AsyncWorker
+else:
+    base_worker_class = SyncWorker
+
+class Worker(base_worker_class):
+
+    def __init__(self, job, queryclass):
+        super(Worker, self).__init__(job, queryclass)
+        
+    def do_run(self):
         job = self.job
         try:
             logger.info("%s running queryclass %s" % (self, self.queryclass))
@@ -949,10 +1017,8 @@ class AsyncWorker(threading.Thread):
                             message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 
         finally:
-            job.dereference("AsyncWorker exiting")
+            job.dereference("Worker exiting")
             
-        logger.debug("AsyncWorker caling sys.exit(0)")
-        sys.exit(0)
 
 class BatchJobRunner(object):
 

@@ -225,18 +225,15 @@ class TableFieldForm(forms.Form):
         if not self._use_widgets and 'widget' in fkwargs:
             del fkwargs['widget']
 
+        for k in ['label', 'required', 'initial', 'help_text']:
+            fkwargs[k] = getattr(field, k)
+        
         f = field.pre_process_func
         if f is not None:
             f.function(field, fkwargs, f.params)
 
-        self.fields[field_id] = field_cls(label=field.label,
-                                          required=field.required,
-                                          initial=field.initial,
-                                          help_text=field.help_text,
-                                          **fkwargs)
-
-        self.initial[field_id] = field.initial
-
+        self.fields[field_id] = field_cls(**fkwargs)
+        self.initial[field_id] = fkwargs['initial']
 
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
@@ -292,12 +289,19 @@ class TableFieldForm(forms.Form):
                     fieldset.append(field)
                     continue
 
-            if field.template:
-                criteria[field.keyword] = field.template.format(**criteria)
+            if field.post_process_template:
+                try:
+                    criteria[field.keyword] = field.post_process_template.format(**criteria)
+                except:
+                    raise KeyError("Failed to resolve field %s template: %s" %
+                                   (field.keyword, field.template))
+                                   
             else:
                 f = field.post_process_func
                 if f is not None:
-                    criteria[field.keyword] = f.function(field, criteria, f.params)
+                    __import__('IPython').core.debugger.Pdb().set_trace()
+                    f.function(field, criteria, f.params)
+                    print "criteria %s" % criteria
                 
         return criteria
 

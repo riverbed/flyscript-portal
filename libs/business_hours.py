@@ -30,7 +30,7 @@ def fields_add_business_hour_fields(report,
     TIMES = ['%d:00am' % h for h in range(1, 13)]
     TIMES.extend(['%d:00pm' % h for h in range(1, 13)])
 
-    business_hours_start = TableField(keyword='business_hours_start', template='{}',
+    business_hours_start = TableField(keyword='business_hours_start', 
                                       label='Start Business', initial=default_start,
                                       field_cls=forms.ChoiceField,
                                       field_kwargs={'choices': zip(TIMES, TIMES)},
@@ -38,7 +38,7 @@ def fields_add_business_hour_fields(report,
     business_hours_start.save()
     report.fields.add(business_hours_start)
 
-    business_hours_end = TableField(keyword='business_hours_end', template='{}',
+    business_hours_end = TableField(keyword='business_hours_end', 
                                     label='End Business', initial=default_end,
                                     field_cls=forms.ChoiceField,
                                     field_kwargs={'choices': zip(TIMES, TIMES)},
@@ -46,7 +46,7 @@ def fields_add_business_hour_fields(report,
     business_hours_end.save()
     report.fields.add(business_hours_end)
 
-    business_hours_tzname = TableField(keyword='business_hours_tzname', template='{}',
+    business_hours_tzname = TableField(keyword='business_hours_tzname', 
                                        label='Business Timezone', initial=default_timezone,
                                        field_cls=forms.ChoiceField,
                                        field_kwargs={'choices': zip(pytz.common_timezones,pytz.common_timezones)},
@@ -54,7 +54,7 @@ def fields_add_business_hour_fields(report,
     business_hours_tzname.save()
     report.fields.add(business_hours_tzname)
 
-    business_hours_weekends = TableField(keyword='business_hours_weekends', template='{}',
+    business_hours_weekends = TableField(keyword='business_hours_weekends', 
                                          field_cls=forms.BooleanField,
                                          label='Business includes weekends', initial=default_weekends,
                                          required=False)
