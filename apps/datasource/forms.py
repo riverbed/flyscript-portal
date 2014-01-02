@@ -299,7 +299,6 @@ class TableFieldForm(forms.Form):
             else:
                 f = field.post_process_func
                 if f is not None:
-                    __import__('IPython').core.debugger.Pdb().set_trace()
                     f.function(field, criteria, f.params)
                     print "criteria %s" % criteria
                 
