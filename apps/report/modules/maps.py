@@ -18,6 +18,8 @@ from pygeoip.util import ip2long
 
 from rvbd.common.jsondict import JsonDict
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from apps.report.models import Widget
 from apps.geolocation.models import Location
 from apps.geolocation.geoip import Lookup
@@ -132,13 +134,16 @@ class MapWidget(object):
                 val = reportrow[valuecol.dataindex]
 
                 # skip empty result values which are not explicitly zero
-                if val == '':
+                if val is None or val == '':
                     continue
 
                 # XXXCJ - this is a hack for Profiler based host groups,
                 # need to find a way to generalize this, probably via options
                 if widget.table().options['groupby'] == 'host_group':
-                    geo = Location.objects.get(name=key)
+                    try:
+                        geo = Location.objects.get(name=key)
+                    except ObjectDoesNotExist:
+                        continue
                 else:
                     # Perform geolookup on the key (should be an IP address...)
                     if geolookup is None:
