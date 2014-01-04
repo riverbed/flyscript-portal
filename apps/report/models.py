@@ -84,7 +84,12 @@ class Report(models.Model):
         # Pull in fields from each section (which may add fields to
         # the common as well)
         for s in Section.objects.filter(report=self):
-            s.collect_fields_by_section(fields_by_section)
+            for section_id, fields in s.collect_fields_by_section().iteritems():
+                if section_id not in fields_by_section:
+                    fields_by_section[section_id] = fields
+                else:
+                    fields_by_section[section_id].update(fields)
+
 
         return fields_by_section
 
@@ -168,33 +173,25 @@ class Section(models.Model):
                 
         return section
 
-    def _all_fields(self, include_report=False, include_hidden=False):
-        # Gather up all fields
-        all_fields = []
+    def collect_fields_by_section(self):
 
-        # All fields attached to the section's report
-        if include_report:
-            for f in self.report.fields.all():
-                if include_hidden or not f.hidden:
-                    all_fields.append(f)
+        # Gather up all fields
+        fields = []
 
         # All fields attached to the section
-        [all_fields.append(f)
-         for f in self.fields.all()
-         if include_hidden or not f.hidden]
+        for f in self.fields.filter(hidden=False):
+            fields.append(f)
 
         # All fields attached to any Widget's Tables
         for w in Widget.objects.filter(section=self):
             for t in w.tables.all():
-                for f in t.fields.all():
-                    if include_hidden or not f.hidden:
-                        all_fields.append(f)
+                for f in t.fields.filter(hidden=False):
+                    fields.append(f)
 
-        return all_fields
-    
-    def collect_fields_by_section(self, fields_by_section):
+        fields_by_section = SortedDict()
+        fields_by_section[0] = {}
         fields_by_section[self.id] = {}
-        for f in self._all_fields():
+        for f in fields:
             # Split fields into section vs common based on the field_mode
             # for each keyword
             if self.fields_mode(f.keyword) is SectionFieldMode.SECTION:
@@ -208,16 +205,8 @@ class Section(models.Model):
                 if id not in fields_by_section[0]:
                     fields_by_section[0][id] = f
 
-    def collect_fields(self):
-        fields = SortedDict()
-
-        for f in self._all_fields(include_report=True, include_hidden=True):
-            id = f.keyword
-            if id not in fields:
-                fields[id] = f
-
-        return fields
-
+        return fields_by_section
+    
     def fields_mode(self, keyword):
         try:
             m = self.sectionfieldmode_set.get(keyword=keyword)
@@ -230,7 +219,8 @@ class Section(models.Model):
         except ObjectDoesNotExist: pass
         
         return SectionFieldMode.INHERIT
-        
+
+
 class SectionFieldMode(models.Model):
     section = models.ForeignKey(Section)
     keyword = models.CharField(blank=True, max_length=200)
@@ -308,6 +298,24 @@ class Widget(models.Model):
 
         return fields
         
+    def collect_fields(self):
+        # Gather up all fields
+        fields = SortedDict()
+
+        # All fields attached to the section's report
+        for f in self.section.report.fields.all():
+            fields[f.keyword] = f
+
+        # All fields attached to the section
+        for f in self.section.fields.all():
+            fields[f.keyword] = f
+
+        # All fields attached to any Widget's Tables
+        for t in self.tables.all():
+            for f in t.fields.all():
+                fields[f.keyword] = f
+
+        return fields
 
 class WidgetJob(models.Model):
     """ Query point for status of Jobs for each Widget.

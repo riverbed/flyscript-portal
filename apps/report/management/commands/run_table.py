@@ -15,6 +15,7 @@ import sys
 
 from django.core.management.base import BaseCommand, CommandError
 from django.forms import ValidationError
+from django.utils.datastructures import SortedDict
 
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
@@ -155,7 +156,10 @@ class Command(BaseCommand):
                     (k,v) = s.split(':', 1)
                     criteria_options[k] = v
 
-            form = TableFieldForm(table.criteria.all(), use_widgets=False,
+            all_fields = SortedDict()
+            for f in table.fields.all():
+                all_fields[f.keyword]=f
+            form = TableFieldForm(all_fields, use_widgets=False,
                                   data=criteria_options)
             if not form.is_valid():
                 self.console('Invalid criteria:')

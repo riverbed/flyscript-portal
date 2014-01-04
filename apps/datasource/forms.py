@@ -14,6 +14,7 @@ import pytz
 
 from django import forms
 from django.utils.datastructures import SortedDict
+from django.forms.util import from_current_timezone
 from django.core.files.uploadedfile import UploadedFile
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -28,6 +29,16 @@ logger = logging.getLogger(__name__)
 DURATIONS = ('Default', '1 min', '15 min', '1 hour',
              '2 hours', '4 hours', '12 hours',
              '1 day', '1 week', '4 weeks')
+
+class CriteriaError(Exception):
+    """ Exception raised when a problem resolving criteria occurs. """
+    pass
+
+class CriteriaTemplateError(CriteriaError):
+    pass
+
+class CriteriaPostProcessError(CriteriaError):
+    pass
 
 # Map of all possible timezone names to tzinfo structures
 ALL_TIMEZONES_MAP = None
@@ -99,12 +110,12 @@ class ReportSplitDateTimeWidget(forms.SplitDateTimeWidget):
         # we want to define widgets.
         forms.MultiWidget.__init__(self, split_widgets, attrs)
 
-    def value_from_datadict(self, data, files, name):
+    def value_from_datadict_old(self, data, files, name):
         v = super(ReportSplitDateTimeWidget, self).value_from_datadict(data, files, name)
-        v = ' '.join(v)
+        #v = ' '.join(v)
         return v
 
-    def decompress(self, value):
+    def decompress_old(self, value):
         logger.debug("ReportSplitDateTimeWidget.decompress: %s" % (value))
         if value:
             return value.split(" ", 1)
@@ -117,12 +128,27 @@ class DateTimeField(forms.DateTimeField):
     def to_python(self, value):
         if value in validators.EMPTY_VALUES:
             return None
-        try:
-            v = dateutil.parser.parse(value, tzinfos=all_timezones_map())
-        except:
-            raise ValidationError('Invalid date/time string: %s' % value)
+
+        if isinstance(value, list):
+            # This came from SplitDateTimeWidget so the value is two strings
+            value = ' '.join(value)
             
-        return v
+        if isinstance(value, str) or isinstance(value, unicode):
+            try:
+                v = dateutil.parser.parse(value, tzinfos=all_timezones_map())
+            except:
+                raise ValidationError('Invalid date/time string: %s' % value)
+            
+            return from_current_timezone(v)
+
+        if isinstance(value, datetime.datetime):
+            return from_current_timezone(value)
+
+        if isinstance(value, datetime.date):
+            result = datetime.datetime(value.year, value.month, value.day)
+            return from_current_timezone(result)
+
+        raise ValidationError('Unknown data/time field value type: %s' % type(value))
             
 class DurationField(forms.ChoiceField):
     """ Field that takes a duration string and parses it to a timedelta object. """
@@ -225,7 +251,7 @@ class TableFieldForm(forms.Form):
         if not self._use_widgets and 'widget' in fkwargs:
             del fkwargs['widget']
 
-        for k in ['label', 'required', 'initial', 'help_text']:
+        for k in ['label', 'required', 'help_text']:
             fkwargs[k] = getattr(field, k)
         
         f = field.pre_process_func
@@ -233,7 +259,7 @@ class TableFieldForm(forms.Form):
             f.function(field, fkwargs, f.params)
 
         self.fields[field_id] = field_cls(**fkwargs)
-        self.initial[field_id] = fkwargs['initial']
+        self.initial[field_id] = field.initial
 
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
@@ -274,33 +300,85 @@ class TableFieldForm(forms.Form):
         # parent TableFields down to thier children
 
         fieldset = self._tablefields.values()
-        while fieldset:
-            field = fieldset.pop()
-                
-            for parent in field.parents.all():
-                if not parent.keyword in criteria:
-                    # this parent's keyword hasn't been computed yet -- make sure
-                    # we didn't get an invalid relationship
-                    if parent.keyword not in fieldset:
-                        raise KeyError("Child field %s depends on parent %s, " +
-                                       "but parent didn't show up in fieldset" %
-                                       (child.keyword, parent.keyword))
-                    # add this on to the end for reprocessing
-                    fieldset.append(field)
+        fieldset_keywords = [f.keyword for f in fieldset]
+
+        # List of fields that are still unset after this iteration
+        unsetfields = copy.copy(fieldset)
+        
+        # The fieldset is the *complete* list of fields that must
+        # end up in the criteria.  Any "hidden" fields (TableField.hidden)
+        # will not show up in the cleaned_data and must be filled in either
+        # by post_process_template or the post_process_function.
+        #
+        # Iterate until all fields in the fieldset show up in the criteria
+        while len(unsetfields) > 0:
+            # Flag to detect if we're making progress -- if no new fields
+            # are resolved yet there are still some unset fields, we're stuck...
+            stuck = True
+
+            iterate_fields = copy.copy(unsetfields)
+            unsetfields = []
+            
+            # Iterate through the fieldset (note, this is initially all fields, but
+            # after this loop it gets set to unsetfields
+            for field in fieldset:
+                skip = False
+                # Check if all parents of this field are already in the criteria. 
+                # If not, do this later
+                for parent in (field.parent_keywords or []):
+                    if not parent in criteria:
+                        # this parent's keyword hasn't been computed yet -- make sure
+                        # we didn't get an invalid relationship
+                        if parent not in fieldset_keywords:
+                            raise CriteriaError(("Child field %s depends on parent %s, " +
+                                                 "but parent didn't show up in the form's fieldset") %
+                                                (field.keyword, parent))
+                        
+                        logger.debug("Child field %s depends on parent %s which is not set yet" %
+                                     (field.keyword, parent))
+                        unsetfields.append(field)
+                        skip = True
+                        break
+
+                if skip:
+                    # At least one parent was missing
                     continue
 
-            if field.post_process_template:
-                try:
-                    criteria[field.keyword] = field.post_process_template.format(**criteria)
-                except:
-                    raise KeyError("Failed to resolve field %s template: %s" %
-                                   (field.keyword, field.template))
-                                   
-            else:
-                f = field.post_process_func
-                if f is not None:
-                    f.function(field, criteria, f.params)
-                    print "criteria %s" % criteria
+                if field.post_process_template:
+                    # Resolve the fields criteria value by the <string>.format() function
+                    # using a template.
+                    try:
+                        criteria[field.keyword] = field.post_process_template.format(**criteria)
+                    except:
+                        raise (CriteriaTemplateError
+                               ("Failed to resolve field %s template: %s" %
+                                (field.keyword, field.post_process_template)))
+
+                elif field.post_process_func is not None:
+                    # Call the post process function
+                    f = field.post_process_func
+                    try:
+                        f.function(field, criteria, f.params)
+                    except Exception as e:
+                        raise (CriteriaPostProcessError
+                               ('Field %s function %s raised an exception: %s %s' %
+                                (field, f.function, type(e), e)))
+                    
+                    if field.keyword not in criteria:
+                        raise (CriteriaPostProcessError
+                               ('Field %s function %s failed to set criteria.%s value' %
+                                (field, f.function, field.keyword)))
+                elif field.keyword not in criteria:
+                    raise CriteriaError('Field %s has no value and no post-process hooks' %
+                                        field)
+                        
+                # We got this far, so at least this field was processed
+                stuck = False
+
+            if stuck:
+                raise CriteriaError(('Failed to resolve all criteria, remaining fields ' +
+                                      'may have circular dependencies: %s') %
+                                     ([f.keyword for f in unsetfields]))
                 
         return criteria
 

@@ -84,7 +84,7 @@ class MapWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         """Class method to generate list of circle objects.
 
         Subclass should manipulate this list into specific JSON structures as needed.
@@ -160,7 +160,7 @@ class MapWidget(object):
             pass
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "circles": circles
         }
 

@@ -36,23 +36,30 @@ class ReportRunnerTestCase(TestCase):
         logger.info('Report count: %d' % len(Report.objects.all()))
         self.client = Client()
         self.assertTrue(self.client.login(username='admin', password='admin'))
+
+    def check_status(self, response, expect_fail):
+        sc = int(response.status_code)
+        if (sc >= 400 and sc < 500):
+            logger.info("Report error response code %s\n%s" %
+                        (sc, response.content))
+            self.assertTrue(expect_fail)
+            return
+
+        self.assertTrue(not expect_fail)
+        self.assertEqual(response.status_code, 200)
         
-    def run_report(self, criteria, expect_fail=False):
+    def run_report(self, criteria,
+                   expect_fail_report=False, expect_fail_job=False):
         logger.info("Running report %s with criteria:\n%s" %
                     (self.report, criteria))
 
         response = self.client.post('/report/%s/' % self.report,
                                     data=criteria)
 
-        sc = response.status_code
-        if (sc >= 400 and sc < 500):
-            logger.info("Report erroro response code %s\n%s" %
-                        (sc, response.content))
-            self.assertTrue(expect_fail)
+        self.check_status(response, expect_fail_report)
+        if expect_fail_report:
             return
-
-        self.assertEqual(response.status_code, 200)
-
+        
         report_data = json.loads(response.content)
         widgets = {}
         for widget_data in report_data[1:]:
@@ -65,10 +72,13 @@ class ReportRunnerTestCase(TestCase):
             widget_criteria = widget_data['criteria']
             postdata = {'criteria': json.dumps(widget_criteria)}
             response = self.client.post(widget_url, data=postdata)
-            self.assertEqual(response.status_code, 200)
+            self.check_status(response, expect_fail_job)
+
+            if expect_fail_job:
+                return
             
             widgetjob_data = json.loads(response.content)
-
+            
             # Extract the job url and get the first response
             joburl = widgetjob_data['joburl']
             widgets[joburl] = None

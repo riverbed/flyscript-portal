@@ -10,22 +10,16 @@ from apps.report.modules import raw
 
 from . import criteria_functions as funcs
 
-report = Report(title='Criteria Post Process' )
+report = Report(title='Criteria Post Process Errors' )
 report.save()
 
 section = Section(report=report, title='Section 0')
 section.save()
 
-TableField.create('w', 'W Value', section)
-TableField.create('x', 'X Value', section)
-TableField.create('y', 'Y Value', section)
-
-for (f1,f2) in [('w', 'x'), ('w', 'y'), ('x', 'y')]:
-    ( TableField.create
-      ('%s%s' % (f1, f2), '%s+%s Value' % (f1, f2), section,
-       hidden = True, parent_keywords=[f1, f2],
-       post_process_func = Function(funcs.postprocess_field_compute,
-                                    params={'fields': [f1, f2]})))
+TableField.create('error', 'Error type', section)    
+TableField.create('x', 'X Value', section,
+                  hidden=True,
+                  post_process_func = Function(funcs.postprocesserrors_compute))
     
 table = AnalysisTable.create('test-criteria-postprocess', tables={}, duration=60,
                              func = funcs.criteria)

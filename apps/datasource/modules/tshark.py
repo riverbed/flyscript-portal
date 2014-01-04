@@ -30,10 +30,33 @@ class ColumnOptions(JsonDict):
                 'operation': 'sum'}
     _required = ['field']
 
+def fields_add_resolution(obj,
+                          keyword = 'tshark_resolution',
+                          initial=None
+                          ):
+    field = ( TableField
+              (keyword = keyword,
+               label = 'TShark Data Resolution',
+               field_cls = forms.ChoiceField,
+               field_kwargs = {'choices': [('default', 'Default'),
+                                           ('1 second', '1sec'),
+                                           ('1 minute', '1min'),
+                                           ('15 minutes', '15min')]},
+               initial = initial,
+               required = False))
+    field.save()
+    obj.fields.add(field)
+
 class TSharkTable:
     @classmethod
-    def create(cls, name, **kwargs):
-        return Table.create(name, module=__name__, **kwargs)
+    def create(cls, name, resolution=1, **kwargs):
+
+        if resolution and isinstance(resolution, int):
+            resolution = "%dsec" % resolution
+
+        criteria = {'resolution': resolution}
+
+        return Table.create(name, module=__name__, criteria=criteria, **kwargs)
 
 def tofloat(x):
     try:

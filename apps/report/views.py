@@ -265,7 +265,7 @@ class WidgetJobsList(views.APIView):
 
         req_json = json.loads(request.POST['criteria'])
 
-        fields = widget.section.collect_fields()
+        fields = widget.collect_fields()
         form = TableFieldForm(fields, 
                               use_widgets=False,
                               data=req_json, files=request.FILES)
@@ -283,20 +283,25 @@ class WidgetJobsList(views.APIView):
             timezone = pytz.timezone(profile.timezone)
             form.apply_timezone(timezone)
 
-            job = Job.create(table=widget.table(),
-                             criteria=form.criteria())
-            job.start()
+            try:
+                job = Job.create(table=widget.table(),
+                                 criteria=form.criteria())
+                job.start()
             
-            wjob = WidgetJob(widget=widget, job=job)
-            wjob.save()
+                wjob = WidgetJob(widget=widget, job=job)
+                wjob.save()
 
-            logger.debug("Created WidgetJob %s for report %s (handle %s)" %
-                         (str(wjob), report_slug, job.handle))
+                logger.debug("Created WidgetJob %s for report %s (handle %s)" %
+                             (str(wjob), report_slug, job.handle))
 
-            return Response({"joburl": reverse('report-job-detail',
-                                               args=[report_slug,
-                                                     widget_id,
-                                                     wjob.id])})
+                return Response({"joburl": reverse('report-job-detail',
+                                                   args=[report_slug,
+                                                         widget_id,
+                                                         wjob.id])})
+            except Exception as e:
+                logger.exception("Failed to start job, an exception occured")
+                return HttpResponse(str(e), status=400)
+
         else:
             logger.error("form is invalid, entering debugger")
             from IPython import embed; embed()
@@ -343,19 +348,18 @@ class WidgetJobDetail(views.APIView):
                     logger.debug("%s Error: module unauthorized for user %s"
                                  % (str(wjob), request.user))
                 else:
-                    data = widget_func(widget, tabledata)
+                    data = widget_func(widget, job, tabledata)
                     resp = job.json(data)
                     logger.debug("%s complete" % str(wjob))
             except:
+                logger.exception("Widget %s Job %s processing failed" % (job.id, widget.id))
                 resp = job.json()
                 resp['status'] = Job.ERROR
                 ei = sys.exc_info()
                 resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
-                traceback.print_exc()
             
             wjob.delete()
             
         resp['message'] = cgi.escape(resp['message'])
-        logger.debug("Response: job %s:\n%s" % (job.id, resp))
 
         return HttpResponse(json.dumps(resp))

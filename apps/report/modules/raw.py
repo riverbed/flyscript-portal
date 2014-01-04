@@ -21,5 +21,5 @@ class TableWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         return data

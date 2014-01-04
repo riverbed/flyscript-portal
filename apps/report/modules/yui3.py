@@ -28,7 +28,7 @@ class TableWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         qcols = []
         columns = []
 
@@ -67,7 +67,7 @@ class TableWidget(object):
             rows.append(row)
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "columns": columns,
             "data": rows
         }
@@ -94,7 +94,7 @@ class PieWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         columns = widget.table().get_columns()
 
         catcol = [c for c in columns if c.name == widget.options.key][0]
@@ -126,7 +126,7 @@ class PieWidget(object):
                      qcols[1]: 1}]
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "pie",
             "categoryKey": catcol.name,
             "dataProvider": rows,
@@ -165,7 +165,7 @@ class TimeSeriesWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
 
         class ColInfo:
             def __init__(self, col, dataindex, axis, istime=False):
@@ -297,7 +297,7 @@ class TimeSeriesWidget(object):
                 axes[axis_name]['formatter'] = 'formatMetric'
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "area" if stacked else "combo",
             "stacked": stacked,
             "dataProvider": rows,
@@ -333,7 +333,7 @@ class BarWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         class ColInfo:
             def __init__(self, col, dataindex, axis):
                 self.col = col
@@ -466,7 +466,7 @@ class BarWidget(object):
                 axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "column",
             "categoryKey": catname,
             "dataProvider": rows,

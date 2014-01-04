@@ -33,3 +33,15 @@ def postprocess_field_compute(field, criteria, params):
         s = s + int(criteria[f])
 
     criteria[field.keyword] = s
+
+def sharedfields_compute(field, criteria, params):
+    criteria[field.keyword] = str(int(criteria['x']) * 2 + int(params['factor']))
+    
+def postprocesserrors_compute(field, criteria, params):
+    if criteria['error'] == 'syntax':
+        adsf
+    elif criteria['error'] == 'missing':
+        pass
+    else:
+        criteria['x'] = 1
+        

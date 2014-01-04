@@ -20,6 +20,7 @@ import random
 import datetime
 import pytz
 import pandas
+import string
 
 from django.db import models
 from django.db.models import Max
@@ -33,7 +34,7 @@ from django import forms
 from rvbd.common.utils import DictObject
 
 from apps.devices.models import Device
-from libs.fields import PickledObjectField, FunctionField
+from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
 
 logger = logging.getLogger(__name__)
@@ -95,9 +96,9 @@ class TableField(models.Model):
     :param field_kwargs: Dictionary of additional field specific
         kwargs to pass to the field_cls constructor.
 
-    :param parants: Reference to other TableField objects which
-        this field depends on for a final value.  Used in conjunction
-        with either post_process_func or post_process_template.
+    :param parants: List of parent keywords that this field depends on
+        for a final value.  Used in conjunction with either
+        post_process_func or post_process_template.
 
     :param pre_process_func: Function to call to perform any necessary
         preprocessing before rendering a form field or accepting
@@ -111,7 +112,7 @@ class TableField(models.Model):
         to fill in based on other form criteria.
     """
     keyword = models.CharField(max_length=100)
-    label = models.CharField(max_length=100)
+    label = models.CharField(max_length=100, null=True, default=None)
     help_text = models.CharField(blank=True, null=True, default=None, max_length=400)
     initial = PickledObjectField(blank=True, null=True)
     required = models.BooleanField(default=False)
@@ -120,25 +121,29 @@ class TableField(models.Model):
     field_cls = PickledObjectField(null=True)
     field_kwargs = PickledObjectField(blank=True, null=True)
 
-    parents = models.ManyToManyField("self", null=True,
-                                     symmetrical=False,
-                                     related_name="children")
+    parent_keywords = SeparatedValuesField(null=True)
 
     pre_process_func = FunctionField(null=True)
     post_process_func = FunctionField(null=True)
     post_process_template = models.CharField(null=True, max_length=500)
 
     @classmethod
-    def create(cls, keyword, label, obj, **kwargs):
-        parents = kwargs.pop('parents', None)
+    def create(cls, keyword, label=None, obj=None, **kwargs):
+        parent_keywords = kwargs.pop('parent_keywords', None)
+        if parent_keywords is None:
+            parent_keywords = []
+        
         field = cls(keyword=keyword, label=label, **kwargs)
         field.save()
 
-        if parents:
-            for parent in parents:
-                parent_field = obj.fields.get(keyword=parent)
-                field.parents.add(parent_field)
-                
+        if field.post_process_template is not None:
+            f = string.Formatter()
+            for (_, keyword, _, _) in f.parse(field.post_process_template):
+                parent_keywords.append(keyword)
+
+        field.parent_keywords = parent_keywords
+        field.save()
+        
         if obj is not None:
             obj.fields.add(field)
         return field
@@ -148,11 +153,6 @@ class TableField(models.Model):
 
     def __unicode__(self):
         return "<TableField %s (%s)>" % (self.keyword, self.id)
-
-    def save(self, *args, **kwargs):
-        #if not self.field_type:
-        #    self.field_type = 'forms.CharField'
-        super(TableField, self).save(*args, **kwargs)
 
     def is_report_criteria(self, table):
         """ Runs through intersections of widgets to determine if this criteria
@@ -178,31 +178,18 @@ class TableField(models.Model):
         param = param[0]
         return param
 
-    @classmethod
-    def get_children(cls, key, value):
-        """ Given a key, return all children objects
-            with value attributes filled in.  Return empty list if no
-            children.
-        """
-        parent = cls.get_instance(key, value)
-        children = parent.children.all()
-        for c in children:
-            c.value = value
-        return children
-
 
 class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)         # source module name
     device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
-    filterexpr = models.TextField(null=True)
     duration = models.IntegerField(null=True)         # default duration in seconds
-    resolution = models.IntegerField(default=60)      # query resolution, sec
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
+    filterexpr = models.CharField(null=True, max_length=400)
 
-    # deprecated interface for profiler key/value separated by comma
-    datafilter = models.TextField(null=True, blank=True)  
+    # Criteria specific to this table
+    criteria = PickledObjectField()
 
     # indicator field for analysis/synthetic tables
     resample = models.BooleanField(default=False)
@@ -309,7 +296,7 @@ class Table(models.Model):
                     msg = 'WARNING: keyword %s not found in table %s or its options'
                     logger.debug(msg % (v.keyword, self))
 
-    def compute_synthetic(self, df):
+    def compute_synthetic(self, job, df):
         """ Compute the synthetic columns from DF a two-dimensional array
             of the non-synthetic columns.
 
@@ -376,7 +363,8 @@ class Table(models.Model):
                 how[k] = colmap[k].resample_operation
 
             indexed = df.set_index(timecol)
-            resampled = indexed.resample('%ss' % self.resolution, how).reset_index()
+            resolution = timedelta_total_seconds(parse_timedelta(job.criteria.resolution))
+            resampled = indexed.resample('%ss' % int(resolution), how).reset_index()
             df = resampled
 
         # 3. Compute remaining synthetic columns (post_resample is True)
@@ -656,6 +644,7 @@ class Job(models.Model):
 
                     job = Job(table = table,
                               criteria = criteria,
+                              actual_criteria = parent.actual_criteria,
                               status = parent.status,
                               handle = handle,
                               parent = parent,
@@ -986,7 +975,7 @@ class Worker(base_worker_class):
                     raise ValueError("Unrecognized query result type: %s" % type(query.data))
 
                 if df is not None:
-                    df = job.table.compute_synthetic(df)
+                    df = job.table.compute_synthetic(job, df)
 
                 if df is not None:
                     df.save(job.datafile())
@@ -995,6 +984,10 @@ class Worker(base_worker_class):
                     logger.debug("%s no data saved, data is empty" % (str(self)))
 
                 logger.info("%s finished as COMPLETE" % self)
+                job.refresh()
+                if job.actual_criteria is None:
+                    job.safe_update(actual_criteria = job.criteria)
+
                 job.mark_complete()
             else:
                 # If the query.run() function returns false, the run() may
@@ -1010,8 +1003,7 @@ class Worker(base_worker_class):
                 logger.error("%s finished with an error: %s" % (self, job.message))
                 
         except:
-            traceback.print_exc()
-            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
+            logger.exception("%s raised an exception" % (self))
             job.safe_update(status = job.ERROR,
                             progress = 100,
                             message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))

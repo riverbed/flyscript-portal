@@ -10,6 +10,8 @@ import logging
 import datetime
 import threading
 
+from django import forms
+
 import pandas as pd
 from rvbd.shark import Shark
 from rvbd.shark.types import Operation, Value, Key
@@ -18,6 +20,8 @@ from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
+from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
+                                   timedelta_total_seconds)
 
 from apps.datasource.models import Column, Table, TableField
 from apps.datasource.forms import fields_add_time_selection
@@ -46,13 +50,29 @@ class ColumnOptions(JsonDict):
 
 
 def fields_add_filterexpr(obj,
-                            keyword = 'shark_filterexpr',
-                            initial=None
-                            ):
+                          keyword = 'shark_filterexpr',
+                          initial=None):
     field = ( TableField
               (keyword = keyword,
                label = 'Shark Filter Expression',
                help_text = 'Traffic expression using Shark filter syntax',
+               initial = initial,
+               required = False))
+    field.save()
+    obj.fields.add(field)
+
+def fields_add_resolution(obj,
+                          keyword = 'shark_resolution',
+                          initial=None):
+    field = ( TableField
+              (keyword = keyword,
+               label = 'Shark Data Resolution',
+               field_cls = forms.ChoiceField,
+               field_kwargs = {'choices': [('default', 'Default'),
+                                           ('1 ms', '1ms'),
+                                           ('1 second', '1sec'),
+                                           ('1 minute', '1min'),
+                                           ('15 minutes', '15min')]},
                initial = initial,
                required = False))
     field.save()
@@ -71,12 +91,18 @@ class SharkTable:
         options = TableOptions(view=view,
                                view_size=view_size,
                                aggregated=aggregated)
+
+        if resolution and isinstance(resolution, int):
+            resolution = "%dsec" % resolution
+
+        criteria = {'resolution': resolution}
         t = Table(name=name, module=__name__, device=device, duration=duration * 60,
-                  filterexpr=filterexpr, options=options, resolution=resolution,
+                  filterexpr=filterexpr, options=options, criteria=criteria,
                   sortcol=sortcol)
         t.save()
         fields_add_time_selection(t, initial_duration="%d min" % duration)
         fields_add_filterexpr(t)
+        fields_add_resolution(t, initial=resolution)
         return t
 
 
@@ -113,8 +139,15 @@ class TableQuery:
         self.timeseries = False         # if key column called 'time' is created
         self.column_names = []
 
+        resolution = job.criteria.shark_resolution 
+        if resolution == 'default':
+            # 60sec if it's not in the table criteria, or it's None in the table criteria
+            resolution = self.table.criteria.get('resolution', 60) or 60
+
+        resolution = timedelta_total_seconds(parse_timedelta(resolution))
+
         default_delta = 1000000000                      # one second
-        self.delta = default_delta * table.resolution   # sample size interval
+        self.delta = int(default_delta * resolution)    # sample size interval
 
     def run(self):
         """ Main execution method

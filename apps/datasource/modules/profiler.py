@@ -10,9 +10,13 @@ import logging
 import threading
 import datetime
 
+from django import forms
+
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
+from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
+                                   timedelta_total_seconds)
 
 from apps.datasource.models import Table, TableField
 from apps.devices.devicemanager import DeviceManager
@@ -41,25 +45,43 @@ def fields_add_filterexpr(obj,
     field.save()
     obj.fields.add(field)
 
-def fields_add_combine_filterexprs(obj, 
-                                   keyword = 'profiler_filterexpr',
-                                   parents = None):
-    field = obj.fields.get(keyword = keyword)
-    field.post_process_func = Function(function=fields_combine_filterexprs)
+def fields_add_resolution(obj,
+                          keyword = 'profiler_resolution',
+                          initial=None
+                          ):
+    field = ( TableField
+              (keyword = keyword,
+               label = 'Profiler Data Resolution',
+               field_cls = forms.ChoiceField,
+               field_kwargs = {'choices': [('default', 'Default'),
+                                           ('auto', 'Automatic'),
+                                           ('1 minute', '1min'),
+                                           ('15 minutes', '15min'),
+                                           ('Hour', 'hour'),
+                                           ('6 Hour', '6hour')]},
+               initial = initial,
+               required = False))
     field.save()
+    obj.fields.add(field)
 
-    for parent in parents:
-        field.parents.add(parent)
+def fields_add_filterexprs_field(obj, keyword):
+    field = obj.fields.get(keyword = 'profiler_filterexpr')
+    field.post_process_func = Function(function=_fields_combine_filterexprs)
 
+    parent_keywords = set(field.parent_keywords or [])
+    parent_keywords.add(keyword)
+    field.parent_keywords = list(parent_keywords)
+    field.save()
+    
     return field
     
-def fields_combine_filterexprs(field, criteria, params):
+def _fields_combine_filterexprs(field, criteria, params):
     exprs = []
     if (  'profiler_filterexpr' in criteria and
           criteria.profiler_filterexpr != ''):
         exprs.append(criteria.profiler_filterexpr)
-    for parent in field.parents.all():
-        expr = criteria[parent.keyword]
+    for parent in field.parent_keywords:
+        expr = criteria[parent]
         if expr is not None and expr != '':
             exprs.append(expr)
 
@@ -78,11 +100,49 @@ class TableOptions(JsonDict):
                 'centricity': None}
 
 
-class TimeSeriesTable:
+class ProfilerTable(object):
+    @classmethod
+    def create(cls, name, device, groupby, realm, duration,
+               resolution='auto', filterexpr=None, interface=False,
+               add_time_selection=True, add_filterexpr=True, add_resolution=True,
+               **kwargs):
+        logger.debug('Creating ProfilerTable table %s (%d) - %s/%s' %
+                     (name, duration, groupby, realm))
+
+        options = TableOptions(groupby=groupby,
+                               realm=realm,
+                               centricity='int' if interface else 'hos')
+
+        resolution = kwargs.pop('resolution', None)
+        if resolution and isinstance(resolution, int):
+            resolution = "%dmin" % resolution
+
+        if resolution:
+            rd = parse_timedelta(resolution)
+            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[int(timedelta_total_seconds(rd))]
+
+        criteria = {'resolution': resolution}
+
+        t = Table(name=name, module=__name__, device=device, duration=duration*60,
+                  filterexpr=filterexpr, options=options, criteria=criteria, **kwargs)
+        t.save()
+
+        if add_time_selection:
+            fields_add_time_selection(t, initial_duration="%d min" % duration)
+        if add_filterexpr:
+            fields_add_filterexpr(t)
+        fields_add_resolution(t, initial=criteria.get('resolution', None))
+        return t
+
+class TimeSeriesTable(ProfilerTable):
     @classmethod
     def create(cls, name, device, duration,
-               filterexpr=None, interface=False,
-               add_time_selection=True, add_filterexpr=True,
+               resolution='auto',
+               filterexpr=None,
+               interface=False,
+               add_time_selection=True,
+               add_filterexpr=True,
+               add_resolution=True,
                **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
@@ -92,26 +152,27 @@ class TimeSeriesTable:
         logger.debug('Creating Profiler TimeSeries table %s (%d)' %
                      (name, duration))
 
-        options = TableOptions(groupby='time',
-                               realm='traffic_overall_time_series',
-                               centricity='int' if interface else 'hos')
-
-        t = Table(name=name, module=__name__, device=device, duration=duration*60,
-                  filterexpr=filterexpr, options=options, **kwargs)
-        t.save()
-
-        if add_time_selection:
-            fields_add_time_selection(t, initial_duration="%d min" % duration)
-        if add_filterexpr:
-            fields_add_filterexpr(t)
-        return t
-        
-
-class GroupByTable:
+        return super(TimeSeriesTable,cls).create(name, device,
+                                                 groupby='time',
+                                                 realm='traffic_overall_time_series',
+                                                 duration=duration,
+                                                 resolution=resolution,
+                                                 filterexpr=filterexpr,
+                                                 interface=interface,
+                                                 add_time_selection=add_time_selection,
+                                                 add_filterexpr=add_filterexpr,
+                                                 add_resolution=add_resolution,
+                                                 **kwargs)
+    
+class GroupByTable(ProfilerTable):
     @classmethod
     def create(cls, name, device, groupby, duration, 
-               filterexpr=None, interface=False,
-               add_time_selection=True, add_filterexpr=True,
+               resolution='auto',
+               filterexpr=None,
+               interface=False,
+               add_time_selection=True,
+               add_filterexpr=True,
+               add_resolution=True,
                **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
@@ -121,19 +182,17 @@ class GroupByTable:
         msg = 'Creating Profiler GroupBy table %s (%s, %d, %s)'
         logger.debug(msg % (name, groupby, duration, filterexpr))
 
-        options = TableOptions(groupby=groupby,
-                               realm='traffic_summary',
-                               centricity='int' if interface else 'hos')
-
-        t = Table(name=name, module=__name__, device=device, duration=duration*60,
-                  filterexpr=filterexpr, options=options, **kwargs)
-        t.save()
-        if add_time_selection:
-            fields_add_time_selection(t, initial_duration="%d min" % duration)
-        if add_filterexpr:
-            fields_add_filterexpr(t)
-        return t
-        
+        return super(GroupByTable,cls).create(name, device,
+                                                 groupby=groupby,
+                                                 realm='traffic_summary',
+                                                 duration=duration, 
+                                                 resolution=resolution,
+                                                 filterexpr=filterexpr,
+                                                 interface=interface,
+                                                 add_time_selection=add_time_selection,
+                                                 add_filterexpr=add_filterexpr,
+                                                 add_resolution=add_resolution,
+                                                 **kwargs)
 
 class TableQuery:
     # Used by Table to actually run a query
@@ -170,13 +229,19 @@ class TableQuery:
         # process Report/Table Criteria
         self.table.apply_table_criteria(criteria)
 
-        if self.table.datafilter:
-            datafilter = self.table.datafilter.split(',')
+        if ('datafilter' in criteria) and (criteria.datafilter is not None):
+            datafilter = criteria.datafilter.split(',')
         else:
             datafilter = None
 
         trafficexpr = TrafficFilter(self.job.combine_filterexprs(exprs=criteria.profiler_filterexpr))
-        
+
+        #__import__('IPython').core.debugger.Pdb().set_trace()
+        resolution = criteria.profiler_resolution
+        if resolution == 'default':
+            # auto if it's not in the table criteria, or it's None in the table criteria
+            resolution = self.table.criteria.get('resolution', 'auto') or 'auto'
+
         with lock:
             report.run(realm=self.table.options.realm,
                        groupby=profiler.groupbys[self.table.options.groupby],
@@ -185,7 +250,7 @@ class TableQuery:
                        timefilter=tf, 
                        trafficexpr=trafficexpr,
                        data_filter=datafilter,
-                       resolution="%dmin" % (int(self.table.resolution / 60)),
+                       resolution=resolution,
                        sort_col=sortcol,
                        sync=False
                        )

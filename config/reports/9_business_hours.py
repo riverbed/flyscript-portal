@@ -63,12 +63,7 @@ Column.create(basetable, 'out_avg_util', '% Utilization Out', datatype='pct', is
 bustable_pre = bizhours.create('bh-bustable-pre', basetable, 
                                aggregate = { 'avg_util' : 'avg',
                                              'in_avg_util' : 'avg',
-                                             'out_avg_util' : 'avg' },
-                               resolution=3600, duration=60*24*7)
-
-#bustable = AnalysisTable.create('bh-bustable', tables={'table': bustable_pre.id},
-#                                func = protools.process_interface_dns)
-
+                                             'out_avg_util' : 'avg' })
 
 # Device Table
 

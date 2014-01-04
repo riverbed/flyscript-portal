@@ -27,7 +27,7 @@ SHARK_VIEW_SIZE = '10%'                         # Default size to use if job doe
 #
 # Define a Shark Report and Table
 #
-report = Report(title='Shark 1', position=3)
+report = Report(title='Shark', position=3)
 report.save()
 
 section = Section.create(report)
@@ -40,9 +40,9 @@ t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view=SHARK_VIEW
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
 create_shark_column(t, 'generic_bytes', label='Bytes', iskey=False, extractor='generic.bytes', operation='sum')
 
-yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes) at (1-second resolution)', width=12)
+yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes)', width=12)
 
-### Table for Shark 1
+### Table for Shark
 table = SharkTable.create(name='Packet Traffic', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
@@ -53,9 +53,9 @@ create_shark_column(table, 'generic_bytes', label='Bytes', iskey=False, extracto
 create_shark_column(table, 'generic_packets', label='Packets', iskey=False, extractor='generic.packets', operation='sum',
                         datatype='metric')
 
-yui3.TableWidget.create(section, table, 'Shark 1 Packets', width=12)
+yui3.TableWidget.create(section, table, 'Packets', width=12)
 
-### Microbursts Graph for Shark 1
+### Microbursts Graph for Shark 
 table = SharkTable.create(name='MicroburstsTime', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
@@ -70,9 +70,9 @@ create_shark_column(table, 'max_microburst_10ms_bytes', label='uBurst 10ms',
 create_shark_column(table, 'max_microburst_100ms_bytes', label='uburst 100ms',
                     extractor='generic.max_microburst_100ms.bytes', operation='max',  datatype='bytes')
 
-yui3.TimeSeriesWidget.create(section, table, 'Shark 1 Microbursts Summary Bytes', width=6)
+yui3.TimeSeriesWidget.create(section, table, 'Microbursts Summary Bytes', width=6)
 
-### Microbursts Table for Shark 1
+### Microbursts Table for Shark
 table = SharkTable.create(name='MicroburstsTable', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                             duration=10, aggregated=False)
 
@@ -85,7 +85,7 @@ create_shark_column(table, 'max_microburst_10ms_bytes', label='uBurst 10ms',
 create_shark_column(table, 'max_microburst_100ms_bytes', label='uburst 100ms',
                     extractor='generic.max_microburst_100ms.bytes', operation='max',  datatype='bytes')
 
-yui3.TableWidget.create(section, table, 'Shark 1 Microbursts Bytes Summary', width=6)
+yui3.TableWidget.create(section, table, 'Microbursts Bytes Summary', width=6)
 
 ### Table and Widget 2
 
