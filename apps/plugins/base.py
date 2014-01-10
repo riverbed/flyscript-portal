@@ -56,11 +56,13 @@ class IPlugin(object):
         if self.reports is not None and self.is_enabled():
             module_path = self.__module__.rsplit('.', 1)[0]
 
+            importer = Importer()
+
             for report in self.reports:
                 path, module = report.split('.', 1)
                 name = '.'.join([module_path, path, module])
 
-                Importer().import_file(module, name)
+                importer.import_file(module, name)
             self._reports_loaded = True
 
 

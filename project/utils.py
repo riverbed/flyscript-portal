@@ -46,28 +46,28 @@ class Importer(object):
     def import_file(self, f, name):
         try:
             if name in sys.modules:
-                self.stdout.write('reloading %s as %s' % (f, name))
+                self.stdout.write('reloading %s as %s\n' % (f, name))
                 reload(sys.modules[name])
             else:
-                self.stdout.write('importing %s as %s' % (f, name))
+                self.stdout.write('importing %s as %s\n' % (f, name))
                 __import__(name)
 
         except RvbdHTTPException as e:
-            instance = RvbdException('From config file "%s": %s' %
+            instance = RvbdException('From config file "%s": %s\n' %
                                      (name, e.message))
             raise RvbdException, instance, sys.exc_info()[2]
 
         except SyntaxError as e:
-            msg_format = '%s: (file: %s, line: %s, offset: %s)\n%s'
+            msg_format = '%s: (file: %s, line: %s, offset: %s)\n%s\n'
             message = msg_format % (e.msg, e.filename,
                                     e.lineno, e.offset, e.text)
-            instance = type(e)('From config file "%s": %s' % (name,
-                                                              message))
+            instance = type(e)('From config file "%s": %s\n' % (name,
+                                                                message))
             raise type(e), instance, sys.exc_info()[2]
 
         except Exception as e:
-            instance = type(e)('From config file "%s": %s' % (name,
-                                                              str(e)))
+            instance = type(e)('From config file "%s": %s\n' % (name,
+                                                                str(e)))
             raise type(e), instance, sys.exc_info()[2]
 
     def import_directory(self, root, report_name=None, ignore_list=None):
@@ -95,7 +95,7 @@ class Importer(object):
                 name = '.'.join(name.split(os.path.sep))
 
                 if report_name and report_name != name:
-                    self.stdout.write('skipping %s (%s) ...' % (f, name))
+                    self.stdout.write('skipping %s (%s) ...\n' % (f, name))
                     continue
 
                 self.import_file(f, name)

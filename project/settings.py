@@ -180,6 +180,9 @@ INSTALLED_APPS = (
     'apps.plugins.builtin.whois',
 )
 
+from apps.plugins.loader import load_plugins
+load_plugins()
+
 REST_FRAMEWORK = {
     # Use hyperlinked styles by default.
     # Only used if the `serializer_class` attribute is not set on a view.
