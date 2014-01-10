@@ -302,10 +302,10 @@ class TableFieldForm(forms.Form):
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
     
-    def __init__(self, fields, use_widgets=True, hidden_fields=None, include_hidden=False, **kwargs):
+    def __init__(self, tablefields, use_widgets=True, hidden_fields=None, include_hidden=False, **kwargs):
         """ Initialize a TableFieldForm for the given set of table.
 
-        :param fields: dict of id to TableField
+        :param tablefields: dict of id to TableField
 
         :param use_widgets: if True (default) include UI-style widgets,
             otherwise (False) use only TextInput (suitable for command-line)
@@ -315,31 +315,31 @@ class TableFieldForm(forms.Form):
             
         """
 
-        if ('data' in kwargs):
+        if ('data' in kwargs and kwargs['data'] is not None):
             # Make a copy of data as we may change it below
             kwargs['data'] = copy.copy(kwargs['data'])
 
         super(TableFieldForm, self).__init__(**kwargs)
 
-        self._tablefields = fields
+        self._tablefields = tablefields
         self._use_widgets = use_widgets
         self._hidden_fields = hidden_fields
         
-        for field_id, field in fields.iteritems():
-            if include_hidden or not (field.hidden or
+        for field_id, tablefield in tablefields.iteritems():
+            if include_hidden or not (tablefield.hidden or
                                       (hidden_fields and
-                                       field.keyword in hidden_fields)):
-                self.add_field(field_id, field)
-                
-    def add_field(self, field_id, field):
+                                       tablefield.keyword in hidden_fields)):
+                self.add_field(field_id, tablefield)
+
+    def add_field(self, field_id, tablefield):
         if field_id in self.fields:
             # Already added this field
             return
 
-        field_cls = field.field_cls or forms.CharField
+        field_cls = tablefield.field_cls or forms.CharField
 
-        if field.field_kwargs is not None:
-            fkwargs = copy.copy(field.field_kwargs)
+        if tablefield.field_kwargs is not None:
+            fkwargs = copy.copy(tablefield.field_kwargs)
         else:
             fkwargs = {}
 
@@ -347,13 +347,20 @@ class TableFieldForm(forms.Form):
             fkwargs['widget'] = TextInput
 
         for k in ['label', 'required', 'help_text', 'initial']:
-            fkwargs[k] = getattr(field, k)
+            fkwargs[k] = getattr(tablefield, k)
 
-        f = field.pre_process_func
+        f = tablefield.pre_process_func
         if f is not None:
-            f.function(field, fkwargs, f.params)
+            f.function(tablefield, fkwargs, f.params)
 
-        self.fields[field_id] = field_cls(**fkwargs)
+        field = field_cls(**fkwargs)
+        self.fields[field_id] = field
+        
+        if (  (self.data is not None) and
+              (field_id not in self.data) and
+              (tablefield.initial is not None)):
+            self.data[field_id] = tablefield.initial
+    
 
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
@@ -464,6 +471,16 @@ class TableFieldForm(forms.Form):
 
                 
         return criteria
+
+    def is_valid(self, check_unknown=False):
+        super(TableFieldForm, self).is_valid()
+
+        if check_unknown and self.is_bound:
+            for k in self.data.keys():
+                if k not in self.fields:
+                    self._errors[k] = self.error_class(['Unknown criteria field'])
+
+        return self.is_bound and not bool(self.errors)
 
     def apply_timezone(self, tzinfo):
         """ Apply `tzinfo` as the timezone of any naive datetime objects. """

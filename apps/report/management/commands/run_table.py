@@ -12,6 +12,7 @@ import datetime
 import optparse
 import pytz
 import sys
+from dateutil.tz import tzlocal
 
 from django.core.management.base import BaseCommand, CommandError
 from django.forms import ValidationError
@@ -103,6 +104,23 @@ class Command(BaseCommand):
             self.stdout.write(msg, ending=ending)
             self.stdout.flush()
 
+    def get_form(self, table, data=None):
+        # First see if there's a single report associated with this table, and if so
+        # use it to get the field set
+        widgets = Widget.objects.filter(tables__in=[table])
+        sections = set()
+        for w in widgets:
+            sections.add(w.section)
+
+        if len(sections) == 1:
+            all_fields = widgets[0].collect_fields()
+        else:
+            for f in table.fields.all():
+                all_fields[f.keyword]=f
+
+        return TableFieldForm(all_fields, use_widgets=False, data=data)
+
+
     def handle(self, *args, **options):
         """ Main command handler
         """
@@ -132,7 +150,9 @@ class Command(BaseCommand):
             else:
                 raise ValueError("Must specify either --table-id or --table-name to run a table")
 
-            output = [[c.keyword, c.label] for c in table.criteria.all()]
+            form = self.get_form(table)
+
+            output = [[c.keyword, c.label] for c in form._tablefields.values()]
             Formatter.print_table(output, ['Keyword', 'Label'])
         else:
             if 'table_id' in options and options['table_id'] is not None:
@@ -152,22 +172,9 @@ class Command(BaseCommand):
                     (k,v) = s.split(':', 1)
                     criteria_options[k] = v
 
-            # First see if there's a single report associated with this table, and if so
-            # use it to get the field set
-            widgets = Widget.objects.filter(tables__in=[table])
-            sections = set()
-            for w in widgets:
-                sections.add(w.section)
-                    
-            if len(sections) == 1:
-                all_fields = widgets[0].collect_fields()
-            else:
-                for f in table.fields.all():
-                    all_fields[f.keyword]=f
-                    
-            form = TableFieldForm(all_fields, use_widgets=False,
-                                  data=criteria_options)
-            if not form.is_valid():
+            form = self.get_form(table, data=criteria_options)
+
+            if not form.is_valid(check_unknown=True):
                 self.console('Invalid criteria:')
                 for k,v in form.errors.iteritems():
                     self.console('  %s: %s' % (k,','.join(v)))
