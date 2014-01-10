@@ -25,17 +25,20 @@ SHARK_VIEW_SIZE = '10%'                         # Default size to use if job doe
 # Overall report
 #
 
-report = Report(title="Overall", position=1)
+report = Report(title="Overall", position=1,
+                field_order = ['endtime', 'profiler_filterexpr', 'shark_filterexpr'],
+                hidden_fields = ['resolution', 'duration'])
 report.save()
 
-section = Section.create(report)
+section = Section.create(report, title = 'Locations',
+                         section_keywords = ['resolution', 'duration'])
                          
 #### Load devices that are defined
 PROFILER = Device.objects.get(name="profiler")
 SHARK1 = Device.objects.get(name="shark1")
 
 # Define a map and table, group by location
-table = GroupByTable.create('maploc', PROFILER, 'host_group', duration=60)
+table = GroupByTable.create('maploc', PROFILER, 'host_group', duration=60, resolution='auto')
 
 Column.create(table, 'group_name',    label='Group Name', iskey=True)
 Column.create(table, 'response_time', label='Resp Time',  datatype='metric')
@@ -46,7 +49,10 @@ maps.MapWidget.create(section, table, "Response Time", width=6, height=300)
 yui3.TableWidget.create(section, table, "Locations by Avg Bytes", width=6)
 
 # Define a Overall TimeSeries showing Avg Bytes/s
-table = TimeSeriesTable.create('ts1', PROFILER, duration=1440, resolution=(60*15))
+section = Section.create(report, title = 'Profiler Overall',
+                         section_keywords = ['resolution', 'duration'])
+
+table = TimeSeriesTable.create('ts1', PROFILER, duration=1440, resolution='15min')
 
 Column.create(table, 'time',      label='Time',        datatype='time',  iskey=True)
 Column.create(table, 'avg_bytes', label='Avg Bytes/s', datatype='bytes', units='B/s')
@@ -54,12 +60,16 @@ Column.create(table, 'avg_bytes', label='Avg Bytes/s', datatype='bytes', units='
 yui3.TimeSeriesWidget.create(section, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
+section = Section.create(report, title = 'Shark Traffic',
+                         section_keywords = ['resolution', 'duration', ])
+
 t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1,
                       view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                      duration=10, resolution=1, aggregated=False)
+                      duration=15, resolution='1sec', aggregated=False)
 
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
 create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False,
                     extractor='generic.bytes', operation='sum', datatype='bytes')
 
-yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes) at (1-second resolution)', width=6)
+yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes) at (1-second resolution)',
+                             width=6)

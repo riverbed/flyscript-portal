@@ -29,7 +29,7 @@ report.save()
 section = Section.create(report)
 
 # Define a Table that gets external hosts by avg bytes
-table = GroupByTable.create('5-hosts', PROFILER, 'host', duration=60*10,
+table = GroupByTable.create('5-hosts', PROFILER, 'host', duration='1 hour',
                             filterexpr='not srv host 10/8 and not srv host 192.168/16')
 
 Column.create(table, 'host_ip', 'IP Addr', iskey=True)

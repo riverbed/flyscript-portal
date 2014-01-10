@@ -20,7 +20,7 @@ from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds,
 
 from apps.datasource.models import Table, TableField
 from apps.devices.devicemanager import DeviceManager
-from apps.datasource.forms import fields_add_time_selection
+from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 from libs.fields import Function
 
 logger = logging.getLogger(__name__)
@@ -40,25 +40,6 @@ def fields_add_filterexpr(obj,
                label = 'Profiler Filter Expression',
                help_text = ('Traffic expression using Profiler Advanced ' +
                             'Traffic Expression syntax'),
-               initial = initial,
-               required = False))
-    field.save()
-    obj.fields.add(field)
-
-def fields_add_resolution(obj,
-                          keyword = 'profiler_resolution',
-                          initial=None
-                          ):
-    field = ( TableField
-              (keyword = keyword,
-               label = 'Profiler Data Resolution',
-               field_cls = forms.ChoiceField,
-               field_kwargs = {'choices': [('default', 'Default'),
-                                           ('auto', 'Automatic'),
-                                           ('1 minute', '1min'),
-                                           ('15 minutes', '15min'),
-                                           ('Hour', 'hour'),
-                                           ('6 Hour', '6hour')]},
                initial = initial,
                required = False))
     field.save()
@@ -104,34 +85,39 @@ class ProfilerTable(object):
     @classmethod
     def create(cls, name, device, groupby, realm, duration,
                resolution='auto', filterexpr=None, interface=False,
-               add_time_selection=True, add_filterexpr=True, add_resolution=True,
                **kwargs):
-        logger.debug('Creating ProfilerTable table %s (%d) - %s/%s' %
+        logger.debug('Creating ProfilerTable table %s (%s) - %s/%s' %
                      (name, duration, groupby, realm))
 
         options = TableOptions(groupby=groupby,
                                realm=realm,
                                centricity='int' if interface else 'hos')
 
-        resolution = kwargs.pop('resolution', None)
-        if resolution and isinstance(resolution, int):
-            resolution = "%dmin" % resolution
 
-        if resolution:
-            rd = parse_timedelta(resolution)
-            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[int(timedelta_total_seconds(rd))]
-
-        criteria = {'resolution': resolution}
-
-        t = Table(name=name, module=__name__, device=device, duration=duration*60,
-                  filterexpr=filterexpr, options=options, criteria=criteria, **kwargs)
+        t = Table(name=name, module=__name__, device=device, 
+                  filterexpr=filterexpr, options=options, **kwargs)
         t.save()
 
-        if add_time_selection:
-            fields_add_time_selection(t, initial_duration="%d min" % duration)
-        if add_filterexpr:
-            fields_add_filterexpr(t)
-        fields_add_resolution(t, initial=criteria.get('resolution', None))
+        if resolution != 'auto':
+            if isinstance(resolution, int):
+                rsecs = resolution
+            else:
+                rsecs  = int(timedelta_total_seconds(parse_timedelta(resolution)))
+            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[rsecs]
+
+        if isinstance(duration, int):
+            duration = "%d min" % duration
+
+        fields_add_time_selection(t, initial_duration=duration)
+        
+        fields_add_filterexpr(t)
+        fields_add_resolution(t, initial=resolution,
+                              resolutions = [('auto', 'Automatic'),
+                                             ('1min', '1 minute'),
+                                             ('15min', '15 minutes'),
+                                             ('hour', 'Hour'),
+                                             ('6hour', '6 Hour')],
+                              special_values = ['auto'])
         return t
 
 class TimeSeriesTable(ProfilerTable):
@@ -140,16 +126,13 @@ class TimeSeriesTable(ProfilerTable):
                resolution='auto',
                filterexpr=None,
                interface=False,
-               add_time_selection=True,
-               add_filterexpr=True,
-               add_resolution=True,
                **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
-        `duration` is in minutes
+        `duration` is in minutes or a string like '15min'
 
         """
-        logger.debug('Creating Profiler TimeSeries table %s (%d)' %
+        logger.debug('Creating Profiler TimeSeries table %s (%s)' %
                      (name, duration))
 
         return super(TimeSeriesTable,cls).create(name, device,
@@ -159,9 +142,6 @@ class TimeSeriesTable(ProfilerTable):
                                                  resolution=resolution,
                                                  filterexpr=filterexpr,
                                                  interface=interface,
-                                                 add_time_selection=add_time_selection,
-                                                 add_filterexpr=add_filterexpr,
-                                                 add_resolution=add_resolution,
                                                  **kwargs)
     
 class GroupByTable(ProfilerTable):
@@ -170,29 +150,23 @@ class GroupByTable(ProfilerTable):
                resolution='auto',
                filterexpr=None,
                interface=False,
-               add_time_selection=True,
-               add_filterexpr=True,
-               add_resolution=True,
                **kwargs):
         """ Create a Profiler TimeSeriesTable.
 
         `duration` is in minutes
 
         """
-        msg = 'Creating Profiler GroupBy table %s (%s, %d, %s)'
+        msg = 'Creating Profiler GroupBy table %s (%s, %s, %s)'
         logger.debug(msg % (name, groupby, duration, filterexpr))
 
         return super(GroupByTable,cls).create(name, device,
-                                                 groupby=groupby,
-                                                 realm='traffic_summary',
-                                                 duration=duration, 
-                                                 resolution=resolution,
-                                                 filterexpr=filterexpr,
-                                                 interface=interface,
-                                                 add_time_selection=add_time_selection,
-                                                 add_filterexpr=add_filterexpr,
-                                                 add_resolution=add_resolution,
-                                                 **kwargs)
+                                              groupby=groupby,
+                                              realm='traffic_summary',
+                                              duration=duration, 
+                                              resolution=resolution,
+                                              filterexpr=filterexpr,
+                                              interface=interface,
+                                              **kwargs)
 
 class TableQuery:
     # Used by Table to actually run a query
@@ -202,13 +176,13 @@ class TableQuery:
 
     def fake_run(self):
         import fake_data
-        self.data = fake_data.make_data(self.table)
+        self.data = fake_data.make_data(self.table, self.job)
         
     def run(self):
         """ Main execution method
         """
         #self.fake_run()
-        #return
+        #return True
 
         profiler = DeviceManager.get_device(self.table.device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
@@ -236,11 +210,16 @@ class TableQuery:
 
         trafficexpr = TrafficFilter(self.job.combine_filterexprs(exprs=criteria.profiler_filterexpr))
 
-        #__import__('IPython').core.debugger.Pdb().set_trace()
-        resolution = criteria.profiler_resolution
-        if resolution == 'default':
-            # auto if it's not in the table criteria, or it's None in the table criteria
-            resolution = self.table.criteria.get('resolution', 'auto') or 'auto'
+        # Incoming criteria.resolution is a timedelta
+        logger.debug('Profiler report got criteria resolution %s (%s)' %
+                     (criteria.resolution, type(criteria.resolution)))
+        if criteria.resolution != 'auto':
+            rsecs  = int(timedelta_total_seconds(criteria.resolution))
+            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[rsecs]
+        else:
+            resolution = 'auto'
+        
+        logger.debug('Profiler report using resolution %s (%s)' % (resolution, type(resolution)))
 
         with lock:
             report.run(realm=self.table.options.realm,
@@ -270,9 +249,10 @@ class TableQuery:
             query = report.get_query_by_index(0)
             self.data = query.get_data()
 
+            tz = criteria.starttime.tzinfo
             # Update criteria
-            criteria.starttime = query.actual_t0
-            criteria.endtime = query.actual_t1
+            criteria.starttime = datetime.datetime.utcfromtimestamp(query.actual_t0).replace(tzinfo=tz)
+            criteria.endtime = datetime.datetime.utcfromtimestamp(query.actual_t1).replace(tzinfo=tz)
 
         self.job.safe_update(actual_criteria = criteria)
 

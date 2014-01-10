@@ -21,6 +21,7 @@ import datetime
 import pytz
 import pandas
 import string
+from decimal import Decimal
 
 from django.db import models
 from django.db.models import Max
@@ -32,7 +33,9 @@ from django.dispatch import receiver
 from django import forms
 
 from rvbd.common.utils import DictObject
+from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
 
+from apps.datasource.exceptions import *
 from apps.devices.models import Device
 from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
@@ -183,15 +186,12 @@ class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)         # source module name
     device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
-    duration = models.IntegerField(null=True)         # default duration in seconds
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
     filterexpr = models.CharField(null=True, max_length=400)
 
-    # Criteria specific to this table
-    criteria = PickledObjectField()
-
-    # indicator field for analysis/synthetic tables
+    # resample flag -- resample to the criteria.resolution
+    # - this requires a "time" column
     resample = models.BooleanField(default=False)
 
     # options are typically fixed attributes defined at Table creation
@@ -200,6 +200,10 @@ class Table(models.Model):
     # list of fields that must be bound to values in criteria
     # that this table needs to run
     fields = models.ManyToManyField(TableField, null=True)
+
+    # Default values for fields assocaited with this table, these
+    # may be overridden by user criteria at run time
+    criteria = PickledObjectField()
     
     # indicate if data can be cached 
     cacheable = models.BooleanField(default=True)
@@ -355,7 +359,19 @@ class Table(models.Model):
             colmap[col.name] = col
             if col.datatype == "time":
                 timecol = col.name
-        if timecol and self.resample:
+
+        if self.resample:
+            if (timecol is None):
+                raise (TableComputeSyntheticError
+                       ("Table %s 'resample' is set but no 'time' column'" %
+                        self))
+
+            if (  ('resolution' not in job.criteria) and
+                  ('resample_resolution' not in job.criteria)):
+                raise (TableComputeSyntheticError
+                       (("Table %s 'resample' is set but criteria missing " +
+                         "'resolution' or 'resample_resolution'") % self))
+            
             how = {}
             for k in df.keys():
                 if k == timecol:
@@ -363,13 +379,24 @@ class Table(models.Model):
                 how[k] = colmap[k].resample_operation
 
             indexed = df.set_index(timecol)
-            resolution = timedelta_total_seconds(parse_timedelta(job.criteria.resolution))
-            resampled = indexed.resample('%ss' % int(resolution), how).reset_index()
+            if ('resample_resolution' in job.criteria):
+                resolution = job.criteria.resample_resolution
+            else:
+                resolution = job.criteria.resolution
+
+            resolution = timedelta_total_seconds(resolution)
+            if resolution < 1:
+                raise (TableComputeSyntheticError
+                       (("Table %s cannot resample at a resolution " +
+                         "less than 1 second") % self))
+
+            indexed.save('/tmp/indexed.pd')
+            resampled = indexed.resample('%ss' % int(resolution), how, convention='end').reset_index()
             df = resampled
 
         # 3. Compute remaining synthetic columns (post_resample is True)
-        compute(df, [col for col in all_columns if (col.synthetic and
-                                                    col.compute_post_resample is True)])
+        compute(df, [c for c in all_columns
+                     if (c.synthetic and c.compute_post_resample is True)])
 
         return df
 
@@ -484,12 +511,15 @@ class Criteria(DictObject):
 
         return crit
                         
-    def compute_times(self, default_duration=None):
+    def compute_times(self):
         # Start with the original values not any values formerly computed
-        duration = self._orig_duration or default_duration
+        duration = self._orig_duration
         starttime = self._orig_starttime
         endtime = self._orig_endtime
 
+        logger.debug("compute_times: %s %s %s" %
+                     (starttime, endtime, duration))
+        
         if starttime is not None:
             if endtime is not None:
                 duration = endtime - starttime
@@ -614,10 +644,7 @@ class Job(models.Model):
             with transaction.commit_on_success():
                 # Lockdown start/endtimes
                 try:
-                    logger.debug("table.duration: %s - %s" % (table, table.duration))
-                    default_duration = (None if not table.duration else
-                                        datetime.timedelta(seconds=table.duration))
-                    criteria.compute_times(default_duration)
+                    criteria.compute_times()
                 except ValueError:
                     # Ignore errors, this table may not have start/end times
                     pass
@@ -672,6 +699,8 @@ class Job(models.Model):
                     job.save()
                     logger.info("%s: New job for table %s" % (job, table.name))
 
+                logger.debug("%s: criteria = %s" % (job, criteria))
+
             # Flush old jobs
             Job.age_jobs()
 
@@ -712,14 +741,14 @@ class Job(models.Model):
     def reference(self, message=""):
         pk = self.pk
         Job.objects.filter(pk=pk).update(refcount=F('refcount')+1)
-        logger.debug("%s: reference(%s) @ %d" %
-                     (self, message, Job.objects.get(pk=pk).refcount))
+        #logger.debug("%s: reference(%s) @ %d" %
+        #             (self, message, Job.objects.get(pk=pk).refcount))
         
     def dereference(self, message=""):
         pk = self.pk
         Job.objects.filter(pk=pk).update(refcount=F('refcount')-1)
-        logger.debug("%s: dereference(%s) @ %d" %
-                     (self, message, Job.objects.get(pk=pk).refcount))
+        #logger.debug("%s: dereference(%s) @ %d" %
+        #             (self, message, Job.objects.get(pk=pk).refcount))
         
     def json(self, data=None):
         """ Return a simple JSON structure representing the status of this Job """
@@ -876,10 +905,16 @@ class Job(models.Model):
 
         # Ancient jobs are deleted regardless of refcount
         now = datetime.datetime.now(tz=pytz.utc)
-        (Job.objects.filter(touched__lte = now - ancient)).delete()
-            
+        try:
+            (Job.objects.filter(touched__lte = now - ancient)).delete()
+        except:
+            logger.exception("Failed to delete ancient jobs")
+
         # Old jobs are deleted only if they have a refcount of 0
-        (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+        try:
+            (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+        except:
+            logger.exception("Failed to delete old jobs")
 
         age_jobs_last_run = time.time()
 

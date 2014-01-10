@@ -21,7 +21,11 @@ import libs.profiler_tools as protools
 
 PROFILER = Device.objects.get(name="profiler")
 
-report = Report(title="Business Hour Reporting - Profiler Interfaces", position=9)
+report = Report(title="Business Hour Reporting - Profiler Interfaces", position=9,
+                field_order = ['endtime', 'duration', 'profiler_filterexpr',
+                               'business_hours_start', 'business_hours_end',
+                               'business_hours_tzname', 'business_hours_weekends'],
+                hidden_fields = ['resolution'])
 report.save()
 
 section = Section.create(report)

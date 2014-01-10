@@ -16,19 +16,20 @@ report.save()
 section = Section(report=report, title='Section 0')
 section.save()
 
-TableField.create('w', 'W Value', section)
-TableField.create('x', 'X Value', section)
-TableField.create('y', 'Y Value', section)
+table = AnalysisTable.create('test-criteria-postprocess', tables={}, 
+                             func = funcs.analysis_echo_criteria)
+
+TableField.create('w', 'W Value', table)
+TableField.create('x', 'X Value', table)
+TableField.create('y', 'Y Value', table)
 
 for (f1,f2) in [('w', 'x'), ('w', 'y'), ('x', 'y')]:
     ( TableField.create
-      ('%s%s' % (f1, f2), '%s+%s Value' % (f1, f2), section,
+      ('%s%s' % (f1, f2), '%s+%s Value' % (f1, f2), table,
        hidden = True, parent_keywords=[f1, f2],
        post_process_func = Function(funcs.postprocess_field_compute,
                                     params={'fields': [f1, f2]})))
     
-table = AnalysisTable.create('test-criteria-postprocess', tables={}, duration=60,
-                             func = funcs.criteria)
 Column.create(table, 'key', 'Key', iskey=True, isnumeric=False)
 Column.create(table, 'value', 'Value', isnumeric=False)
 

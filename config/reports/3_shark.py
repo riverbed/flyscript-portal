@@ -35,7 +35,7 @@ section = Section.create(report)
 ### Shark Time Series
 
 t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                      duration=10, resolution=1, aggregated=False)
+                      duration=1, resolution='1sec', aggregated=False)
 
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
 create_shark_column(t, 'generic_bytes', label='Bytes', iskey=False, extractor='generic.bytes', operation='sum')
@@ -44,7 +44,7 @@ yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes)', width=12)
 
 ### Table for Shark
 table = SharkTable.create(name='Packet Traffic', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                            duration=10, aggregated=False)
+                            duration=1, aggregated=False)
 
 create_shark_column(table, 'ip_src', label='Source IP', iskey=True, extractor='ip.src')
 create_shark_column(table, 'ip_dst', label='Dest IP', iskey=True, extractor='ip.dst')
@@ -57,7 +57,7 @@ yui3.TableWidget.create(section, table, 'Packets', width=12)
 
 ### Microbursts Graph for Shark 
 table = SharkTable.create(name='MicroburstsTime', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                            duration=10, aggregated=False)
+                            duration=1, aggregated=False)
 
 create_shark_column(table, 'time', extractor='sample_time', iskey=True, label='Time (ns)', datatype='time')
 
@@ -74,7 +74,7 @@ yui3.TimeSeriesWidget.create(section, table, 'Microbursts Summary Bytes', width=
 
 ### Microbursts Table for Shark
 table = SharkTable.create(name='MicroburstsTable', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                            duration=10, aggregated=False)
+                            duration=1, aggregated=False)
 
 create_shark_column(table, 'max_microburst_1ms_bytes', label='uBurst 1ms',
                     extractor='generic.max_microburst_1ms.bytes', operation='max', datatype='bytes')
@@ -90,7 +90,7 @@ yui3.TableWidget.create(section, table, 'Microbursts Bytes Summary', width=6)
 ### Table and Widget 2
 
 t = SharkTable.create(name='Traffic by TCP/UDP', device=SHARK1, view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
-                            duration=10, aggregated=False)
+                            duration=1, aggregated=False)
 
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, datatype='time', label='Time (ns)')
 create_shark_column(t, 'udp_bytes', extractor='udp.bytes', iskey=False, operation='sum', label='UDP Bytes', default_value=0)

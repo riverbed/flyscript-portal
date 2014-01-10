@@ -29,8 +29,8 @@ TableField.create ('choices_with_params', 'Choices with params', section,
                                     'end': 3,
                                     'prefix': 'pre'}))
 
-table = AnalysisTable.create('test-criteria-preprocess', tables={}, duration=60,
-                             func = funcs.criteria)
+table = AnalysisTable.create('test-criteria-preprocess', tables={}, 
+                             func = funcs.analysis_echo_criteria)
 Column.create(table, 'key', 'Key', iskey=True, isnumeric=False)
 Column.create(table, 'value', 'Value', isnumeric=False)
 

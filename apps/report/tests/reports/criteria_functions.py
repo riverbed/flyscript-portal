@@ -7,8 +7,7 @@ from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
 logger = logging.getLogger(__name__)
 
 
-def criteria(query, tables, criteria, params):
-    criteria.compute_times()
+def analysis_echo_criteria(query, tables, criteria, params):
     df = pandas.DataFrame([[str(k),str(v)]
                            for k,v in criteria.iteritems()],
                           columns=['key', 'value'])
@@ -40,8 +39,6 @@ def sharedfields_compute(field, criteria, params):
 def postprocesserrors_compute(field, criteria, params):
     if criteria['error'] == 'syntax':
         adsf
-    elif criteria['error'] == 'missing':
-        pass
     else:
         criteria['x'] = 1
         

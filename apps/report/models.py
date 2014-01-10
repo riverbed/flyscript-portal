@@ -23,7 +23,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from model_utils.managers import InheritanceManager
 from apps.datasource.models import Table, Job, TableField
 
-from libs.fields import PickledObjectField
+from libs.fields import PickledObjectField, SeparatedValuesField
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,11 @@ class Report(models.Model):
     sourcefile = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     fields = models.ManyToManyField(TableField, null=True)
-
+    field_order = SeparatedValuesField(null=True,
+                                       default= ['starttime', 'endtime',
+                                                 'duration', 'filterexpr'])
+    hidden_fields = SeparatedValuesField(null=True)
+    
     def __init__(self, *args, **kwargs):
         if 'sourcefile' not in kwargs:
             kwargs['sourcefile'] = get_caller_name(self)
@@ -90,8 +94,33 @@ class Report(models.Model):
                 else:
                     fields_by_section[section_id].update(fields)
 
+        # Reorder fields in each section according to the field_order list
+        new_fields_by_section = {}
+        for i,fields in fields_by_section.iteritems():
+            # fields_by_section will have the format:
+            #   { 's17_duration' : TableField(keyword='duration'),
+            #     's18_duration' : TableField(keyword='duration'), ...}
+            # The field_order list is by keyword, not the <sectionid>_<keyword> format
+            keywords_to_field_names = SortedDict()
+            for (field_name,field) in fields_by_section[i].iteritems():
+                keywords_to_field_names[field.keyword] = (field_name,field)
+                
+            ordered_field_names = SortedDict()
+            # Iterate over the defined order list, which may not address all fields
+            if self.field_order:
+                for keyword in self.field_order:
+                    if keyword in keywords_to_field_names:
+                        pair = keywords_to_field_names[keyword]
+                        ordered_field_names[pair[0]] = pair[1]
+                        del keywords_to_field_names[keyword]
 
-        return fields_by_section
+            # Preserve the order of any fields left
+            for pair in keywords_to_field_names.values():
+                ordered_field_names[pair[0]] = pair[1]
+
+            new_fields_by_section[i] = ordered_field_names
+
+        return new_fields_by_section
 
     def widgets(self):
         return Widget.objects.filter(section__in=Section.objects.filter(report=self))
@@ -132,6 +161,7 @@ class Section(models.Model):
 
     @classmethod
     def create(cls, report, title='', position=0,
+               section_keywords = None,
                default_field_mode = None,
                keyword_field_modes = None):
         """ Create a Section of a report and define field modes.
@@ -164,6 +194,13 @@ class Section(models.Model):
                                     mode=default_field_mode or SectionFieldMode.INHERIT)
         critmode.save()
 
+        if section_keywords:
+            for keyword in section_keywords:
+                critmode = SectionFieldMode(section=section,
+                                            keyword=keyword,
+                                            mode=SectionFieldMode.SECTION)
+                critmode.save()
+                
         if keyword_field_modes:
             for keyword, mode in keyword_field_modes.iteritems():
                 critmode = SectionFieldMode(section=section,

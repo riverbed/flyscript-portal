@@ -5,6 +5,10 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import datetime
+
+from rvbd.common.timeutils import datetime_to_seconds
+
 from apps.report.models import Widget
 
 import logging
@@ -22,4 +26,13 @@ class TableWidget(object):
 
     @classmethod
     def process(cls, widget, job, data):
-        return data
+        newdata = []
+        for row in data:
+            newrow = []
+            for col in row:
+                if isinstance(col, datetime.datetime):
+                    col = datetime_to_seconds(col)
+                newrow.append(col)
+            newdata.append(newrow)
+        
+        return newdata

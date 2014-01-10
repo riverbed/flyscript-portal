@@ -30,7 +30,7 @@ report.save()
 section = Section.create(report)
 
 # Define a Overall TimeSeries showing Avg Bytes/s
-table = TimeSeriesTable.create('ts-overall', PROFILER, duration=60, resolution=1)
+table = TimeSeriesTable.create('ts-overall', PROFILER, duration=60, resolution="1min")
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')

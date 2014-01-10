@@ -79,14 +79,14 @@ class AnalysisTable:
 
     @classmethod
     def create(cls, name, tables, func,
-               duration=None, columns=[], params=None,
+               columns=[], params=None,
                copy_fields=True,
                **kwargs):
         """ Class method to create an AnalysisTable.
         """
         options = TableOptions(tables=tables, func=func,
                                params=params)
-        table = Table (name=name, module=__name__, device=None, duration=duration,
+        table = Table (name=name, module=__name__, device=None,
                        options=options, **kwargs)
         table.save()
         
@@ -161,13 +161,12 @@ class TableQuery:
             df = options.func(self, dfs, self.job.criteria, params=options.params)
         except AnalysisException as e:
             self.job.mark_error("Analysis function %s failed: %s" % (options.func, e.message))
-            traceback.print_exc()
-            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
+            logger.exception("%s raised an exception" % (self))
             return False
         except Exception as e:
             self.job.mark_error("Analysis function %s failed: %s" % (options.func, str(e)))
-            traceback.print_exc()
-            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
+            logger.exception("%s: Analysis function %s raised an exception" %
+                             (self, options.func))
             return False
             
         # Sort according to the defined sort columns

@@ -31,7 +31,7 @@ section = Section.create(report, title="Overall")
 
 # Define a Overall TimeSeries showing In/Out Utilization
 table = TimeSeriesTable.create('qos-overall-util', PROFILER, 
-                               duration=15, resolution=15*60,
+                               duration=15, resolution=60,
                                interface=True)
 table.fields.add(interface_field)
 table.fields.add(datafilter_field)
@@ -57,7 +57,7 @@ yui3.TimeSeriesWidget.create(section, table, "Overall In/Out Bandwidth", width=6
 
 # Define a Overall TimeSeries showing In/Out Totals
 table = TimeSeriesTable.create('qos-overall-avg', PROFILER, 
-                               duration=15, resolution=15*60,
+                               duration=15, resolution=60,
                                interface=True)
 table.fields.add(interface_field)
 table.fields.add(datafilter_field)
@@ -72,7 +72,7 @@ yui3.TimeSeriesWidget.create(section, table, "Overall Average In/Out Bandwidth",
 # QOS Summary Tables
 for direction in ['inbound', 'outbound']:
     table = GroupByTable.create('qos-%s-totals' % direction, PROFILER, groupby='qos', 
-                                duration=15, resolution=15*60,
+                                duration=15, resolution=60,
                                 interface=True)
     table.fields.add(interface_field)
     TableField.create(keyword='%s_filterexpr' % direction, obj=table, hidden=True, 
@@ -99,7 +99,7 @@ for i,qos in enumerate(['AF11', 'EF', 'Default']):
 
     for direction in ['inbound', 'outbound']:
         table = TimeSeriesTable.create('qos-%d-%s' % (i, direction), PROFILER, 
-                                       duration=15, resolution=15*60,
+                                       duration=15, resolution=60,
                                        interface=True)
         table.fields.add(interface_field)
         table.fields.add(datafilter_field)

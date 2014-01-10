@@ -15,38 +15,34 @@ import os
 import pandas
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Table
+from django import forms
+from django.forms.widgets import FileInput
+
+from apps.datasource.models import Table, TableField
+from apps.datasource.forms import FileSelectField, fields_add_resolution
 
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
-class TableOptions(JsonDict):
-    _default = {'pcapfile': None}
-    
 class ColumnOptions(JsonDict):
     _default = {'field': None,
                 'fieldtype': 'string',  # float, int, time
                 'operation': 'sum'}
     _required = ['field']
 
-def fields_add_resolution(obj,
-                          keyword = 'tshark_resolution',
-                          initial=None
-                          ):
-    field = ( TableField
-              (keyword = keyword,
-               label = 'TShark Data Resolution',
-               field_cls = forms.ChoiceField,
-               field_kwargs = {'choices': [('default', 'Default'),
-                                           ('1 second', '1sec'),
-                                           ('1 minute', '1min'),
-                                           ('15 minutes', '15min')]},
-               initial = initial,
-               required = False))
+
+def fields_add_pcapfile(obj,
+                        keyword = 'pcapfile',
+                        initial=None
+                        ):
+    field = TableField(keyword='pcapfile',
+                       label='PCAP File',
+                       field_cls=FileSelectField,
+                       field_kwargs={'widget': FileInput})
     field.save()
     obj.fields.add(field)
-
+    
 class TSharkTable:
     @classmethod
     def create(cls, name, resolution=1, **kwargs):
@@ -56,7 +52,11 @@ class TSharkTable:
 
         criteria = {'resolution': resolution}
 
-        return Table.create(name, module=__name__, criteria=criteria, **kwargs)
+        table = Table.create(name, module=__name__, criteria=criteria, **kwargs)
+        fields_add_resolution(table)
+        fields_add_pcapfile(table)
+        return table
+    
 
 def tofloat(x):
     try:
@@ -90,7 +90,7 @@ class TableQuery:
         #from IPython import embed; embed()
         table.apply_table_criteria(self.job.criteria)
 
-        pcapfile = table.options.pcapfile
+        pcapfile = self.job.criteria.pcapfile
 
         if not pcapfile:
             raise ValueError("No pcap file specified")

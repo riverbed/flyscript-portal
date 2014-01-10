@@ -79,21 +79,16 @@ class Command(BaseCommand):
 
         group = optparse.OptionGroup(parser, "Run Table Output Options",
                                      "Specify how data should be displayed")
+
+        group.add_option('-o', '--output-file',
+                         dest='output_file',
+                         default=None,
+                         help='Output data to a file')
         group.add_option('--csv',
                          action='store_true',
                          dest='as_csv',
                          default=False,
                          help='Output data in CSV format instead of tabular')
-        group.add_option('--json',
-                         action='store_true',
-                         dest='as_json',
-                         default=False,
-                         help='Output data in JSON format instead of tabular')
-        group.add_option('--data',
-                         action='store_true',
-                         dest='only_data',
-                         default=False,
-                         help='Output only data ignoring columns')
         group.add_option('--columns',
                          action='store_true',
                          dest='only_columns',
@@ -123,10 +118,11 @@ class Command(BaseCommand):
             output = []
             reports = Report.objects.all()
             for report in reports:
-                for widget in report.widget_set.all():
-                    for table in widget.tables.all():
-                        line = [table.id, report.title, widget.title, table]
-                        output.append(line)
+                for section in report.section_set.all():
+                    for widget in section.widget_set.all():
+                        for table in widget.tables.all():
+                            line = [table.id, report.title, widget.title, table]
+                            output.append(line)
             Formatter.print_table(output, ['ID', 'Report', 'Widget', 'Table'])
         elif options['criteria_list']:
             if 'table_id' in options and options['table_id'] is not None:
@@ -156,9 +152,19 @@ class Command(BaseCommand):
                     (k,v) = s.split(':', 1)
                     criteria_options[k] = v
 
-            all_fields = SortedDict()
-            for f in table.fields.all():
-                all_fields[f.keyword]=f
+            # First see if there's a single report associated with this table, and if so
+            # use it to get the field set
+            widgets = Widget.objects.filter(tables__in=[table])
+            sections = set()
+            for w in widgets:
+                sections.add(w.section)
+                    
+            if len(sections) == 1:
+                all_fields = widgets[0].collect_fields()
+            else:
+                for f in table.fields.all():
+                    all_fields[f.keyword]=f
+                    
             form = TableFieldForm(all_fields, use_widgets=False,
                                   data=criteria_options)
             if not form.is_valid():
@@ -205,7 +211,13 @@ class Command(BaseCommand):
 
             if job.status == job.COMPLETE:
                 if options['as_csv']:
-                    Formatter.print_csv(job.values(), columns)
+                    if options['output_file']:
+                        with open(options['output_file'], 'w') as f:
+                            for line in Formatter.get_csv(job.values(), columns):
+                                f.write(line)
+                                f.write('\n')
+                    else:
+                        Formatter.print_csv(job.values(), columns)
                 else:
                     Formatter.print_table(job.values(), columns)
             else:

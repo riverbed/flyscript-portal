@@ -8,12 +8,17 @@
 import datetime
 import dateutil.parser
 import logging
+import tempfile
 
 from rvbd.common import datetime_to_seconds
 
+from libs.call_command import call_command
+
 from apps.datasource.forms import fields_add_time_selection
 from apps.datasource.modules.analysis import AnalysisTable
+from apps.datasource.models import Job, Table
 
+from apps.report.models import Report, Section, Widget
 import apps.report.modules.raw as raw
 
 from . import reportrunner
@@ -23,12 +28,28 @@ logger = logging.getLogger(__name__)
 class CriteriaTest(reportrunner.ReportRunnerTestCase):
 
     def run_with_criteria(self, criteria, expected=None, expect_fail_report=False, expect_fail_job=False):
+        self.run_report_with_criteria(criteria, expected=expected,
+                                      expect_fail_report=expect_fail_report,
+                                      expect_fail_job=expect_fail_job)
+        if not expect_fail_report and not expect_fail_job:
+            self.run_tables_with_criteria(criteria, expected=expected)
+        
+    def run_report_with_criteria(self, criteria, expected=None, expect_fail_report=False, expect_fail_job=False):
         if expected is None:
             expected = [criteria]
         elif not isinstance(expected, list):
             expected = [expected]
-            
-        widgets = self.run_report(criteria,
+
+        run_criteria = {}
+        for k,v in criteria.iteritems():
+            if k == 'endtime':
+                (e0, e1) = v.split(' ',1)
+                run_criteria['endtime_0'] = e0
+                run_criteria['endtime_1'] = e1
+            else:
+                run_criteria[k] = v
+
+        widgets = self.run_report(run_criteria,
                                   expect_fail_report=expect_fail_report,
                                   expect_fail_job=expect_fail_job)
 
@@ -36,7 +57,11 @@ class CriteriaTest(reportrunner.ReportRunnerTestCase):
             return
 
         for i,e in enumerate(expected):
-            returned_criteria = dict(widgets.values()[i]['data'])
+            w = widgets.values()[i]
+            self.assertEqual(w['status'], Job.COMPLETE,
+                             'Widget %d, message %s' % (i, w['message']))
+                
+            returned_criteria = dict(w['data'])
             logger.debug("Widget %d, returned_criteria: %s" % (i, returned_criteria))
 
             for k,v in e.iteritems():
@@ -44,34 +69,64 @@ class CriteriaTest(reportrunner.ReportRunnerTestCase):
                                  "Key %s => %s vs %s" %
                                  (k, v, returned_criteria[k]))
     
+    def run_tables_with_criteria(self, criteria, expected=None, expect_fail_report=False, expect_fail_job=False):
+        if expected is None:
+            expected = [criteria]
+        elif not isinstance(expected, list):
+            expected = [expected]
+        
+        report = Report.objects.get(slug = self.report)
+        tables = []
+        for w in Widget.objects.filter(section__in = report.section_set.all()):
+            tables.extend(w.tables.all())
+
+        for i,t in enumerate(tables):
+
+            with tempfile.NamedTemporaryFile() as outfile:
+                filename = outfile.name
+
+            r = call_command('run_table',
+                             table_id=t.id,
+                             as_csv=True,
+                             output_file=filename,
+                             criteria=['%s:%s' % (k,v) for (k,v) in criteria.iteritems()])
+
+            data = []
+            with open(filename, 'r') as f:
+                for line in f:
+                    data.append(line.strip().split(',',1))
+
+            returned_criteria = {}
+            for k,v in data[1:]:
+                returned_criteria[k] = v
+                
+            logger.debug("Table %s, returned_criteria: %s" % (t.id, returned_criteria))
+            
+            for k,v in expected[i].iteritems():
+                self.assertEqual(returned_criteria[k], v,
+                                 "Key %s => %s vs %s" %
+                                 (k, v, returned_criteria[k]))
+            
 class TimeSelection(CriteriaTest):
 
     report = 'criteria_timeselection' 
 
-    def test_default(self):
-        self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
-                                'duration': 'Default'},
-                               {'duration': str(datetime.timedelta(seconds=60)),
-                                'starttime': str(dateutil.parser.parse("12/1/2013 10:59am +0000")),
-                                'endtime': str(dateutil.parser.parse("12/1/2013 11:00am +0000"))})
-                                
-
     def test_duration_1day(self):
-        self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
+        self.run_with_criteria({'endtime': '12/1/2013 11:00 am',  
                                 'duration': '1 week'},
                                {'duration': str(datetime.timedelta(days=7)),
                                 'starttime': str(dateutil.parser.parse("11/24/2013 11:00am +0000")),
                                 'endtime': str(dateutil.parser.parse("12/1/2013 11:00am +0000"))})
-
+        
     def test_duration_5min(self):
-        self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
+        self.run_with_criteria({'endtime': '12/1/2013 11:00 am',  
                                 'duration': '5 min'},
                                {'duration': str(datetime.timedelta(seconds=60*5)),
                                 'starttime': str(dateutil.parser.parse("12/1/2013 10:55am +0000")),
                                 'endtime': str(dateutil.parser.parse("12/1/2013 11:00am +0000"))})
 
     def test_bad_time(self):
-        self.run_with_criteria({'endtime_0': '12/1f/2013', 'endtime_1': '11:00 am',  
+        self.run_with_criteria({'endtime': '12/1f/2013 11:00 am',  
                                 'duration': '5 min'},
                                expect_fail_report=True)
 
@@ -116,10 +171,6 @@ class PostProcessErrors(CriteriaTest):
 
     def test_syntax(self):
         self.run_with_criteria({'error': 'syntax'},
-                               expect_fail_job=True)
-
-    def test_missing_value(self):
-        self.run_with_criteria({'error': 'missing'},
                                expect_fail_job=True)
 
 

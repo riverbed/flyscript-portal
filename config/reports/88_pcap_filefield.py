@@ -12,10 +12,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from django import forms
 
 from apps.report.models import Report, Section
-from apps.datasource.models import Table, Column, TableField
+from apps.datasource.models import Table, Column
+
 import apps.report.modules.yui3 as yui3
 
-from apps.datasource.modules.tshark import TSharkTable, TableOptions
+from apps.datasource.modules.tshark import TSharkTable
 from apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions
 
 import logging
@@ -36,22 +37,7 @@ section = Section.create(report)
 # Table: Process Internal.pcap
 #
 
-# The pcapfile can be manually specified here as a TableOption:
-#   options = TableOptions(pcapfile="/tmp/my.pcap")
-# or, on the page enter "pcap /tmp/my.pcp" in the Filter Expression
-# box in the Criteria section
-
-# Interesting traces to try:
-#   ftp://ita.ee.lbl.gov/new/lbnl.anon-ftp.03-01-10.tcpdump.gz
-options = TableOptions()
-
-table = TSharkTable.create('pcap', resolution=60, resample=True,
-                           options=options)
-filefield = TableField(keyword='pcapfile',
-                       label='PCAP File',
-                       field_cls=forms.FileField)
-filefield.save()
-table.fields.add(filefield)
+table = TSharkTable.create('pcap', resolution=60, resample=True)
 
 Column.create(table, 'pkttime', datatype='time', iskey=True,
               options=TSharkColumnOptions(field='frame.time_epoch'))

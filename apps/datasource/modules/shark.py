@@ -24,7 +24,7 @@ from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds,
                                    timedelta_total_seconds)
 
 from apps.datasource.models import Column, Table, TableField
-from apps.datasource.forms import fields_add_time_selection
+from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
@@ -61,48 +61,37 @@ def fields_add_filterexpr(obj,
     field.save()
     obj.fields.add(field)
 
-def fields_add_resolution(obj,
-                          keyword = 'shark_resolution',
-                          initial=None):
-    field = ( TableField
-              (keyword = keyword,
-               label = 'Shark Data Resolution',
-               field_cls = forms.ChoiceField,
-               field_kwargs = {'choices': [('default', 'Default'),
-                                           ('1 ms', '1ms'),
-                                           ('1 second', '1sec'),
-                                           ('1 minute', '1min'),
-                                           ('15 minutes', '15min')]},
-               initial = initial,
-               required = False))
-    field.save()
-    obj.fields.add(field)
-
 class SharkTable:
     @classmethod
     def create(cls, name, device, view, view_size, duration,
-               aggregated=False, filterexpr=None, resolution=60, sortcol=None):
+               aggregated=False, filterexpr=None, resolution='1min', sortcol=None):
         """ Create a Shark table.
 
         `duration` is in minutes
 
         """
-        logger.debug('Creating Shark table %s (%s, %d)' % (name, view, duration))
+        logger.debug('Creating Shark table %s (%s, %s)' % (name, view, duration))
         options = TableOptions(view=view,
                                view_size=view_size,
                                aggregated=aggregated)
-
-        if resolution and isinstance(resolution, int):
-            resolution = "%dsec" % resolution
-
-        criteria = {'resolution': resolution}
-        t = Table(name=name, module=__name__, device=device, duration=duration * 60,
-                  filterexpr=filterexpr, options=options, criteria=criteria,
-                  sortcol=sortcol)
+        
+        t = Table(name=name, module=__name__, device=device, 
+                  filterexpr=filterexpr, options=options, sortcol=sortcol)
         t.save()
-        fields_add_time_selection(t, initial_duration="%d min" % duration)
+
+        if resolution not in ['1ms', '1sec', '1min', '15min']:
+            raise KeyError("Invalid resolution %s, must be one of: %s" %
+                           (resolution, ', '.join(['1ms', '1sec', '1min', '15min'])))
+
+        if isinstance(duration, int):
+            duration = "%d min" % duration
+
+        fields_add_time_selection(t, initial_duration=duration)
         fields_add_filterexpr(t)
-        fields_add_resolution(t, initial=resolution)
+        fields_add_resolution(t, initial=resolution,
+                              resolutions = [('1sec', '1 second'),
+                                             ('1min', '1 minute'),
+                                             ('15min', '15 minutes')])
         return t
 
 
@@ -139,20 +128,23 @@ class TableQuery:
         self.timeseries = False         # if key column called 'time' is created
         self.column_names = []
 
-        resolution = job.criteria.shark_resolution 
-        if resolution == 'default':
-            # 60sec if it's not in the table criteria, or it's None in the table criteria
-            resolution = self.table.criteria.get('resolution', 60) or 60
-
-        resolution = timedelta_total_seconds(parse_timedelta(resolution))
+        # Resolution comes in as a time_delta
+        resolution = timedelta_total_seconds(job.criteria.resolution)
 
         default_delta = 1000000000                      # one second
         self.delta = int(default_delta * resolution)    # sample size interval
 
+
+    def fake_run(self):
+        import fake_data
+        self.data = fake_data.make_data(self.table, self.job)
+
     def run(self):
         """ Main execution method
         """
-
+        #self.fake_run()
+        #return True
+    
         shark = DeviceManager.get_device(self.table.device.id)
 
         logger.debug("Creating columns for Shark table %d" % self.table.id)

@@ -26,8 +26,7 @@ class DevicesTable:
     def create(cls, name, device, **kwargs):
         logger.debug('Creating Profiler DevivceTable table %s' % (name))
 
-        t = Table(name=name, module=__name__, device=device,
-                  duration=None, **kwargs)
+        t = Table(name=name, module=__name__, device=device, **kwargs)
         t.save()
         return t
 

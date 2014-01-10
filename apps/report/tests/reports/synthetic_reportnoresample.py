@@ -7,24 +7,25 @@ from libs.fields import Function
 
 from apps.report.models import Report, Section
 from apps.report.modules import raw
+from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 
-from . import criteria_functions as funcs
+from . import synthentic_functions as funcs
 
-report = Report(title='Criteria Post Process Errors' )
+# Report
+report = Report(title='Synthetic No Resampling' )
 report.save()
 
+# Section 
 section = Section(report=report, title='Section 0')
 section.save()
 
-table = AnalysisTable.create('test-criteria-postprocess', tables={}, 
+# Table
+table = AnalysisTable.create('test-synthetic-noresampling', tables={}, 
                              func = funcs.analysis_echo_criteria)
+fields_add_time_selection(table)
+fields_add_resolution(table)
 
-TableField.create('error', 'Error type', table)    
-TableField.create('x', 'X Value', table,
-                  hidden=True,
-                  post_process_func = Function(funcs.postprocesserrors_compute))
-    
-Column.create(table, 'key', 'Key', iskey=True, isnumeric=False)
-Column.create(table, 'value', 'Value', isnumeric=False)
+Column.create(table, 'time', 'Time', iskey=True, isnumeric=True, datatype='time')
+Column.create(table, 'value', 'Value', isnumeric=True)
 
 raw.TableWidget.create(section, table, 'Table')

@@ -46,13 +46,11 @@ def reload_config(request, report_slug=None):
     """ Reload all reports or one specific report
     """
     if report_slug:
-        report_id = Report.objects.get(slug=report_slug).id
         logger.debug("Reloading %s report" % report_slug)
+        management.call_command('reload', report_name=report_slug)
     else:
-        report_id = None
         logger.debug("Reloading all reports")
-
-    management.call_command('reload', report_id=report_id)
+        management.call_command('reload')
 
     if ('HTTP_REFERER' in request.META and
         'reload' not in request.META['HTTP_REFERER']):
@@ -133,17 +131,24 @@ class ReportView(views.APIView):
         # Merge all the fields into a single dict for use by the Django Form # logic
         all_fields = SortedDict()
         [all_fields.update(c) for c in fields_by_section.values()]
-        form = TableFieldForm(all_fields, initial=form_init)
+        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields, initial=form_init)
 
         # Build a section map that indicates which section each field
         # belongs in when displayed
         section_map = []
         if fields_by_section[0]:
             section_map.append({'title': 'Common', 'parameters': fields_by_section[0]})
+
         for s in Section.objects.filter(report=report).order_by('position'):
-            if fields_by_section[s.id]:
+            show = False
+            for v in fields_by_section[s.id].values():
+                if v.keyword not in (report.hidden_fields or []):
+                    show=True
+                    break
+                
+            if show:
                 section_map.append({'title': s.title, 'parameters': fields_by_section[s.id]})
-        
+
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': profile.developer,
@@ -172,8 +177,8 @@ class ReportView(views.APIView):
         fields_by_section = report.collect_fields_by_section()
         all_fields = SortedDict()
         [all_fields.update(c) for c in fields_by_section.values()]
-        form = TableFieldForm(all_fields, data=request.POST,
-                              files=request.FILES)
+        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields,
+                              data=request.POST, files=request.FILES)
 
         if form.is_valid():
 
@@ -266,8 +271,9 @@ class WidgetJobsList(views.APIView):
         req_json = json.loads(request.POST['criteria'])
 
         fields = widget.collect_fields()
-        form = TableFieldForm(fields, 
-                              use_widgets=False,
+
+        form = TableFieldForm(fields, use_widgets=False,
+                              hidden_fields=report.hidden_fields, include_hidden=True,
                               data=req_json, files=request.FILES)
 
         if not form.is_valid():

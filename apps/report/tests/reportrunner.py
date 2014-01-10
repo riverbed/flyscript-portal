@@ -61,7 +61,9 @@ class ReportRunnerTestCase(TestCase):
             return
         
         report_data = json.loads(response.content)
-        widgets = {}
+        logger.debug("Report data:\n%s" % json.dumps(report_data, indent=2))
+        
+        widgets = SortedDict()
         for widget_data in report_data[1:]:
             wid = widget_data['widgetid']
             widget = Widget.objects.get(id=wid)
@@ -71,6 +73,7 @@ class ReportRunnerTestCase(TestCase):
             widget_url = widget_data['posturl']
             widget_criteria = widget_data['criteria']
             postdata = {'criteria': json.dumps(widget_criteria)}
+            logger.debug("Widget post data:\n%s" % (json.dumps(postdata, indent=2)))
             response = self.client.post(widget_url, data=postdata)
             self.check_status(response, expect_fail_job)
 
@@ -78,6 +81,7 @@ class ReportRunnerTestCase(TestCase):
                 return
             
             widgetjob_data = json.loads(response.content)
+            logger.debug("Widget response data:\n%s" % (json.dumps(widgetjob_data, indent=2)))
             
             # Extract the job url and get the first response
             joburl = widgetjob_data['joburl']
@@ -88,6 +92,7 @@ class ReportRunnerTestCase(TestCase):
                 response = self.client.get(joburl)
                 job_data = json.loads(response.content)
                 widgets[joburl] = job_data
+                logger.debug("Widget job data:\n%s" % (json.dumps(job_data, indent=2)))
                 if widgets[joburl]['status'] not in [Job.COMPLETE, Job.ERROR]:
                     time.sleep(0.1)
                 else:

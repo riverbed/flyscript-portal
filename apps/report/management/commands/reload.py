@@ -51,11 +51,11 @@ class Command(BaseCommand):
     def import_file(self, f, name):
         try:
             if name in sys.modules:
-                self.stdout.write('reloading %s as %s' % (f, name))
                 reload(sys.modules[name])
+                self.stdout.write('reloading %s as %s' % (f, name))
             else:
-                self.stdout.write('importing %s as %s' % (f, name))
                 __import__(name)
+                self.stdout.write('importing %s as %s' % (f, name))
 
         except RvbdHTTPException as e:
             instance = RvbdException('From config file "%s": %s' %
@@ -124,7 +124,7 @@ class Command(BaseCommand):
             # single report
             report_name = options['report_name']
             try:
-                report_id = Report.objects.get(sourcefile=report_name).id
+                report_id = Report.objects.get(sourcefile__endswith=report_name).id
                 management.call_command('clean',
                                         applications=False,
                                         report_id=report_id,
@@ -134,9 +134,19 @@ class Command(BaseCommand):
                 pass
 
             DeviceManager.clear()
-            self.import_file(report_name, report_name)
+            modules = [report_name, 'config.reports.%s' % report_name]
+            success = False
+            for module in modules:
+                try:
+                    self.import_file(report_name, module)
+                    success = True
+                except ImportError:
+                    pass
+                
+            if not success:
+                raise ImportError("No module found matching '%s'" % report_name)
+
             return
-        
         else:
             # clear all data
             report_name = None

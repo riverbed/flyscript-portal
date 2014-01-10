@@ -66,8 +66,7 @@ def timestable():
     try:
         table = Table.objects.get(name=name)
     except ObjectDoesNotExist:
-        table = AnalysisTable.create(name, tables={},
-                                     func = compute_times, duration=60*24)
+        table = AnalysisTable.create(name, tables={}, func = compute_times)
         Column.create(table, 'starttime', 'Start time', datatype='time', iskey=True, issortcol=True)
         Column.create(table, 'endtime',   'End time', datatype='time', iskey=True)
         Column.create(table, 'totalsecs', 'Total secs')
@@ -177,8 +176,8 @@ def report_business_hours(query, tables, criteria, params):
         t0 = row['starttime']/1000
         t1 = row['endtime']/1000
         sub_criteria = copy.copy(criteria)
-        sub_criteria.starttime = datetime.datetime.fromtimestamp(t0)
-        sub_criteria.endtime = datetime.datetime.fromtimestamp(t1)
+        sub_criteria.starttime = datetime.datetime.utcfromtimestamp(t0).replace(tzinfo=pytz.utc)
+        sub_criteria.endtime = datetime.datetime.utcfromtimestamp(t1).replace(tzinfo=pytz.utc)
 
         job = Job.create(table=deptable, criteria=sub_criteria)
         logger.debug("Created %s: %s - %s" % (job, t0, t1))
@@ -209,8 +208,8 @@ def report_business_hours(query, tables, criteria, params):
         logger.debug("%s: actual_criteria %s" % (job, job.actual_criteria))
         t0 = job.actual_criteria.starttime
         t1 = job.actual_criteria.endtime
-        subdf['__secs__'] = t1 - t0
-        total_secs += (t1 - t0)
+        subdf['__secs__'] = timedelta_total_seconds(t1 - t0)
+        total_secs += timedelta_total_seconds(t1 - t0)
         idx += 1
         if df is None:
             df = subdf

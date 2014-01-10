@@ -19,8 +19,8 @@ section.save()
 x = TableField.create('x', 'X Value')
 for i in range(2):
 
-    table = AnalysisTable.create('test-criteria-sharedfields-%d' % i, tables={}, duration=60,
-                                 func = funcs.criteria)
+    table = AnalysisTable.create('test-criteria-sharedfields-%d' % i, tables={}, 
+                                 func = funcs.analysis_echo_criteria)
     Column.create(table, 'key', 'Key', iskey=True, isnumeric=False)
     Column.create(table, 'value', 'Value', isnumeric=False)
 

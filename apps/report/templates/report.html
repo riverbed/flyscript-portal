@@ -212,9 +212,6 @@
                     {% csrf_token %}
                     <fieldset>
                         <div id="form-error-info" class="text-error"></div>
-                        {% if form.errors %}
-                            <p class="text-error">Please correct the errors below.</p>
-                        {% endif %}
 
                         {% if form.errors %}
                             <p class="text-error">Please correct the errors below.</p>
