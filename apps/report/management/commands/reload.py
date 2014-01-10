@@ -50,6 +50,8 @@ class Command(BaseCommand):
         management.call_command('clean_pyc', path=settings.PROJECT_ROOT)
         management.call_command('syncdb', interactive=False)
 
+        importer = Importer(buf=self.stdout)
+
         if options['report_id']:
             # single report
             pk = int(options['report_id'])
@@ -77,11 +79,11 @@ class Command(BaseCommand):
             success = False
             for module in modules:
                 try:
-                    self.import_file(report_name, module)
+                    importer.import_file(report_name, module)
                     success = True
                 except ImportError:
                     pass
-                
+
             if not success:
                 raise ImportError("No module found matching '%s'" % report_name)
 
@@ -102,7 +104,6 @@ class Command(BaseCommand):
         report_dir = os.path.join(settings.PROJECT_ROOT,
                                   options['report_dir'] or 'config')
 
-        importer = Importer(buf=self.stdout)
         importer.import_directory(report_dir, report_name=report_name)
 
         for plugin in plugins.all():

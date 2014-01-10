@@ -46,11 +46,11 @@ class Importer(object):
     def import_file(self, f, name):
         try:
             if name in sys.modules:
-                self.stdout.write('reloading %s as %s\n' % (f, name))
                 reload(sys.modules[name])
+                self.stdout.write('reloading %s as %s\n' % (f, name))
             else:
-                self.stdout.write('importing %s as %s\n' % (f, name))
                 __import__(name)
+                self.stdout.write('importing %s as %s\n' % (f, name))
 
         except RvbdHTTPException as e:
             instance = RvbdException('From config file "%s": %s\n' %
