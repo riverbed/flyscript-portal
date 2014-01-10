@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -18,7 +18,7 @@ PROJECT_ROOT = os.path.dirname(PORTAL_ROOT)
 DATA_CACHE = os.path.join(PROJECT_ROOT, 'datacache')
 
 ADMINS = (
-# ('Your Name', 'your_email@example.com'),
+    # ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS
@@ -37,20 +37,6 @@ DATABASES = {
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
 }
-
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql_psycopg2',      # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-#        'NAME': 'portal',
-#        'USER': '',                      
-#        'PASSWORD': '',                  
-#        'HOST': 'localhost',             
-#        'PORT': '',                      
-#    },
-#    'OPTIONS': {
-#        'autocommit': True,
-#    },
-#}
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -189,6 +175,9 @@ INSTALLED_APPS = (
     'apps.console',
     'apps.help',
     'apps.preferences',
+
+    # 'standard' plugins
+    'apps.plugins.builtin.whois',
 )
 
 REST_FRAMEWORK = {
@@ -235,11 +224,11 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-            },
+        },
         'logfile': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024*1024*5,            # 5 MB
+            'maxBytes': 1024 * 1024 * 5,            # 5 MB
             'backupCount': 1,
             'formatter': 'verbose',
             'filename': os.path.join(PROJECT_ROOT, 'log.txt')
@@ -247,7 +236,7 @@ LOGGING = {
         'backend-log': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024*1024*5,            # 5 MB
+            'maxBytes': 1024 * 1024 * 5,            # 5 MB
             'backupCount': 1,
             'formatter': 'standard',
             'filename': os.path.join(PROJECT_ROOT, 'log-db.txt')
@@ -263,7 +252,7 @@ LOGGING = {
             'handlers': ['backend-log'],
             'level': 'DEBUG',
             'propagate': False,
-            },
+        },
         '': {
             'handlers': ['logfile'],
             'level': 'DEBUG',
@@ -275,9 +264,9 @@ LOGGING = {
 APPS_DATASOURCE = {
     #'job_age_old_seconds' : 60*60*24
     #'job_age_ancient_seconds' : 7*60*60*24
-    'job_age_old_seconds' : 60*1,
-    'job_age_ancient_seconds' : 60*10,
-    'threading' : True
-    }
+    'job_age_old_seconds': 60 * 1,
+    'job_age_ancient_seconds': 60 * 10,
+    'threading': True
+}
 
 TESTING = 'test' in sys.argv

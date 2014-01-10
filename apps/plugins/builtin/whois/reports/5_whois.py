@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
@@ -13,8 +12,11 @@ from apps.datasource.models import Column
 from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
-from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+from apps.datasource.modules.profiler import GroupByTable
 from apps.datasource.modules.analysis import AnalysisTable
+
+# helper libraries
+from apps.plugins.builtin.whois.libs.whois import whois
 
 #### Load devices that are defined
 PROFILER = Device.objects.get(name="profiler")
@@ -35,16 +37,14 @@ table = GroupByTable.create('5-hosts', PROFILER, 'host', duration='1 hour',
 Column.create(table, 'host_ip', 'IP Addr', iskey=True)
 Column.create(table, 'avg_bytes', 'Avg Bytes', units='s', issortcol=True)
 
-from config.reports.helpers.whois import whois
 
 # Create an Analysis table that calls the 'whois' function to craete a link to 'whois'
 whoistable = AnalysisTable.create('5-whois-hosts',
-                                  tables = {'t' : table.id},
-                                  func = whois)
+                                  tables={'t': table.id},
+                                  func=whois)
 
 Column.create(whoistable, 'host_ip', label="IP Addr", iskey=True)
 Column.create(whoistable, 'avg_bytes', 'Avg Bytes', datatype='bytes', issortcol=True)
 Column.create(whoistable, 'whois', label="Whois link", datatype='html')
 
 yui3.TableWidget.create(section, whoistable, "Link table", width=12)
-
