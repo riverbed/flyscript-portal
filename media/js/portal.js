@@ -62,3 +62,14 @@ function loadingModal(heading, text) {
 
     return confirmModal;
 };
+
+function reloadingModal(url, allReports) {
+    if (allReports) {
+        modal = loadingModal('Reloading All Reports', 'Please wait ...');
+    } else {
+        modal = loadingModal('Reloading Report', 'Please wait ...');
+    }
+
+    modal.modal('show');
+    window.location.href = url;
+};

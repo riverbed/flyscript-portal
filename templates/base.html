@@ -52,9 +52,9 @@
                             {% endif %}
                             <li class="divider"></li>
                             {% if reports and 'report' in request.path %}
-                                <li><a href="reload"><i class="icon-repeat"></i> Reload This Report</a></li>
+                                <li><a href="#" onClick="reloadingModal('reload', false)"><i class="icon-repeat"></i> Reload This Report</a></li>
                             {% endif %}
-                            <li><a href="{% url 'reload-all' %}"><i class="icon-retweet"></i> Reload All Reports</a></li>
+                            <li><a href="#" onClick="reloadingModal('{% url 'reload-all' %}', true)"><i class="icon-retweet"></i> Reload All Reports</a></li>
                         </ul>
                     </div>
                 </li>

@@ -28,7 +28,7 @@
 
     function reloadButton() {
         modal = loadingModal('Reloading All Reports', 'Please wait ...');
-        modal.modal('show')
+        modal.modal('show');
         
         window.location.href = "{% url 'reload-all' %}";
     }
@@ -77,7 +77,7 @@
         <div class="row">
             <div class="block-centered" style="text-align: center">
             {% if changed %}
-                <input type="button" value="Reload All Reports" class="btn btn-primary" onClick="reloadButton()">
+            <input type="button" value="Reload All Reports" class="btn btn-primary" onClick="reloadingModal('{% url 'reload-all' %}', true)">
             {% else %}
                 <a href="#" class="btn btn-primary disabled">Reload All Reports</a>
             {% endif %}
