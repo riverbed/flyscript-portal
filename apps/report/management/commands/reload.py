@@ -106,7 +106,7 @@ class Command(BaseCommand):
 
         importer.import_directory(report_dir, report_name=report_name)
 
-        for plugin in plugins.all():
+        for plugin in plugins.enabled():
             if plugin.reports:
                 #from IPython import embed; embed()
                 plugin.load_reports()

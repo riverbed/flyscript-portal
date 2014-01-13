@@ -73,10 +73,14 @@ class PluginManager(object):
 
         return results
 
-    def all(self):
+    def enabled(self):
         for plugin in sorted(self._all(), key=lambda x: x.title):
             if not plugin.is_enabled():
                 continue
+            yield plugin
+
+    def all(self):
+        for plugin in sorted(self._all(), key=lambda x: x.title):
             yield plugin
 
     def get(self, slug):

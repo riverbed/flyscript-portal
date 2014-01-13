@@ -23,6 +23,7 @@ urlpatterns = patterns('',
     url(r'^help/', include('apps.help.urls')),
     url(r'^console/', include('apps.console.urls')),
     url(r'^preferences/', include('apps.preferences.urls')),
+    url(r'^plugins/', include('apps.plugins.urls')),
 
     # Examples:
     # url(r'^$', 'flybox.views.home', name='home'),

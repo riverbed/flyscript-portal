@@ -12,6 +12,7 @@ class WhoisReport(Plugin):
     title = 'Whois Report Plugin'
     description = 'Example Plugin providing report and helper script'
     version = '0.0.1'
+    author = 'Riverbed Technology'
 
     enabled = True
     can_disable = True

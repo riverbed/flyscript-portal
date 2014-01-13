@@ -175,6 +175,7 @@ INSTALLED_APPS = (
     'apps.console',
     'apps.help',
     'apps.preferences',
+    'apps.plugins',
 
     # 'standard' plugins
     'apps.plugins.builtin.whois',

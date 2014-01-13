@@ -39,3 +39,26 @@ function confirm(heading, question, cancelButtonTxt, okButtonTxt, callback) {
 
     confirmModal.modal('show');
 };
+
+function loadingModal(heading, text) {
+
+    var confirmModal =
+      $('<div class="modal hide fade">' +
+          '<div class="modal-header">' +
+            '<h3>' + heading +'</h3>' +
+          '</div>' +
+
+          '<div class="modal-body">' +
+            '<p class="text-center">' + text + '</p>' +
+            '<p class="text-center">'  +
+               '<img src="/static/showLoading/images/loading.gif">' +
+            '</p>' +
+          '</div>' +
+
+          '<div class="modal-footer">' +
+            '&nbsp;' +
+          '</div>' +
+        '</div>');
+
+    return confirmModal;
+};
