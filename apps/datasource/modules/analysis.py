@@ -86,7 +86,7 @@ class AnalysisTable:
         """
         options = TableOptions(tables=tables, func=func,
                                params=params)
-        table = Table (name=name, module=__name__, device=None,
+        table = Table (name=name, module=__name__, 
                        options=options, **kwargs)
         table.save()
         

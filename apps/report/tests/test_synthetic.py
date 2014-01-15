@@ -63,7 +63,7 @@ class NoResample(SyntheticTest):
     report = 'synthetic_noresample' 
 
     def test_basic(self):
-        # This might break if run in a timezone other than US/Eastern
+        # This might break if run with project.settings.TIME_ZONE set to anything but UTC
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
                                 'duration': '15min'},
                                [self.make_data(1385894700, 1385895600, 60)])
@@ -73,7 +73,7 @@ class Resample(SyntheticTest):
     report = 'synthetic_resample' 
 
     def test_basic(self):
-        # This might break if run in a timezone other than US/Eastern
+        # This might break if run with project.settings.TIME_ZONE set to anything but UTC
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
                                 'duration': '15min',
                                 'resolution': '2min'},

@@ -10,12 +10,9 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler_devices import DevicesTable
-
-PROFILER = Device.objects.get(name="profiler")
 
 report = Report(title="Profiler Device List", position=10)
 report.save()
@@ -25,7 +22,7 @@ section = Section.create(report)
 #
 # Device Table
 
-devtable = DevicesTable.create('devtable', PROFILER)
+devtable = DevicesTable.create('devtable')
 Column.create(devtable, 'ipaddr', 'Device IP', iskey=True, isnumeric=False)
 Column.create(devtable, 'name', 'Device Name', isnumeric=False)
 Column.create(devtable, 'type', 'Flow Type', isnumeric=False)

@@ -9,7 +9,6 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable
@@ -17,9 +16,6 @@ from apps.datasource.modules.analysis import AnalysisTable
 
 # helper libraries
 from apps.plugins.builtin.whois.libs.whois import whois
-
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
 
 #
 # Profiler report
@@ -31,7 +27,7 @@ report.save()
 section = Section.create(report)
 
 # Define a Table that gets external hosts by avg bytes
-table = GroupByTable.create('5-hosts', PROFILER, 'host', duration='1 hour',
+table = GroupByTable.create('5-hosts', 'host', duration='1 hour',
                             filterexpr='not srv host 10/8 and not srv host 192.168/16')
 
 Column.create(table, 'host_ip', 'IP Addr', iskey=True)

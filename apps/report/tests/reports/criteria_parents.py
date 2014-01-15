@@ -10,9 +10,9 @@ from apps.report.modules import raw
 
 from . import criteria_functions as funcs
 
-report = Report(title='Criteria Post Process', hidden_fields = ['report_computed',
-                                                                'section_computed',
-                                                                'table_computed'] )
+report = Report(title='Criteria Parents', hidden_fields = ['report_computed',
+                                                           'section_computed',
+                                                           'table_computed'] )
 report.save()
 
 # Report-level independent

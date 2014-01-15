@@ -10,15 +10,10 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.datasource.modules.profiler import TimeSeriesTable, GroupByTable
 from apps.report.models import Report, Section, Table
 import apps.report.modules.maps as maps
 import apps.report.modules.yui3 as yui3
-
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
-SHARK1 = Device.objects.get(name="shark1")
 
 #
 # Google Map example
@@ -31,7 +26,7 @@ report.save()
 section = Section.create(report)
 
 # Define a map and table, group by location
-table = GroupByTable.create('maploc2', PROFILER, 'host_group', duration=60)
+table = GroupByTable.create('maploc2', 'host_group', duration=60)
 
 Column.create(table, 'group_name', iskey=True, label='Group Name')
 Column.create(table, 'response_time', label='Resp Time', datatype='metric')

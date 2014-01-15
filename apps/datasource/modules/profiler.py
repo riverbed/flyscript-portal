@@ -19,6 +19,8 @@ from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds,
                                    timedelta_total_seconds)
 
 from apps.datasource.models import Table, TableField
+from apps.devices.models import Device
+from apps.devices.forms import fields_add_device_selection
 from apps.devices.devicemanager import DeviceManager
 from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 from libs.fields import Function
@@ -83,7 +85,7 @@ class TableOptions(JsonDict):
 
 class ProfilerTable(object):
     @classmethod
-    def create(cls, name, device, groupby, realm, duration,
+    def create(cls, name, groupby, realm, duration,
                resolution='auto', filterexpr=None, interface=False,
                **kwargs):
         logger.debug('Creating ProfilerTable table %s (%s) - %s/%s' %
@@ -94,7 +96,7 @@ class ProfilerTable(object):
                                centricity='int' if interface else 'hos')
 
 
-        t = Table(name=name, module=__name__, device=device, 
+        t = Table(name=name, module=__name__, 
                   filterexpr=filterexpr, options=options, **kwargs)
         t.save()
 
@@ -108,6 +110,7 @@ class ProfilerTable(object):
         if isinstance(duration, int):
             duration = "%d min" % duration
 
+        fields_add_device_selection(t, keyword='profiler_device', label='Profiler', module='profiler', enabled=True)
         fields_add_time_selection(t, initial_duration=duration)
         
         fields_add_filterexpr(t)
@@ -122,7 +125,7 @@ class ProfilerTable(object):
 
 class TimeSeriesTable(ProfilerTable):
     @classmethod
-    def create(cls, name, device, duration,
+    def create(cls, name, duration,
                resolution='auto',
                filterexpr=None,
                interface=False,
@@ -135,7 +138,7 @@ class TimeSeriesTable(ProfilerTable):
         logger.debug('Creating Profiler TimeSeries table %s (%s)' %
                      (name, duration))
 
-        return super(TimeSeriesTable,cls).create(name, device,
+        return super(TimeSeriesTable,cls).create(name,
                                                  groupby='time',
                                                  realm='traffic_overall_time_series',
                                                  duration=duration,
@@ -146,7 +149,7 @@ class TimeSeriesTable(ProfilerTable):
     
 class GroupByTable(ProfilerTable):
     @classmethod
-    def create(cls, name, device, groupby, duration, 
+    def create(cls, name, groupby, duration, 
                resolution='auto',
                filterexpr=None,
                interface=False,
@@ -159,7 +162,7 @@ class GroupByTable(ProfilerTable):
         msg = 'Creating Profiler GroupBy table %s (%s, %s, %s)'
         logger.debug(msg % (name, groupby, duration, filterexpr))
 
-        return super(GroupByTable,cls).create(name, device,
+        return super(GroupByTable,cls).create(name,
                                               groupby=groupby,
                                               realm='traffic_summary',
                                               duration=duration, 
@@ -181,10 +184,19 @@ class TableQuery:
     def run(self):
         """ Main execution method
         """
+        criteria = self.job.criteria
+        device = Device.objects.get(id=criteria.profiler_device)
+        if not device.enabled:
+            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
+            self.job.mark_error("Device '%s' disabled. "
+                                "See Configure->Edit Devices page to enable."
+                                % device.name)
+            return False
+            
         #self.fake_run()
         #return True
 
-        profiler = DeviceManager.get_device(self.table.device.id)
+        profiler = DeviceManager.get_device(device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
 
         columns = [col.name for col in self.table.get_columns(synthetic=False)]
@@ -193,7 +205,6 @@ class TableQuery:
         if self.table.sortcol is not None:
             sortcol = self.table.sortcol.name
 
-        criteria = self.job.criteria
         tf = TimeFilter(start=criteria.starttime,
                         end=criteria.endtime)
 
@@ -251,8 +262,12 @@ class TableQuery:
 
             tz = criteria.starttime.tzinfo
             # Update criteria
-            criteria.starttime = datetime.datetime.utcfromtimestamp(query.actual_t0).replace(tzinfo=tz)
-            criteria.endtime = datetime.datetime.utcfromtimestamp(query.actual_t1).replace(tzinfo=tz)
+            criteria.starttime = (datetime.datetime
+                                  .utcfromtimestamp(query.actual_t0)
+                                  .replace(tzinfo=tz))
+            criteria.endtime = (datetime.datetime
+                                .utcfromtimestamp(query.actual_t1)
+                                .replace(tzinfo=tz))
 
         self.job.safe_update(actual_criteria = criteria)
 

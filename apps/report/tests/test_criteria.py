@@ -112,21 +112,21 @@ class TimeSelection(CriteriaTest):
     report = 'criteria_timeselection' 
 
     def test_duration_1day(self):
-        self.run_with_criteria({'endtime': '12/1/2013 11:00 am',  
+        self.run_with_criteria({'endtime': '12/1/2013 11:00 am +0000',  
                                 'duration': '1 week'},
                                {'duration': str(datetime.timedelta(days=7)),
                                 'starttime': str(dateutil.parser.parse("11/24/2013 11:00am +0000")),
                                 'endtime': str(dateutil.parser.parse("12/1/2013 11:00am +0000"))})
         
     def test_duration_5min(self):
-        self.run_with_criteria({'endtime': '12/1/2013 11:00 am',  
+        self.run_with_criteria({'endtime': '12/1/2013 11:00 am +0000',  
                                 'duration': '5 min'},
                                {'duration': str(datetime.timedelta(seconds=60*5)),
                                 'starttime': str(dateutil.parser.parse("12/1/2013 10:55am +0000")),
                                 'endtime': str(dateutil.parser.parse("12/1/2013 11:00am +0000"))})
 
     def test_bad_time(self):
-        self.run_with_criteria({'endtime': '12/1f/2013 11:00 am',  
+        self.run_with_criteria({'endtime': '12/1f/2013 11:00 am +0000',  
                                 'duration': '5 min'},
                                expect_fail_report=True)
 
@@ -186,7 +186,41 @@ class Parents(CriteriaTest):
                                 'section_computed' : 'section_computed:report_computed:top',
                                 'table_computed' : 'table_computed:section_computed:report_computed:top'})
                                
+class Defaults(CriteriaTest):
 
+    report = 'criteria_defaults' 
 
+    def test(self):
+        self.run_with_criteria({}, {}, expect_fail_report=True)
+                               
+        self.run_with_criteria({'report-2': 'r22'},
+
+                               {'report-1': 'r1',
+                                'report-2': 'r22',
+                                'section-1': 's1',
+                                'section-2': 's2',
+                                'table-1': 't1',
+                                'table-2': 't2'})
+
+        self.run_with_criteria({'report-1': 'r11',
+                                'report-2': 'r22'},
+
+                               {'report-1': 'r11',
+                                'report-2': 'r22',
+                                'section-1': 's1',
+                                'section-2': 's2',
+                                'table-1': 't1',
+                                'table-2': 't2'})
+
+        self.run_with_criteria({'report-1': 'r11',
+                                'report-2': 'r22',
+                                'table-1': 't11'},
+
+                               {'report-1': 'r11',
+                                'report-2': 'r22',
+                                'section-1': 's1',
+                                'section-2': 's2',
+                                'table-1': 't11',
+                                'table-2': 't2'})
 
 

@@ -22,10 +22,11 @@ from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
 from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
                                    timedelta_total_seconds)
-
+from apps.devices.models import Device
+from apps.devices.devicemanager import DeviceManager
+from apps.devices.forms import fields_add_device_selection
 from apps.datasource.models import Column, Table, TableField
 from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
-from apps.devices.devicemanager import DeviceManager
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -63,7 +64,7 @@ def fields_add_filterexpr(obj,
 
 class SharkTable:
     @classmethod
-    def create(cls, name, device, view, view_size, duration,
+    def create(cls, name, view, view_size, duration,
                aggregated=False, filterexpr=None, resolution='1min', sortcol=None):
         """ Create a Shark table.
 
@@ -75,7 +76,7 @@ class SharkTable:
                                view_size=view_size,
                                aggregated=aggregated)
         
-        t = Table(name=name, module=__name__, device=device, 
+        t = Table(name=name, module=__name__, 
                   filterexpr=filterexpr, options=options, sortcol=sortcol)
         t.save()
 
@@ -86,6 +87,11 @@ class SharkTable:
         if isinstance(duration, int):
             duration = "%d min" % duration
 
+        fields_add_device_selection(t,
+                                    keyword='shark_device',
+                                    label='Shark',
+                                    module='shark',
+                                    enabled=True)
         fields_add_time_selection(t, initial_duration=duration)
         fields_add_filterexpr(t)
         fields_add_resolution(t, initial=resolution,
@@ -142,10 +148,19 @@ class TableQuery:
     def run(self):
         """ Main execution method
         """
+        criteria = self.job.criteria
+        device = Device.objects.get(id=criteria.shark_device)
+        if not device.enabled:
+            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
+            self.job.mark_error("Device '%s' disabled. "
+                                "See Configure->Edit Devices page to enable."
+                                % device.name)
+            return False
+            
         #self.fake_run()
         #return True
     
-        shark = DeviceManager.get_device(self.table.device.id)
+        shark = DeviceManager.get_device(device.id)
 
         logger.debug("Creating columns for Shark table %d" % self.table.id)
 
