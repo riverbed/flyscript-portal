@@ -6,13 +6,12 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from django.conf.urls import patterns, include, url
-from django.views.generic import DetailView, ListView
-import apps.help.views as views
+from django.conf.urls import patterns, url
+import rvbd_common.apps.help.views as views
 
 
 urlpatterns = patterns(
-    'apps.help.views',
+    'rvbd_common.apps.help.views',
     #url(r'^$', views.ReportView.as_view()),
 
     url(r'^(?P<device_type>[a-z]+)/$',

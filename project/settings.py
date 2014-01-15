@@ -174,7 +174,7 @@ INSTALLED_APPS = (
     'apps.report',
     'rvbd_common.apps.geolocation',
     'rvbd_common.apps.console',
-    'apps.help',
+    'rvbd_common.apps.help',
     'apps.preferences',
     'apps.plugins',
 
