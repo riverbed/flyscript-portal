@@ -22,11 +22,12 @@ class ReportRunnerTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         initial_data = glob.glob(os.path.join(settings.PROJECT_ROOT,
+                                              'rvbd_common',
                                               'apps', 'report', 'tests',
                                               '*.json'))
         management.call_command('loaddata', *initial_data)
 
-        path = 'apps.report.tests.reports.' + cls.report
+        path = 'rvbd_common.apps.report.tests.reports.' + cls.report
         logger.info("Loading report: %s" % path)
         management.call_command('reload', report_name=path)
 

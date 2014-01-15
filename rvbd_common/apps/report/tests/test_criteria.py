@@ -14,7 +14,7 @@ import dateutil.parser
 from rvbd_common.apps.datasource.models import Job
 from rvbd_common.apps.report.models import Report, Widget
 from . import reportrunner
-from rvbd_common.libs import call_command
+from rvbd_common.libs.call_command import call_command
 
 
 logger = logging.getLogger(__name__)

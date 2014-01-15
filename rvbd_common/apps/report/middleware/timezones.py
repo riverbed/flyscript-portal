@@ -6,7 +6,8 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.utils import timezone
-from apps.preferences.models import UserProfile
+
+from rvbd_common.apps.preferences.models import UserProfile
 
 
 class TimezoneMiddleware(object):

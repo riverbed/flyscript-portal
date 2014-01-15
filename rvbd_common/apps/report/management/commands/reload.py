@@ -17,7 +17,7 @@ from rvbd_common.apps.devices.devicemanager import DeviceManager
 
 from project import settings
 from project.utils import Importer
-from rvbd_common.apps import plugins
+from rvbd_common.apps.plugins import plugins
 
 
 class Command(BaseCommand):
