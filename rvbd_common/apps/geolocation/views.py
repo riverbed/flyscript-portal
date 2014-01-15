@@ -6,19 +6,15 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import os
 import json
 
-from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.template import RequestContext, loader
-from django.conf import settings
+from django.http import HttpResponse, Http404
 from django.core.exceptions import ObjectDoesNotExist
 
-from rvbd.common import UserAuth
 from rvbd.common.utils import DictObject
 
-from apps.geolocation.models import *
-from apps.geolocation.geoip import Lookup
+from rvbd_common.apps.geolocation.models import *
+from rvbd_common.apps.geolocation.geoip import Lookup
 
 # Create your views here.
 

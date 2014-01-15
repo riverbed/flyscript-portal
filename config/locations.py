@@ -9,7 +9,7 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.geolocation.models import Location
+from rvbd_common.apps.geolocation.models import Location
 
 #
 # Location list to use for geo-mapping

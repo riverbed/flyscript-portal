@@ -7,13 +7,14 @@
 
 import os
 import socket
-import pygeoip
 import threading
-from pygeoip.util import ip2long
 
+import pygeoip
+from pygeoip.util import ip2long
 from rvbd.common.utils import DictObject
 
-from apps.geolocation.models import Location
+from rvbd_common.apps.geolocation.models import Location
+
 
 GEOLOCATION_DATA_FILE = '/tmp/GeoLiteCity.dat1'
 lookup_lock = threading.Lock()

@@ -21,8 +21,8 @@ from rvbd.common.jsondict import JsonDict
 from django.core.exceptions import ObjectDoesNotExist
 
 from apps.report.models import Widget
-from apps.geolocation.models import Location
-from apps.geolocation.geoip import Lookup
+from rvbd_common.apps.geolocation.models import Location
+from rvbd_common.apps.geolocation.geoip import Lookup
 from project.utils import get_request
 
 from .maps_providers import google_postprocess, openstreetmaps_postprocess
