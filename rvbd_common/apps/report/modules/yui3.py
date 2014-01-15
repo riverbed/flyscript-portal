@@ -7,14 +7,14 @@
 
 import math
 import datetime
+import logging
 
 from rvbd.common import timeutils
 from rvbd.common.jsondict import JsonDict
 
-from libs.nicescale import NiceScale
+from rvbd_common.libs.nicescale import NiceScale
 from rvbd_common.apps.report.models import Axes, Widget
 
-import logging
 logger = logging.getLogger(__name__)
 
 

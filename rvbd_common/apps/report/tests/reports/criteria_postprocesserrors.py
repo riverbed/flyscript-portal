@@ -1,6 +1,6 @@
 from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
 from rvbd_common.apps.datasource.models import TableField, Column
-from libs.fields import Function
+from rvbd_common.libs.fields import Function
 
 from rvbd_common.apps.report.models import Report, Section
 from rvbd_common.apps.report.modules import raw

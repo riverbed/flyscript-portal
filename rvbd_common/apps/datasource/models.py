@@ -31,7 +31,7 @@ from rvbd.common.utils import DictObject
 from rvbd.common import timedelta_total_seconds
 
 from rvbd_common.apps.datasource.exceptions import *
-from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
+from rvbd_common.libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
 
 

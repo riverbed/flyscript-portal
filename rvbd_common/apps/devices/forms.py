@@ -7,7 +7,7 @@
 
 from django import forms
 
-from libs.fields import Function
+from rvbd_common.libs.fields import Function
 
 from rvbd_common.apps.datasource.models import TableField
 
