@@ -66,13 +66,13 @@ class MapWidgetOptions(JsonDict):
 
 class MapWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, height=300, column=None):
+    def create(cls, section, table, title, width=6, height=300, column=None):
         """Class method to create a MapWidget.
 
         `column` is the data column to graph, defaults to the first non-key
                  column found assigned to the table.
         """
-        w = Widget(report=report, title=title, width=width, height=height,
+        w = Widget(section=section, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey is True]
@@ -86,7 +86,7 @@ class MapWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         """Class method to generate list of circle objects.
 
         Subclass should manipulate this list into specific JSON structures as needed.
@@ -129,9 +129,9 @@ class MapWidget(object):
             else:
                 formatter = None
 
-            for reportrow in data:
-                key = reportrow[keycol.dataindex]
-                val = reportrow[valuecol.dataindex]
+            for rawrow in data:
+                key = rawrow[keycol.dataindex]
+                val = rawrow[valuecol.dataindex]
 
                 # skip empty result values which are not explicitly zero
                 if val is None or val == '':
@@ -165,7 +165,7 @@ class MapWidget(object):
             pass
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "circles": circles
         }
 

@@ -12,16 +12,18 @@ import datetime
 import optparse
 import pytz
 import sys
+from dateutil.tz import tzlocal
 
 from django.core.management.base import BaseCommand, CommandError
 from django.forms import ValidationError
+from django.utils.datastructures import SortedDict
 
 from rvbd.common.utils import Formatter
 from rvbd.common.timeutils import datetime_to_seconds
 
-from apps.datasource.models import Table, Job, Criteria, TableCriteria
+from apps.datasource.models import Table, Job, Criteria, TableField
+from apps.datasource.forms import TableFieldForm
 from apps.report.models import Report, Widget
-from apps.report.forms import create_report_criteria_form
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about
@@ -62,54 +64,32 @@ class Command(BaseCommand):
                          action='store',
                          dest='table_name',
                          help='Table name to execute (use --table-list to list all tables)')
-        group.add_option('--endtime',
-                         action='store',
-                         dest='endtime',
-                         type='str',
-                         default=None,
-                         help='Criteria: optional, timestamp indicating endtime of report')
-        group.add_option('--duration',
-                         action='store',
-                         dest='duration',
-                         type='float',
-                         default=None,
-                         help='Criteria: optional, minutes for report, overrides default')
-        group.add_option('--filterexpr',
-                         action='store',
-                         dest='filterexpr',
-                         default=None,
-                         help='Criteria: optional, text filter expression')
-        group.add_option('--ignore-cache',
-                         action='store_true',
-                         dest='ignore_cache',
-                         default=False,
-                         help='Criteria: optional, if present override any existing caches')
-        group.add_option('--criteria',
+        group.add_option('-C', '--criteria',
                          action='append',
                          type='str',
                          dest='criteria',
                          default=None,
-                         help='Criteria: optional, custome criteria <key>:<value>')
+                         help='Specify criteria as <key>:<value>, repeat as necessary')
+        group.add_option('--criteria-list',
+                         action='store_true',
+                         dest='criteria_list',
+                         default=None,
+                         help='List criteria for this table')
 
         parser.add_option_group(group)
 
         group = optparse.OptionGroup(parser, "Run Table Output Options",
                                      "Specify how data should be displayed")
+
+        group.add_option('-o', '--output-file',
+                         dest='output_file',
+                         default=None,
+                         help='Output data to a file')
         group.add_option('--csv',
                          action='store_true',
                          dest='as_csv',
                          default=False,
                          help='Output data in CSV format instead of tabular')
-        group.add_option('--json',
-                         action='store_true',
-                         dest='as_json',
-                         default=False,
-                         help='Output data in JSON format instead of tabular')
-        group.add_option('--data',
-                         action='store_true',
-                         dest='only_data',
-                         default=False,
-                         help='Output only data ignoring columns')
         group.add_option('--columns',
                          action='store_true',
                          dest='only_columns',
@@ -123,6 +103,23 @@ class Command(BaseCommand):
         if not self.options['as_csv']:
             self.stdout.write(msg, ending=ending)
             self.stdout.flush()
+
+    def get_form(self, table, data=None):
+        # First see if there's a single report associated with this table, and if so
+        # use it to get the field set
+        widgets = Widget.objects.filter(tables__in=[table])
+        sections = set()
+        for w in widgets:
+            sections.add(w.section)
+
+        if len(sections) == 1:
+            all_fields = widgets[0].collect_fields()
+        else:
+            for f in table.fields.all():
+                all_fields[f.keyword]=f
+
+        return TableFieldForm(all_fields, use_widgets=False, data=data)
+
 
     def handle(self, *args, **options):
         """ Main command handler
@@ -139,11 +136,24 @@ class Command(BaseCommand):
             output = []
             reports = Report.objects.all()
             for report in reports:
-                for widget in report.widget_set.all():
-                    for table in widget.tables.all():
-                        line = [table.id, report.title, widget.title, table]
-                        output.append(line)
+                for section in report.section_set.all():
+                    for widget in section.widget_set.all():
+                        for table in widget.tables.all():
+                            line = [table.id, report.title, widget.title, table]
+                            output.append(line)
             Formatter.print_table(output, ['ID', 'Report', 'Widget', 'Table'])
+        elif options['criteria_list']:
+            if 'table_id' in options and options['table_id'] is not None:
+                table = Table.objects.get(id=options['table_id'])
+            elif 'table_name' in options:
+                table = Table.objects.get(name=options['table_name'])
+            else:
+                raise ValueError("Must specify either --table-id or --table-name to run a table")
+
+            form = self.get_form(table)
+
+            output = [[c.keyword, c.label] for c in form._tablefields.values()]
+            Formatter.print_table(output, ['Keyword', 'Label'])
         else:
             if 'table_id' in options and options['table_id'] is not None:
                 table = Table.objects.get(id=options['table_id'])
@@ -155,55 +165,23 @@ class Command(BaseCommand):
             # Django gives us a nice error if we can't find the table
             self.console('Table %s found.' % table)
 
-            # Look for a related report
-            widgets = Widget.objects.filter(tables__in=[table])
-            if len(widgets) > 0:
-                report = widgets[0].report
-                form = create_report_criteria_form(report=report)
-            else:
-                form = None
-
-            add_options = {}
+            # Parse critiria options
+            criteria_options = {}
             if 'criteria' in options and options['criteria'] is not None:
                 for s in options['criteria']:
                     (k,v) = s.split(':', 1)
-                    add_options[k] = v
+                    criteria_options[k] = v
 
-            if 'endtime' in options and options['endtime'] is not None:
-                try:
-                    endtime = form.fields['endtime'].clean(options['endtime'])
-                except ValidationError:
-                    raise ValidationError("Could not parse endtime: %s, try MM/DD/YYYY HH:MM am" % options['endtime'])
-                tz = pytz.timezone("US/Eastern")
-                endtime = endtime.replace(tzinfo=tz)
-            else:
-                endtime = datetime.datetime.now()
+            form = self.get_form(table, data=criteria_options)
 
-            criteria = Criteria(endtime=datetime_to_seconds(endtime),
-                                duration=options['duration'],
-                                filterexpr=options['filterexpr'],
-                                table=table,
-                                ignore_cache=options['ignore_cache'])
+            if not form.is_valid(check_unknown=True):
+                self.console('Invalid criteria:')
+                for k,v in form.errors.iteritems():
+                    self.console('  %s: %s' % (k,','.join(v)))
+                
+                sys.exit(1)
 
-
-            if form:
-                for k,field in form.fields.iteritems():
-                    if not k.startswith('criteria_'): continue
-
-                    tc = TableCriteria.objects.get(pk=k.split('_')[1])
-
-                    if (  options['criteria'] is not None and
-                          tc.keyword in add_options):
-                        val = add_options[tc.keyword]
-                    else:
-                        val = field.initial
-
-                    # handle table criteria and generate children objects
-                    tc = TableCriteria.get_instance(k, val) 
-                    criteria[k] = tc
-                    for child in tc.children.all():
-                        child.value = val
-                        criteria['criteria_%d' % child.id] = child
+            criteria = form.criteria()
 
             columns = [c.name for c in table.get_columns()]
 
@@ -240,7 +218,13 @@ class Command(BaseCommand):
 
             if job.status == job.COMPLETE:
                 if options['as_csv']:
-                    Formatter.print_csv(job.values(), columns)
+                    if options['output_file']:
+                        with open(options['output_file'], 'w') as f:
+                            for line in Formatter.get_csv(job.values(), columns):
+                                f.write(line)
+                                f.write('\n')
+                    else:
+                        Formatter.print_csv(job.values(), columns)
                 else:
                     Formatter.print_table(job.values(), columns)
             else:

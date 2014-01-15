@@ -153,3 +153,53 @@ class PickledObjectField(models.Field):
             raise TypeError('Lookup type %s is not supported.' % lookup_type)
         return self.get_prep_value(value)
 
+class Function(object):
+    def __init__(self, function, params=None):
+        self.function = function
+        self.params = params
+
+class FunctionField(PickledObjectField):
+
+    __metaclass__ = models.SubfieldBase
+    
+    def to_python(self, value):
+        if isinstance(value, Function):
+            return value
+        
+        value = super(FunctionField, self).to_python(value)
+        if value is not None:
+            return Function(value['function'], value['params'])
+        else:
+            return None
+
+    def get_prep_value(self, value):
+        if value is not None:
+            d = {'function': value.function,
+                 'params': value.params}
+
+            value = super(FunctionField, self).get_prep_value(d)
+        return value
+
+
+# See http://stackoverflow.com/questions/1110153/what-is-the-most-efficent-way-to-store-a-list-in-the-django-models
+
+class SeparatedValuesField(models.TextField):
+    __metaclass__ = models.SubfieldBase
+
+    def __init__(self, *args, **kwargs):
+        self.token = kwargs.pop('token', ',')
+        super(SeparatedValuesField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if not value: return
+        if isinstance(value, list):
+            return value
+        return value.split(self.token)
+
+    def get_prep_value(self, value):
+        if not value: return
+        assert(isinstance(value, list) or isinstance(value, tuple))
+        return self.token.join([unicode(s) for s in value])
+
+    def value_to_string(self, obj):
+        value = self._get_val_from_obj(obj)

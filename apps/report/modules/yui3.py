@@ -20,15 +20,15 @@ logger = logging.getLogger(__name__)
 
 class TableWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, rows=1000, height=300):
-        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+    def create(cls, section, table, title, width=6, rows=1000, height=300):
+        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         w.save()
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         qcols = []
         columns = []
 
@@ -49,17 +49,17 @@ class TableWidget(object):
 
         rows = []
 
-        for reportrow in data:
+        for rawrow in data:
             row = {}
             for i in range(0, len(qcols)):
                 if qcols[i] == 'time':
-                    t = reportrow[i]
+                    t = rawrow[i]
                     try:
                         val = timeutils.datetime_to_microseconds(t) / 1000
                     except AttributeError:
                         val = t * 1000
                 else:
-                    val = reportrow[i]
+                    val = rawrow[i]
                     
                 row[qcols[i]] = val
                 i = i + 1
@@ -67,7 +67,7 @@ class TableWidget(object):
             rows.append(row)
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "columns": columns,
             "data": rows
         }
@@ -77,8 +77,8 @@ class TableWidget(object):
 
 class PieWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, rows=10, height=300):
-        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+    def create(cls, section, table, title, width=6, rows=10, height=300):
+        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey is True]
@@ -94,7 +94,7 @@ class PieWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         columns = widget.table().get_columns()
 
         catcol = [c for c in columns if c.name == widget.options.key][0]
@@ -113,10 +113,10 @@ class PieWidget(object):
         rows = []
 
         if len(data) > 0:
-            for reportrow in data:
+            for rawrow in data:
                 row = {}
                 for i in range(0, len(qcols)):
-                    val = reportrow[i]
+                    val = rawrow[i]
                     row[qcols[i]] = val
                     i = i + 1
                 rows.append(row)
@@ -126,7 +126,7 @@ class PieWidget(object):
                      qcols[1]: 1}]
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "pie",
             "categoryKey": catcol.name,
             "dataProvider": rows,
@@ -139,9 +139,9 @@ class PieWidget(object):
 
 class TimeSeriesWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, height=300,
+    def create(cls, section, table, title, width=6, height=300,
                stacked=False, cols=None, altaxis=None):
-        w = Widget(report=report, title=title, width=width, height=height,
+        w = Widget(section=section, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         timecols = [col.name for col in table.get_columns() if col.datatype == 'time']
@@ -165,7 +165,7 @@ class TimeSeriesWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
 
         class ColInfo:
             def __init__(self, col, dataindex, axis, istime=False):
@@ -240,8 +240,8 @@ class TimeSeriesWidget(object):
 
         stacked = widget.options.stacked
         # Iterate through all rows if input data
-        for reportrow in data:
-            t = reportrow[t_dataindex]
+        for rawrow in data:
+            t = rawrow[t_dataindex]
             try:
                 t = timeutils.datetime_to_microseconds(t) / 1000
             except AttributeError:
@@ -254,7 +254,7 @@ class TimeSeriesWidget(object):
                 if ci.istime:
                     continue
                 a = ci.axis
-                val = reportrow[ci.dataindex]
+                val = rawrow[ci.dataindex]
                 row[ci.col.name] = val if val != '' else None
 
                 if a not in rowmin:
@@ -297,7 +297,7 @@ class TimeSeriesWidget(object):
                 axes[axis_name]['formatter'] = 'formatMetric'
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "area" if stacked else "combo",
             "stacked": stacked,
             "dataProvider": rows,
@@ -315,8 +315,8 @@ class TimeSeriesWidget(object):
 
 class BarWidget(object):
     @classmethod
-    def create(cls, report, table, title, width=6, rows=10, height=300, keycols=None, valuecols=None):
-        w = Widget(report=report, title=title, rows=rows, width=width, height=height,
+    def create(cls, section, table, title, width=6, rows=10, height=300, keycols=None, valuecols=None):
+        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         if keycols is None:
@@ -333,7 +333,7 @@ class BarWidget(object):
         w.tables.add(table)
 
     @classmethod
-    def process(cls, widget, data):
+    def process(cls, widget, job, data):
         class ColInfo:
             def __init__(self, col, dataindex, axis):
                 self.col = col
@@ -407,7 +407,7 @@ class BarWidget(object):
 
         stacked = False  # XXXCJ
         
-        for reportrow in data:
+        for rawrow in data:
             row = {}
             rowmin = {}
             rowmax = {}
@@ -417,7 +417,7 @@ class BarWidget(object):
             for c in colmap.values():
                 if not c.col.iskey:
                     continue
-                keyvals.append(reportrow[c.dataindex])
+                keyvals.append(rawrow[c.dataindex])
             row[catname] = ','.join(keyvals)
 
             # collect the data values
@@ -427,7 +427,7 @@ class BarWidget(object):
                     continue
 
                 # Set the value
-                val = reportrow[c.dataindex]
+                val = rawrow[c.dataindex]
                 row[c.col.name] = val
 
 
@@ -466,7 +466,7 @@ class BarWidget(object):
                 axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
 
         data = {
-            "chartTitle": widget.title,
+            "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "column",
             "categoryKey": catname,
             "dataProvider": rows,

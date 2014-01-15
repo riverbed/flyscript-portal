@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block comments %}
+<!--
+# Copyright (c) 2013 Riverbed Technology, Inc.
+#
+# This software is licensed under the terms and conditions of the
+# MIT License set forth at:
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
+# This software is distributed "AS IS" as set forth in the License.
+-->
+{% endblock %}
+
+{% block header %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("input[type='checkbox']").change(function() {
+            $.post(
+                '/plugins/' + this.name + '/',
+                {"enabled": this.checked, "csrfmiddlewaretoken": "{{ csrf_token }}" },
+                function(data) {
+                    href = window.location.href.split('#')[0].split('?')[0]
+                    window.location.href = href + '?changed=true';
+                },
+                "json"
+            );
+        });
+    });
+
+    function reloadButton() {
+        modal = loadingModal('Reloading All Reports', 'Please wait ...');
+        modal.modal('show');
+        
+        window.location.href = "{% url 'reload-all' %}";
+    }
+
+</script>
+
+
+{% endblock %}
+
+{% block title %}Portal: Plugins List{% endblock %}
+
+{% block header_row %}
+    <h3>Plugins List</h3>
+    <h4>List of installed plugins to Portal</h4>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <table border="0" class="table table-bordered block-centered" style="max-width: 50%">
+            <thead>
+            <tr>
+                <th>Enabled</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Version</th>
+                <th>Author</th>
+            </tr>
+            </thead>
+            <tbody>
+                {% if not plugins %}
+                    <tr>
+                        <td colspan="5" style="text-align: center">No plugins installed.</td>
+                    </tr>
+                {% endif %}
+                {% for plugin in plugins %}
+                    <tr {% if not plugin.enabled %}class="row-disabled"{% endif %}>
+                        <td><input id="id_{{plugin.slug}}" name="{{plugin.slug}}" type="checkbox" {% if plugin.is_enabled %}checked{% endif %}></td>
+                        <td>{{ plugin.title }}</td>
+                        <td>{{ plugin.description }}</td>
+                        <td>{{ plugin.version }}</td>
+                        <td>{{ plugin.author }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="row">
+            <div class="block-centered" style="text-align: center">
+            {% if changed %}
+            <input type="button" value="Reload All Reports" class="btn btn-primary" onClick="reloadingModal('{% url 'reload-all' %}', true)">
+            {% else %}
+                <a href="#" class="btn btn-primary disabled">Reload All Reports</a>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

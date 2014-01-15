@@ -20,6 +20,8 @@ import random
 import datetime
 import pytz
 import pandas
+import string
+from decimal import Decimal
 
 from django.db import models
 from django.db.models import Max
@@ -28,11 +30,13 @@ from django.db import transaction
 from django.db.models import F
 from django.db.models.signals import pre_delete 
 from django.dispatch import receiver
+from django import forms
 
 from rvbd.common.utils import DictObject
+from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
 
-from apps.devices.models import Device
-from libs.fields import PickledObjectField
+from apps.datasource.exceptions import *
+from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
 
 logger = logging.getLogger(__name__)
@@ -58,55 +62,99 @@ class LocalLock(object):
             lock.release()
         return False
 
-class TableCriteria(models.Model):
-    """ Criteria model to provide report run-time overrides for key values.
+class TableField(models.Model):
+    """
+    Defines a single field associated with a table.
 
-        Primarily used to parameterize reports with values that may change
-        from time to time, such as interfaces, thresholds, QOS types, etc.
+    TableFields define the the parameters that are used by a Table
+    at run time.  The Table.fields attribute associates one
+    or more fields with the table.
 
-        keyword  -- text name of table field or TableOption field
-        template -- python string template to use for replacement, e.g.
-                    "inbound interface {} and qos EF", where the {} would
-                    be replaced with the value provided in the form field
-        label    -- text label shown in the HTML form
-        initial  -- starting or default value to include in the form
+    At run time, a Criteria object binds values to each field.  The
+    Criteria object has an attribute matching each associated TableField
+    keyword.
 
-        optional:
-        field_type   -- text name of form field type, defaults to
-                        `forms.CharField`.
-        field_kwargs -- additional keywords to pass to field initializer
-        parent       -- reference to another TableCriteria object which
-                        provides values to inherit from.  This allows
-                        multiple criteria to be enumerated while only
-                        displaying/filling out a single form field.
-                        TableCriteria which have a parent object identified
-                        will not be included in the HTML form output.
+    When defining a TableField, the following model attributes
+    may be specified:
+
+    :param keyword: short identifier used like a variable name, this must
+        be unique per table
+    
+    :param label: text label displayed in user interfaces
+
+    :param help_text: descriptive help text associated with this field
+
+    :param initial: starting or default value to use in user interfaces
+    
+    :param required: boolean indicating if a non-null values must be provided
+
+    :param hidden: boolean indicating if this field should be hidden in
+        user interfaces, usually true when the value is computed from
+        other fields via post_process_func or post_process_template
+
+    :param field_cls: Django Form Field class to use for rendering.
+        If not specified, this defaults to CharField
+
+    :param field_kwargs: Dictionary of additional field specific
+        kwargs to pass to the field_cls constructor.
+
+    :param parants: List of parent keywords that this field depends on
+        for a final value.  Used in conjunction with either
+        post_process_func or post_process_template.
+
+    :param pre_process_func: Function to call to perform any necessary
+        preprocessing before rendering a form field or accepting
+        user input.
+
+    :param post_process_func: Function to call to perform any post
+        submit processing.  This may be additional value cleanup
+        or computation based on other form data.
+
+    :param post_process_template: Simple string format style template
+        to fill in based on other form criteria.
     """
     keyword = models.CharField(max_length=100)
-    template = models.CharField(max_length=100)
-    label = models.CharField(max_length=100)
-
+    label = models.CharField(max_length=100, null=True, default=None)
+    help_text = models.CharField(blank=True, null=True, default=None, max_length=400)
     initial = PickledObjectField(blank=True, null=True)
+    required = models.BooleanField(default=False)
+    hidden = models.BooleanField(default=False)
 
-    field_type = models.CharField(max_length=100, default='forms.CharField')
+    field_cls = PickledObjectField(null=True)
     field_kwargs = PickledObjectField(blank=True, null=True)
 
-    parent = models.ForeignKey("self", blank=True, null=True,
-                               related_name="children")
+    parent_keywords = SeparatedValuesField(null=True)
 
-    # whether a value must be provided by the user
-    required = models.BooleanField(default=False)
+    pre_process_func = FunctionField(null=True)
+    post_process_func = FunctionField(null=True)
+    post_process_template = models.CharField(null=True, max_length=500)
 
-    # instance placeholder for form return values, not for database storage
-    value = PickledObjectField(null=True, blank=True)
+    @classmethod
+    def create(cls, keyword, label=None, obj=None, **kwargs):
+        parent_keywords = kwargs.pop('parent_keywords', None)
+        if parent_keywords is None:
+            parent_keywords = []
+        
+        field = cls(keyword=keyword, label=label, **kwargs)
+        field.save()
+
+        if field.post_process_template is not None:
+            f = string.Formatter()
+            for (_, keyword, _, _) in f.parse(field.post_process_template):
+                parent_keywords.append(keyword)
+
+        field.parent_keywords = parent_keywords
+        field.save()
+        
+        if obj is not None:
+            obj.fields.add(field)
+        return field
+    
+    def __repr__(self):
+        return "<TableField %s (%s)>" % (self.keyword, self.id)
 
     def __unicode__(self):
-        return "<TableCriteria %s (id=%s)>" % (self.keyword, str(self.id))
-
-    def save(self, *args, **kwargs):
-        #if not self.field_type:
-        #    self.field_type = 'forms.CharField'
-        super(TableCriteria, self).save(*args, **kwargs)
+        return "<TableField %s (%s)>" % (self.keyword, self.id)
 
     def is_report_criteria(self, table):
         """ Runs through intersections of widgets to determine if this criteria
@@ -114,62 +162,48 @@ class TableCriteria(models.Model):
 
             report  <-->  widgets  <-->  table
                 |
-                L- TableCriteria (self)
+                L- TableField (self)
         """
         wset = set(table.widget_set.all())
         rset = set(self.report_set.all())
         return any(wset.intersection(set(rwset.widget_set.all())) for rwset in rset)
 
     @classmethod
-    def get_instance(cls, key, value):
-        """ Return instance given the 'criteria_%d' formatted key
-
-            If we have an initial value (e.g. no parent specified)
-            then save value as our new initial value
-        """
-        tc = TableCriteria.objects.get(pk=key.split('_')[1])
-        if tc.initial and tc.initial != value:
-            tc.initial = value
-            tc.save()
-        tc.value = value
-        return tc
-
-    @classmethod
-    def get_children(cls, key, value):
-        """ Given a 'criteria_%d' key, return all children objects
-            with value attributes filled in.  Return empty list if no
-            children.
-        """
-        parent = cls.get_instance(key, value)
-        children = parent.children.all()
-        for c in children:
-            c.value = value
-        return children
+    def find_instance(cls, key):
+        """ Return instance given a keyword. """
+        params = TableField.objects.filter(keyword=key)
+        if len(params) == 0:
+            return None
+        elif len(params) > 1:
+            raise KeyError("Multiple TableField matches found for %s"
+                           % key)
+        param = param[0]
+        return param
 
 
 class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)         # source module name
-    device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
-    filterexpr = models.TextField(null=True)
-    duration = models.IntegerField(null=True)         # length of query, mins
-    resolution = models.IntegerField(default=60)      # query resolution, sec
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
+    filterexpr = models.CharField(null=True, max_length=400)
 
-    # deprecated interface for profiler key/value separated by comma
-    datafilter = models.TextField(null=True, blank=True)  
-
-    # indicator field for analysis/synthetic tables
+    # resample flag -- resample to the criteria.resolution
+    # - this requires a "time" column
     resample = models.BooleanField(default=False)
 
     # options are typically fixed attributes defined at Table creation
     options = PickledObjectField()                          
 
-    # criteria are used to override instance values at run time
-    criteria = models.ManyToManyField(TableCriteria, null=True)
+    # list of fields that must be bound to values in criteria
+    # that this table needs to run
+    fields = models.ManyToManyField(TableField, null=True)
+
+    # Default values for fields assocaited with this table, these
+    # may be overridden by user criteria at run time
+    criteria = PickledObjectField()
     
-    # indicate if data can be cached based on criteria
+    # indicate if data can be cached 
     cacheable = models.BooleanField(default=True)
 
     @classmethod
@@ -242,6 +276,9 @@ class Table(models.Model):
 
             Changes are only applied to instance, not saved to database
         """
+        # XXXCJ - I think this function is now obsolete...
+        return
+    
         for k, v in criteria.iteritems():
             if k.startswith('criteria_') and (self in v.table_set.all() or
                                               v.is_report_criteria(self)):
@@ -261,7 +298,7 @@ class Table(models.Model):
                     msg = 'WARNING: keyword %s not found in table %s or its options'
                     logger.debug(msg % (v.keyword, self))
 
-    def compute_synthetic(self, df):
+    def compute_synthetic(self, job, df):
         """ Compute the synthetic columns from DF a two-dimensional array
             of the non-synthetic columns.
 
@@ -320,7 +357,19 @@ class Table(models.Model):
             colmap[col.name] = col
             if col.datatype == "time":
                 timecol = col.name
-        if timecol and self.resample:
+
+        if self.resample:
+            if (timecol is None):
+                raise (TableComputeSyntheticError
+                       ("Table %s 'resample' is set but no 'time' column'" %
+                        self))
+
+            if (  ('resolution' not in job.criteria) and
+                  ('resample_resolution' not in job.criteria)):
+                raise (TableComputeSyntheticError
+                       (("Table %s 'resample' is set but criteria missing " +
+                         "'resolution' or 'resample_resolution'") % self))
+            
             how = {}
             for k in df.keys():
                 if k == timecol:
@@ -328,12 +377,24 @@ class Table(models.Model):
                 how[k] = colmap[k].resample_operation
 
             indexed = df.set_index(timecol)
-            resampled = indexed.resample('%ss' % self.resolution, how).reset_index()
+            if ('resample_resolution' in job.criteria):
+                resolution = job.criteria.resample_resolution
+            else:
+                resolution = job.criteria.resolution
+
+            resolution = timedelta_total_seconds(resolution)
+            if resolution < 1:
+                raise (TableComputeSyntheticError
+                       (("Table %s cannot resample at a resolution " +
+                         "less than 1 second") % self))
+
+            indexed.save('/tmp/indexed.pd')
+            resampled = indexed.resample('%ss' % int(resolution), how, convention='end').reset_index()
             df = resampled
 
         # 3. Compute remaining synthetic columns (post_resample is True)
-        compute(df, [col for col in all_columns if (col.synthetic and
-                                                    col.compute_post_resample is True)])
+        compute(df, [c for c in all_columns
+                     if (c.synthetic and c.compute_post_resample is True)])
 
         return df
 
@@ -390,78 +451,93 @@ class Column(models.Model):
 
 
 class Criteria(DictObject):
-    def __init__(self, starttime=None, endtime=None, duration=None, 
-                 filterexpr=None, table=None, ignore_cache=False, *args, **kwargs):
-        super(Criteria, self).__init__(*args, **kwargs)
-        self.starttime = starttime
-        self.endtime = endtime
-        self.duration = duration
-        self.filterexpr = filterexpr
-        self.ignore_cache = ignore_cache
+    """ Manage a collection of criteria values. """
+    def __init__(self, **kwargs):
+        """ Initialize a criteria object based on key/value pairs. """
 
-        self._orig_starttime = starttime
-        self._orig_endtime = endtime
-        self._orig_duration = duration
-        
-        if table:
-            self.compute_times(table)
+        self.starttime = None
+        self.endtime = None
+        self.duration = None
+
+        super(Criteria, self).__init__(kwargs)
+
+        #self.filterexpr = filterexpr
+        #self.ignore_cache = ignore_cache
+
+        # Keep track of the original starttime / endtime
+        # This are needed when recomputing start/end times with
+        # different default durations
+        self._orig_starttime = self.starttime
+        self._orig_endtime = self.endtime
+        self._orig_duration = self.duration
+
+    def __setattr__(self, key, value):
+        self[key] = value
+        if key.startswith('_'):
+            return
+        elif key in ['starttime', 'endtime', 'duration']:
+            self['_orig_%s' % key] = value
+        else:
+            param = TableField.find_instance(key)
+            if param.initial != value:
+                param.initial = value
+                param.save()
             
     def print_details(self):
         """ Return instance variables as nicely formatted string
         """
-        msg = 'starttime: %s, endtime: %s, duration: %s, ' % (str(self.starttime), 
-                                                              str(self.endtime), 
-                                                              str(self.duration))
-        msg += 'filterexpr: %s, ignore_cache: %s' % (str(self.filterexpr),
-                                                     str(self.ignore_cache))
-        return msg
+        return ', '.join([("%s: %s" % (k,v)) for k,v in self.iteritems()])
 
     def build_for_table(self, table):
-        # used by Analysis datasource module
-        crit =  Criteria(starttime=self._orig_starttime,
+        """ Build a criteria object for a table.
+
+        This copies over all criteria parameters but has 
+        special handling for starttime, endtime, and duration,
+        as they may be altered if duration is 'default'.
+
+        """
+        crit = Criteria(starttime=self._orig_starttime,
                          endtime=self._orig_endtime,
-                         duration=self._orig_duration,
-                         filterexpr=self.filterexpr,
-                         ignore_cache=self.ignore_cache,
-                         table=table)
+                         duration=self._orig_duration)
 
         for k,v in self.iteritems():
-            if k.startswith('criteria_'):
-                crit[k] = v
+            if (  (k in ['starttime', 'endtime', 'duration']) or
+                  k.startswith('_')):
+                continue
+            
+            crit[k] = v
 
         return crit
                         
-    def compute_times(self, table):
-        if table.duration is None:
-            return
+    def compute_times(self):
+        # Start with the original values not any values formerly computed
+        duration = self._orig_duration
+        starttime = self._orig_starttime
+        endtime = self._orig_endtime
+
+        logger.debug("compute_times: %s %s %s" %
+                     (starttime, endtime, duration))
         
-        if self.endtime is None:
-            self.endtime = time.time()
-
-        # Snap backwards based on table resolution
-        self.endtime = self.endtime - self.endtime % table.resolution
-
-        if self.starttime is None:
-            if self.duration is None:
-                self.duration = table.duration * 60
-
-            self.starttime = self.endtime - self.duration
-
-        self.starttime = self.starttime - self.starttime % table.resolution
+        if starttime is not None:
+            if endtime is not None:
+                duration = endtime - starttime
+            elif duration is not None:
+                endtime = starttime + duration
+            else:
+                raise ValueError("Cannot compute times, have starttime but not endtime or duration")
             
-    def lookup(self, key):
-        """ Lookup a criteria entry by `key`. """
-        if key in self:
-            return self[key]
-        
-        for k, v in self.iteritems():
-            if not k.startswith('criteria_'): continue
-        
-            if v.keyword == key:
-                return v.value
+        elif endtime is None:
+            endtime = datetime.datetime.now()
+            
+        if duration is not None:
+            starttime = endtime - duration
+        else:
+            raise ValueError("Cannot compute times, have endtime but not starttime or duration")
 
-        raise KeyError("No such criteria key '%s'" % key)
-
+        self.duration = duration
+        self.starttime = starttime
+        self.endtime = endtime
+        
 class Job(models.Model):
 
     # Timestamp when the job was created
@@ -482,7 +558,7 @@ class Job(models.Model):
     # Table assocaited with this job
     table = models.ForeignKey(Table)
 
-    # Criteria used to start this job
+    # Criteria used to start this job - an instance of the Criteria class
     criteria = PickledObjectField(null=True)
 
     # Actual criteria as returned by the job after running
@@ -564,9 +640,14 @@ class Job(models.Model):
 
         with LocalLock():
             with transaction.commit_on_success():
-
-                # First, compute the handle -- this will take into
-                # account cacheability
+                # Lockdown start/endtimes
+                try:
+                    criteria.compute_times()
+                except ValueError:
+                    # Ignore errors, this table may not have start/end times
+                    pass
+                
+                # Compute the handle -- this will take into account cacheability
                 handle = Job._compute_handle(table, criteria)
 
                 # Look for another job by the same handle in any state except ERROR
@@ -588,6 +669,7 @@ class Job(models.Model):
 
                     job = Job(table = table,
                               criteria = criteria,
+                              actual_criteria = parent.actual_criteria,
                               status = parent.status,
                               handle = handle,
                               parent = parent,
@@ -614,6 +696,8 @@ class Job(models.Model):
                               message = '')
                     job.save()
                     logger.info("%s: New job for table %s" % (job, table.name))
+
+                logger.debug("%s: criteria = %s" % (job, criteria))
 
             # Flush old jobs
             Job.age_jobs()
@@ -642,9 +726,8 @@ class Job(models.Model):
             # files when we don't want it to
             h.update('.'.join([c.name for c in table.get_columns(ephemeral=False)]))
             for k, v in criteria.iteritems():
-                if not k.startswith('criteria_'):
-                    #logger.debug("Updating hash from %s -> %s" % (k,v))
-                    h.update('%s:%s' % (k, v))
+                #logger.debug("Updating hash from %s -> %s" % (k,v))
+                h.update('%s:%s' % (k, v))
         else:
             # Table is not cacheable, instead use current time plus a random value
             # just to get a unique hash
@@ -656,14 +739,14 @@ class Job(models.Model):
     def reference(self, message=""):
         pk = self.pk
         Job.objects.filter(pk=pk).update(refcount=F('refcount')+1)
-        logger.debug("%s: reference(%s) @ %d" %
-                     (self, message, Job.objects.get(pk=pk).refcount))
+        #logger.debug("%s: reference(%s) @ %d" %
+        #             (self, message, Job.objects.get(pk=pk).refcount))
         
     def dereference(self, message=""):
         pk = self.pk
         Job.objects.filter(pk=pk).update(refcount=F('refcount')-1)
-        logger.debug("%s: dereference(%s) @ %d" %
-                     (self, message, Job.objects.get(pk=pk).refcount))
+        #logger.debug("%s: dereference(%s) @ %d" %
+        #             (self, message, Job.objects.get(pk=pk).refcount))
         
     def json(self, data=None):
         """ Return a simple JSON structure representing the status of this Job """
@@ -676,18 +759,26 @@ class Job(models.Model):
                 'message': self.message,
                 'data': data}
 
-    def combine_filterexprs(self, joinstr="and"):
-        exprs = []
+    def combine_filterexprs(self, joinstr="and", exprs=None):
         self.refresh()
+
         criteria = self.criteria
-        for e in [self.table.filterexpr, criteria.filterexpr if criteria else None]:
+        if exprs is None:
+            exprs = []
+        elif type(exprs) is not list:
+            exprs = [exprs]
+            
+        exprs.append(self.table.filterexpr)
+
+        nonnull_exprs = []
+        for e in exprs:
             if e != "" and e is not None:
-                exprs.append(e)
-                
-        if len(exprs) > 1:
-            return "(" + (") " + joinstr + " (").join(exprs) + ")"
-        elif len(exprs) == 1:
-            return exprs[0]
+                nonnull_exprs.append(e)
+
+        if len(nonnull_exprs) > 1:
+            return "(" + (") " + joinstr + " (").join(nonnull_exprs) + ")"
+        elif len(nonnull_exprs) == 1:
+            return nonnull_exprs[0]
         else:
             return ""
 
@@ -702,28 +793,16 @@ class Job(models.Model):
         
         with transaction.commit_on_success():
             logger.debug("%s: Starting job" % str(self))
-            
-            if self.table.device and not self.table.device.enabled:
-                # User has disabled the device so lets wrap up here
-                
-                # would be better if we could mark COMPLETE vs ERROR, but then follow-up
-                # processing would occur which we want to avoid.  This short-circuits the
-                # process to return the message in the Widget window immediately.
-                logger.debug("%s: Device %s disabled, bypassing job" % (self, self.table.device))
-                self.mark_error('Device %s disabled.\n'
-                                'See Configure->Edit Devices page to enable.'
-                                % self.table.device.name)
-            else:
-                self.mark_progress(0)
+            self.mark_progress(0)
 
-                logger.debug("%s: Spawning AsyncWorker to run report" % str(self))
-                # Lookup the query class for this table
-                i = importlib.import_module(self.table.module)
-                queryclass = i.TableQuery
+            logger.debug("%s: Worker to run report" % str(self))
+            # Lookup the query class for this table
+            i = importlib.import_module(self.table.module)
+            queryclass = i.TableQuery
 
-                # Create an asynchronous worker to do the work
-                worker = AsyncWorker(self, queryclass)
-                worker.start()
+            # Create an worker to do the work
+            worker = Worker(self, queryclass)
+            worker.start()
 
     def mark_error(self, message):
         logger.warning("%s failed: %s" % (self, message))
@@ -813,10 +892,16 @@ class Job(models.Model):
 
         # Ancient jobs are deleted regardless of refcount
         now = datetime.datetime.now(tz=pytz.utc)
-        (Job.objects.filter(touched__lte = now - ancient)).delete()
-            
+        try:
+            (Job.objects.filter(touched__lte = now - ancient)).delete()
+        except:
+            logger.exception("Failed to delete ancient jobs")
+
         # Old jobs are deleted only if they have a refcount of 0
-        (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+        try:
+            (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+        except:
+            logger.exception("Failed to delete old jobs")
 
         age_jobs_last_run = time.time()
 
@@ -829,7 +914,8 @@ class Job(models.Model):
 def _my_job_delete(sender, instance, **kwargs):
     if instance.parent is not None:
         instance.parent.dereference(str(instance))
-        
+
+
 class AsyncWorker(threading.Thread):
     def __init__(self, job, queryclass):
         threading.Thread.__init__(self)
@@ -850,6 +936,34 @@ class AsyncWorker(threading.Thread):
         return "<AsyncWorker %s>" % (self.job)
 
     def run(self):
+        self.do_run()
+        sys.exit(0)
+        
+class SyncWorker(object):
+    def __init__(self, job, queryclass):
+        self.job = job
+        self.queryclass = queryclass
+
+    def __unicode__(self):
+        return "<SyncWorker %s>" % (self.job)
+
+    def __str__(self):
+        return "<SyncWorker %s>" % (self.job)
+
+    def start(self):
+        self.do_run()
+        
+if settings.APPS_DATASOURCE['threading'] and not settings.TESTING:
+    base_worker_class = AsyncWorker
+else:
+    base_worker_class = SyncWorker
+
+class Worker(base_worker_class):
+
+    def __init__(self, job, queryclass):
+        super(Worker, self).__init__(job, queryclass)
+        
+    def do_run(self):
         job = self.job
         try:
             logger.info("%s running queryclass %s" % (self, self.queryclass))
@@ -874,7 +988,8 @@ class AsyncWorker(threading.Thread):
                                 # This may incorrectly be tagged as numeric
                                 pass
 
-                elif query.data is not None and len(query.data) == 0:
+                elif ((query.data is None) or
+                      (isinstance (query.data, list) and len(query.data) == 0)):
                     df = None
                 elif isinstance(query.data, pandas.DataFrame):
                     df = query.data
@@ -882,7 +997,7 @@ class AsyncWorker(threading.Thread):
                     raise ValueError("Unrecognized query result type: %s" % type(query.data))
 
                 if df is not None:
-                    df = job.table.compute_synthetic(df)
+                    df = job.table.compute_synthetic(job, df)
 
                 if df is not None:
                     df.save(job.datafile())
@@ -891,6 +1006,10 @@ class AsyncWorker(threading.Thread):
                     logger.debug("%s no data saved, data is empty" % (str(self)))
 
                 logger.info("%s finished as COMPLETE" % self)
+                job.refresh()
+                if job.actual_criteria is None:
+                    job.safe_update(actual_criteria = job.criteria)
+
                 job.mark_complete()
             else:
                 # If the query.run() function returns false, the run() may
@@ -906,17 +1025,14 @@ class AsyncWorker(threading.Thread):
                 logger.error("%s finished with an error: %s" % (self, job.message))
                 
         except:
-            traceback.print_exc()
-            logger.error("%s raised an exception: %s" % (self, str(sys.exc_info())))
+            logger.exception("%s raised an exception" % (self))
             job.safe_update(status = job.ERROR,
                             progress = 100,
                             message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 
         finally:
-            job.dereference("AsyncWorker exiting")
+            job.dereference("Worker exiting")
             
-        logger.debug("AsyncWorker caling sys.exit(0)")
-        sys.exit(0)
 
 class BatchJobRunner(object):
 

@@ -19,8 +19,8 @@ admin.site.register(Report, ReportAdmin)
 
 
 class WidgetAdmin(admin.ModelAdmin):
-    list_display = ('title', 'report', 'module', 'uiwidget')
-    list_filter = ('report', 'module', 'uiwidget', )
+    list_display = ('title', 'section', 'module', 'uiwidget')
+    list_filter = ('section', 'module', 'uiwidget', )
 
 admin.site.register(Widget, WidgetAdmin)
 

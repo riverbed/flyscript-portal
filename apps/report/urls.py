@@ -11,9 +11,6 @@ from django.views.generic import DetailView, ListView
 from apps.report.models import Job
 import apps.report.views as views
 
-for j in Job.objects.all():
-    j.delete()
-
 urlpatterns = patterns(
     'apps.report.views',
     url(r'^$', views.ReportView.as_view(),

@@ -4,7 +4,7 @@
     "model": "devices.device", 
     "fields": {
       "username": "admin", 
-      "name": "profiler", 
+      "name": "tm08-1", 
       "enabled": true, 
       "module": "profiler", 
       "host": "tm08-1.lab.nbttech.com", 
@@ -17,9 +17,21 @@
     "fields": {
       "username": "admin", 
       "name": "shark1", 
-      "enabled": false, 
+      "enabled": true, 
       "module": "shark", 
-      "host": "vdorothy10.lab.nbttech.com", 
+      "host": "cam-shark12.lab.nbttech.com", 
+      "port": 443
+    }
+  }, 
+  {
+    "pk": 3, 
+    "model": "devices.device", 
+    "fields": {
+      "username": "admin", 
+      "name": "eng-profiler", 
+      "enabled": true, 
+      "module": "profiler", 
+      "host": "eng-profiler.lab.nbttech.com", 
       "port": 443
     }
   }

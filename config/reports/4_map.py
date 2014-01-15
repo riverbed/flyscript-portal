@@ -10,15 +10,10 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.datasource.modules.profiler import TimeSeriesTable, GroupByTable
-from apps.report.models import Report, Table
+from apps.report.models import Report, Section, Table
 import apps.report.modules.maps as maps
 import apps.report.modules.yui3 as yui3
-
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
-SHARK1 = Device.objects.get(name="shark1")
 
 #
 # Google Map example
@@ -28,8 +23,10 @@ SHARK1 = Device.objects.get(name="shark1")
 report = Report(title="Response Time Map", position=4)
 report.save()
 
+section = Section.create(report)
+
 # Define a map and table, group by location
-table = GroupByTable.create('maploc2', PROFILER, 'host_group', duration=60)
+table = GroupByTable.create('maploc2', 'host_group', duration=60)
 
 Column.create(table, 'group_name', iskey=True, label='Group Name')
 Column.create(table, 'response_time', label='Resp Time', datatype='metric')
@@ -41,7 +38,7 @@ Column.create(table, 'avg_bytes_rtx', 'Avg Retrans Bytes/s', datatype='bytes', u
 Column.create(table, 'peak_bytes_rtx', 'Peak Retrans Bytes/s', datatype='bytes', units='B/s')
 
 # Create a Map widget
-maps.MapWidget.create(report, table, "Response Time Map", width=12, height=500)
+maps.MapWidget.create(section, table, "Response Time Map", width=12, height=500)
 
 # Create a Table showing the same data as the map
-yui3.TableWidget.create(report, table, "Locations", width=12)
+yui3.TableWidget.create(section, table, "Locations", width=12)

@@ -10,6 +10,8 @@ import logging
 import datetime
 import threading
 
+from django import forms
+
 import pandas as pd
 from rvbd.shark import Shark
 from rvbd.shark.types import Operation, Value, Key
@@ -18,9 +20,13 @@ from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
-
-from apps.datasource.models import Column, Table
+from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
+                                   timedelta_total_seconds)
+from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
+from apps.devices.forms import fields_add_device_selection
+from apps.datasource.models import Column, Table, TableField
+from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -44,18 +50,54 @@ class ColumnOptions(JsonDict):
                 'default_value': None}
 
 
+def fields_add_filterexpr(obj,
+                          keyword = 'shark_filterexpr',
+                          initial=None):
+    field = ( TableField
+              (keyword = keyword,
+               label = 'Shark Filter Expression',
+               help_text = 'Traffic expression using Shark filter syntax',
+               initial = initial,
+               required = False))
+    field.save()
+    obj.fields.add(field)
+
 class SharkTable:
     @classmethod
-    def create(cls, name, device, view, view_size, duration,
-               aggregated=False, filterexpr=None, resolution=60, sortcol=None):
-        logger.debug('Creating Shark table %s (%s, %d)' % (name, view, duration))
+    def create(cls, name, view, view_size, duration,
+               aggregated=False, filterexpr=None, resolution='1min', sortcol=None):
+        """ Create a Shark table.
+
+        `duration` is in minutes
+
+        """
+        logger.debug('Creating Shark table %s (%s, %s)' % (name, view, duration))
         options = TableOptions(view=view,
                                view_size=view_size,
                                aggregated=aggregated)
-        t = Table(name=name, module=__name__, device=device, duration=duration,
-                  filterexpr=filterexpr, options=options, resolution=resolution,
-                  sortcol=sortcol)
+        
+        t = Table(name=name, module=__name__, 
+                  filterexpr=filterexpr, options=options, sortcol=sortcol)
         t.save()
+
+        if resolution not in ['1ms', '1sec', '1min', '15min']:
+            raise KeyError("Invalid resolution %s, must be one of: %s" %
+                           (resolution, ', '.join(['1ms', '1sec', '1min', '15min'])))
+
+        if isinstance(duration, int):
+            duration = "%d min" % duration
+
+        fields_add_device_selection(t,
+                                    keyword='shark_device',
+                                    label='Shark',
+                                    module='shark',
+                                    enabled=True)
+        fields_add_time_selection(t, initial_duration=duration)
+        fields_add_filterexpr(t)
+        fields_add_resolution(t, initial=resolution,
+                              resolutions = [('1sec', '1 second'),
+                                             ('1min', '1 minute'),
+                                             ('15min', '15 minutes')])
         return t
 
 
@@ -92,14 +134,33 @@ class TableQuery:
         self.timeseries = False         # if key column called 'time' is created
         self.column_names = []
 
+        # Resolution comes in as a time_delta
+        resolution = timedelta_total_seconds(job.criteria.resolution)
+
         default_delta = 1000000000                      # one second
-        self.delta = default_delta * table.resolution   # sample size interval
+        self.delta = int(default_delta * resolution)    # sample size interval
+
+
+    def fake_run(self):
+        import fake_data
+        self.data = fake_data.make_data(self.table, self.job)
 
     def run(self):
         """ Main execution method
         """
-
-        shark = DeviceManager.get_device(self.table.device.id)
+        criteria = self.job.criteria
+        device = Device.objects.get(id=criteria.shark_device)
+        if not device.enabled:
+            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
+            self.job.mark_error("Device '%s' disabled. "
+                                "See Configure->Edit Devices page to enable."
+                                % device.name)
+            return False
+            
+        #self.fake_run()
+        #return True
+    
+        shark = DeviceManager.get_device(device.id)
 
         logger.debug("Creating columns for Shark table %d" % self.table.id)
 
@@ -145,14 +206,14 @@ class TableQuery:
                     break
 
         # Initialize filters
+        criteria = self.job.criteria
+
         filters = []
-        filterexpr = self.job.combine_filterexprs(joinstr="&")
+        filterexpr = self.job.combine_filterexprs(exprs=criteria.shark_filterexpr, joinstr="&")
         if filterexpr:
             filters.append(SharkFilter(filterexpr))
 
-        criteria = self.job.criteria
-        tf = TimeFilter(start=datetime.datetime.fromtimestamp(criteria.starttime),
-                        end=datetime.datetime.fromtimestamp(criteria.endtime))
+        tf = TimeFilter(start=criteria.starttime, end=criteria.endtime)
         filters.append(tf)
 
         logger.info("Setting shark table %d timeframe to %s" % (self.table.id, str(tf)))
@@ -214,8 +275,9 @@ class TableQuery:
         if self.timeseries:
             # use sample times for each row
             for d in self.data:
-                t = timeutils.datetime_to_microseconds(d['t']) / float(10 ** 6)
-                out.extend([t] + x for x in d['vals'])
+                if d['t'] is not None:
+                    t = timeutils.datetime_to_microseconds(d['t']) / float(10 ** 6)
+                    out.extend([t] + x for x in d['vals'])
 
         else:
             for d in self.data:

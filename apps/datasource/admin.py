@@ -12,7 +12,7 @@ from apps.datasource.models import Table, Column, Job
 
 
 class TableAdmin(admin.ModelAdmin):
-    list_display = ('name', 'module', 'device')
+    list_display = ('name', 'module')
     list_filter = ('module', )
 
 admin.site.register(Table, TableAdmin)

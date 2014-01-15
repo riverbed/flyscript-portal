@@ -9,162 +9,102 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column
-from apps.devices.models import Device
-from apps.report.models import Report
+from apps.datasource.models import Column, TableField
+from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
+from apps.datasource.modules import profiler
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
-
-#### Replace the following value with the WAN interface for this report to monitor
-INTERFACE = '10.99.16.252:2'
-
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
-
 
 report = Report(title="QoS Report", position=15)
 report.save()
 
+interface_field = TableField.create(keyword='interface', label='Interface', required=True)
+datafilter_field = TableField.create(keyword='datafilter', hidden=True,
+                                     post_process_template='interfaces_a,{interface}')
+
+section = Section.create(report, title="Overall")
+
 # Define a Overall TimeSeries showing In/Out Utilization
-table = TimeSeriesTable.create('qos-overall-util', PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True, datafilter='interfaces_a,%s' % INTERFACE)
+table = TimeSeriesTable.create('qos-overall-util', 
+                               duration=15, resolution=60,
+                               interface=True)
+table.fields.add(interface_field)
+table.fields.add(datafilter_field)
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'in_avg_util', 'Avg Inbound Util %', datatype='bytes', units='B/s')
 Column.create(table, 'out_avg_util', 'Avg Outbound Util %', datatype='bytes', units='B/s')
 
-yui3.TimeSeriesWidget.create(report, table, "Overall Utilization", width=12)
+yui3.TimeSeriesWidget.create(section, table, "Overall Utilization", width=12)
 
 # Define a Overall TimeSeries showing In/Out Totals
-table = TimeSeriesTable.create('qos-overall-total', PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True, datafilter='interfaces_a,%s' % INTERFACE)
+table = TimeSeriesTable.create('qos-overall-total', 
+                               duration=15, resolution=15*60,
+                               interface=True)
+table.fields.add(interface_field)
+table.fields.add(datafilter_field)
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'in_total_bytes', 'Total Inbound Bytes', datatype='bytes', units='B/s')
 Column.create(table, 'out_total_bytes', 'Total Outbound Bytes', datatype='bytes', units='B/s')
 
-yui3.TimeSeriesWidget.create(report, table, "Overall In/Out Bandwidth", width=6)
-
+yui3.TimeSeriesWidget.create(section, table, "Overall In/Out Bandwidth", width=6)
 
 # Define a Overall TimeSeries showing In/Out Totals
-table = TimeSeriesTable.create('qos-overall-avg', PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True, datafilter='interfaces_a,%s' % INTERFACE)
+table = TimeSeriesTable.create('qos-overall-avg', 
+                               duration=15, resolution=60,
+                               interface=True)
+table.fields.add(interface_field)
+table.fields.add(datafilter_field)
 
 Column.create(table, 'time', 'Time', datatype='time', iskey=True)
 Column.create(table, 'in_avg_bytes', 'Avg Inbound Bytes/s', datatype='bytes', units='B/s')
 Column.create(table, 'out_avg_bytes', 'Avg Outbound Bytes/s', datatype='bytes', units='B/s')
 
-yui3.TimeSeriesWidget.create(report, table, "Overall Average In/Out Bandwidth", width=6)
+yui3.TimeSeriesWidget.create(section, table, "Overall Average In/Out Bandwidth", width=6)
 
 ###
 # QOS Summary Tables
-table = GroupByTable.create('qos-inbound-totals', PROFILER, groupby='qos', 
-                            duration=15*60, resolution=15*60,
-                            interface=True,
-                            filterexpr='inbound interface %s' % INTERFACE)
-Column.create(table, 'qos', 'QoS', iskey=True)
-Column.create(table, 'qos_name', 'QoS Name', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-Column.create(table, 'total_bytes', 'Total Bytes/s', datatype='bytes', units='B/s')
-Column.create(table, 'avg_util', 'Avg Util', datatype='metric')
-Column.create(table, 'peak_util', 'Peak Util', datatype='metric')
+for direction in ['inbound', 'outbound']:
+    table = GroupByTable.create('qos-%s-totals' % direction, groupby='qos', 
+                                duration=15, resolution=60,
+                                interface=True)
+    table.fields.add(interface_field)
+    TableField.create(keyword='%s_filterexpr' % direction, obj=table, hidden=True, 
+                      post_process_template='%s interface {interface}' % direction)
+    profiler.fields_add_filterexprs_field(table, '%s_filterexpr' % direction)
 
-yui3.TableWidget.create(report, table, "Inbound Traffic by QoS", width=6)
+    Column.create(table, 'qos', 'QoS', iskey=True)
+    Column.create(table, 'qos_name', 'QoS Name', iskey=True)
+    Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
+    Column.create(table, 'total_bytes', 'Total Bytes/s', datatype='bytes', units='B/s')
+    Column.create(table, 'avg_util', 'Avg Util', datatype='metric')
+    Column.create(table, 'peak_util', 'Peak Util', datatype='metric')
 
-table = GroupByTable.create('qos-outbound-totals', PROFILER, groupby='qos', 
-                            duration=15*60, resolution=15*60,
-                            interface=True,
-                            filterexpr='outbound interface %s' % INTERFACE)
-Column.create(table, 'qos', 'QoS', iskey=True)
-Column.create(table, 'qos_name', 'QoS Name', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-Column.create(table, 'total_bytes', 'Total Bytes/s', datatype='bytes', units='B/s')
-Column.create(table, 'avg_util', 'Avg Util', datatype='metric')
-Column.create(table, 'peak_util', 'Peak Util', datatype='metric')
-
-yui3.TableWidget.create(report, table, "Outbound Traffic by QoS", width=6)
+    yui3.TableWidget.create(section, table, "%s Traffic by QoS" % direction.capitalize(), width=6)
 
 ###
-# QOS Tables
-QOS = 'AF11'
-table = TimeSeriesTable.create('qos-inbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
+# QoS sections, defaults to AF11, EF, and Default
+for i,qos in enumerate(['AF11', 'EF', 'Default']):
+    
+    section = Section.create(report, title="QoS %d" % i)
 
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
+    ###
+    # QOS Tables
 
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Inbound Bandwidth" % QOS, width=6)
+    for direction in ['inbound', 'outbound']:
+        table = TimeSeriesTable.create('qos-%d-%s' % (i, direction), 
+                                       duration=15, resolution=60,
+                                       interface=True)
+        table.fields.add(interface_field)
+        table.fields.add(datafilter_field)
+        qos_field = TableField.create(keyword='qos_%d' % i, label='QoS %d (DSCP)' % i, obj=table, initial=qos)
+        TableField.create(keyword='%s_filterexpr' % direction, obj=table, hidden=True, 
+                          post_process_template='%s interface {interface} and qos {qos_%d}' % (direction, i))
+        profiler.fields_add_filterexprs_field(table, '%s_filterexpr' % direction)
 
-# Define a Overall TimeSeries showing In/Out Totals
-QOS = 'AF11'
-table = TimeSeriesTable.create('qos-outbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
+        Column.create(table, 'time', 'Time', datatype='time', iskey=True)
+        Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
 
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Outbound Bandwidth" % QOS, width=6)
-
-
-# QOS Tables
-QOS = 'EF'
-table = TimeSeriesTable.create('qos-inbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
-
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Inbound Bandwidth" % QOS, width=6)
-
-# Define a Overall TimeSeries showing In/Out Totals
-QOS = 'EF'
-table = TimeSeriesTable.create('qos-outbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
-
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Outbound Bandwidth" % QOS, width=6)
-
-
-# QOS Tables
-QOS = 'Default'
-table = TimeSeriesTable.create('qos-inbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='inbound interface %s and qos %s' % (INTERFACE, QOS))
-
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Inbound Bandwidth" % QOS, width=6)
-
-# Define a Overall TimeSeries showing In/Out Totals
-QOS = 'Default'
-table = TimeSeriesTable.create('qos-outbound-%s' % QOS.lower(), PROFILER, 
-                               duration=15*60, resolution=15*60,
-                               interface=True,
-                               datafilter='interfaces_a,%s' % INTERFACE,
-                               filterexpr='outbound interface %s and qos %s' % (INTERFACE, QOS))
-
-Column.create(table, 'time', 'Time', datatype='time', iskey=True)
-Column.create(table, 'avg_bytes', 'Avg Bytes/s', datatype='bytes', units='B/s')
-
-yui3.TimeSeriesWidget.create(report, table, "%s: Average Outbound Bandwidth" % QOS, width=6)
+        yui3.TimeSeriesWidget.create(section, table, "QoS {qos_%d} - Average %s Bandwidth" % (i, direction.capitalize()), width=6)
 

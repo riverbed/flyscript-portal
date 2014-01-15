@@ -21,21 +21,22 @@ from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.core.servers.basehttp import FileWrapper
 from django.core import management
+from django.utils.datastructures import SortedDict
 
-from apps.datasource.models import Job, Criteria, TableCriteria, Table
+from apps.datasource.models import Job, Criteria, TableField, Table
 from apps.datasource.serializers import TableSerializer
+from apps.datasource.forms import TableFieldForm
 from apps.devices.models import Device
-from apps.report.models import Report, Widget, WidgetJob
+from apps.report.models import Report, Section, Widget, WidgetJob
 from apps.report.serializers import ReportSerializer
 from apps.report.utils import create_debug_zipfile
-from apps.report.forms import create_report_criteria_form
 
 from rest_framework import generics, views
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
-from rvbd.common import parse_timedelta
+from rvbd.common import parse_timedelta, datetime_to_seconds
 
 import logging
 logger = logging.getLogger(__name__)
@@ -45,13 +46,11 @@ def reload_config(request, report_slug=None):
     """ Reload all reports or one specific report
     """
     if report_slug:
-        report_id = Report.objects.get(slug=report_slug).id
         logger.debug("Reloading %s report" % report_slug)
+        management.call_command('reload', report_name=report_slug)
     else:
-        report_id = None
         logger.debug("Reloading all reports")
-
-    management.call_command('reload', report_id=report_id)
+        management.call_command('reload')
 
     if ('HTTP_REFERER' in request.META and
         'reload' not in request.META['HTTP_REFERER']):
@@ -78,7 +77,6 @@ def download_debug(request):
 # currently valid: 'inline' or 'horizontal'
 FORMSTYLE = 'horizontal'
 
-
 class ReportView(views.APIView):
     """ Main handler for /report/{id}
     """
@@ -99,7 +97,7 @@ class ReportView(views.APIView):
         # handle HTML calls
         try:
             if report_slug is None:
-                reports = Report.objects.order_by('slug')
+                reports = Report.objects.order_by('position')
                 return HttpResponseRedirect(reverse('report-view',
                                                     args=[reports[0].slug]))
             else:
@@ -125,15 +123,42 @@ class ReportView(views.APIView):
 
         # factory this to make it extensible
         form_init = {'ignore_cache': request.user.userprofile.ignore_cache}
-        form = create_report_criteria_form(report, initial=form_init)
+
+        # Collect all fields organized by section, with section id 0
+        # representing common report level fields
+        fields_by_section = report.collect_fields_by_section()
+
+        # Merge all the fields into a single dict for use by the Django Form # logic
+        all_fields = SortedDict()
+        [all_fields.update(c) for c in fields_by_section.values()]
+        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields, initial=form_init)
+
+        # Build a section map that indicates which section each field
+        # belongs in when displayed
+        section_map = []
+        if fields_by_section[0]:
+            section_map.append({'title': 'Common', 'parameters': fields_by_section[0]})
+
+        for s in Section.objects.filter(report=report).order_by('position'):
+            show = False
+            for v in fields_by_section[s.id].values():
+                if v.keyword not in (report.hidden_fields or []):
+                    show=True
+                    break
+                
+            if show:
+                section_map.append({'title': s.title, 'parameters': fields_by_section[s.id]})
 
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': profile.developer,
                                    'maps_version': profile.maps_version,
                                    'maps_api_key': profile.maps_api_key,
+                                   'endtime' : 'endtime' in form.fields,
                                    'formstyle': FORMSTYLE,
-                                   'form': form},
+                                   'form': form,
+                                   'section_map': section_map,
+                                   'show_sections': (len(section_map) > 1) },
                                   context_instance=RequestContext(request))
 
     def post(self, request, report_slug=None):
@@ -141,21 +166,30 @@ class ReportView(views.APIView):
         if report_slug is None:
             return self.http_method_not_allowed(request)
 
-        # handle HTML calls
+        logger.debug("Received POST for report %s, with params: %s" %
+                     (report_slug, request.POST))
+
         try:
             report = Report.objects.get(slug=report_slug)
         except:
             raise Http404
 
-        logger.debug("Received POST for report %s, with params: %s" %
-                     (report_slug, request.POST))
-
-        form = create_report_criteria_form(report, data=request.POST,
-                                           files=request.FILES)
+        fields_by_section = report.collect_fields_by_section()
+        all_fields = SortedDict()
+        [all_fields.update(c) for c in fields_by_section.values()]
+        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields,
+                              data=request.POST, files=request.FILES)
 
         if form.is_valid():
 
+            logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data
+            logger.debug('Form cleaned data: %s' % formdata)
+
+            # parse time and localize to user profile timezone
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
+            form.apply_timezone(timezone)
 
             if formdata['debug']:
                 logger.debug("Debugging report and rotating logs now ...")
@@ -164,9 +198,6 @@ class ReportView(views.APIView):
             logger.debug("Report %s validated form: %s" %
                          (report_slug, formdata))
 
-            # parse time and localize to user profile timezone
-            profile = request.user.userprofile
-            timezone = pytz.timezone(profile.timezone)
 
             # setup definitions for each Widget
             definition = []
@@ -181,7 +212,7 @@ class ReportView(views.APIView):
             # create matrix of Widgets
             lastrow = -1
             rows = []
-            for w in Widget.objects.filter(report=report).order_by('row', 'col'):
+            for w in report.widgets().order_by('row', 'col'):
                 if w.row != lastrow:
                     lastrow = w.row
                     rows.append([])
@@ -198,7 +229,7 @@ class ReportView(views.APIView):
                                   "row": w.row,
                                   "width": w.width,
                                   "height": w.height,
-                                  "criteria": form.criteria()
+                                  "criteria": w.criteria_from_form(form)
                                   }
                     definition.append(widget_def)
 
@@ -208,7 +239,7 @@ class ReportView(views.APIView):
             return HttpResponse(json.dumps(definition))
         else:
             # return form with errors attached in a HTTP 200 Error response
-            return HttpResponse(str(form), status=400)
+            return HttpResponse(str(form.errors), status=400)
 
 
 class ReportTableList(generics.ListAPIView):
@@ -233,61 +264,52 @@ class WidgetJobsList(views.APIView):
 
         try:
             report = Report.objects.get(slug=report_slug)
+            widget = Widget.objects.get(id=widget_id)
         except:
             raise Http404
 
         req_json = json.loads(request.POST['criteria'])
 
-        criteria_form = create_report_criteria_form(report, data=req_json,
-                                                    files=request.FILES,
-                                                    jsonform=True)
-        
-        if criteria_form.is_valid():
-            logger.debug('criteria form passed validation: %s' % criteria_form)
-            req_criteria = criteria_form.cleaned_data
-            logger.debug('criteria cleaned data: %s' % req_criteria)
+        fields = widget.collect_fields()
 
-            widget = Widget.objects.get(id=widget_id)
+        form = TableFieldForm(fields, use_widgets=False,
+                              hidden_fields=report.hidden_fields, include_hidden=True,
+                              data=req_json, files=request.FILES)
 
-            if req_criteria['duration'] == 'Default':
-                duration = None
-            else:
-                # py2.6 compatibility
-                td = parse_timedelta(req_criteria['duration'])
-                duration_sec = td.days * 24 * 3600 + td.seconds
-                duration_usec = duration_sec * 10**6 + td.microseconds
-                duration = float(duration_usec) / 10**6
+        if not form.is_valid():
+            raise ValueError("Widget internal criteria form is invalid:\n%s" % (form.errors.as_text()))
+            
+        if form.is_valid():
+            logger.debug('Form passed validation: %s' % form)
+            formdata = form.cleaned_data
+            logger.debug('Form cleaned data: %s' % formdata)
 
-            job_criteria = Criteria(endtime=req_criteria['endtime'],
-                                    duration=duration,
-                                    filterexpr=req_criteria['filterexpr'],
-                                    table=widget.table(),
-                                    ignore_cache=req_criteria['ignore_cache'])
+            # parse time and localize to user profile timezone
+            profile = request.user.userprofile
+            timezone = pytz.timezone(profile.timezone)
+            form.apply_timezone(timezone)
 
-            # handle table criteria and generate children objects
-            for k, v in req_criteria.iteritems():
-                if k.startswith('criteria_'):
-                    tc = TableCriteria.get_instance(k, v) 
-                    job_criteria[k] = tc
-                    for child in tc.children.all():
-                        child.value = v
-                        job_criteria['criteria_%d' % child.id] = child
+            try:
+                job = Job.create(table=widget.table(),
+                                 criteria=form.criteria())
+                job.start()
+            
+                wjob = WidgetJob(widget=widget, job=job)
+                wjob.save()
 
-            job = Job.create(table=widget.table(),
-                             criteria=job_criteria)
-            job.start()
+                logger.debug("Created WidgetJob %s for report %s (handle %s)" %
+                             (str(wjob), report_slug, job.handle))
 
-            wjob = WidgetJob(widget=widget, job=job)
-            wjob.save()
+                return Response({"joburl": reverse('report-job-detail',
+                                                   args=[report_slug,
+                                                         widget_id,
+                                                         wjob.id])})
+            except Exception as e:
+                logger.exception("Failed to start job, an exception occured")
+                return HttpResponse(str(e), status=400)
 
-            logger.debug("Created WidgetJob %s for report %s (handle %s)" %
-                         (str(wjob), report_slug, job.handle))
-
-            return Response({"joburl": reverse('report-job-detail',
-                                               args=[report_slug,
-                                                     widget_id,
-                                                     wjob.id])})
         else:
+            logger.error("form is invalid, entering debugger")
             from IPython import embed; embed()
 
 
@@ -332,19 +354,18 @@ class WidgetJobDetail(views.APIView):
                     logger.debug("%s Error: module unauthorized for user %s"
                                  % (str(wjob), request.user))
                 else:
-                    data = widget_func(widget, tabledata)
+                    data = widget_func(widget, job, tabledata)
                     resp = job.json(data)
                     logger.debug("%s complete" % str(wjob))
             except:
+                logger.exception("Widget %s Job %s processing failed" % (job.id, widget.id))
                 resp = job.json()
                 resp['status'] = Job.ERROR
                 ei = sys.exc_info()
                 resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
-                traceback.print_exc()
             
             wjob.delete()
             
         resp['message'] = cgi.escape(resp['message'])
-        #logger.debug("Response: job %s:\n%s" % (job.id, json.dumps(resp)))
 
         return HttpResponse(json.dumps(resp))

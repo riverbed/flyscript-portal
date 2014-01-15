@@ -16,19 +16,22 @@ from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
 
 from apps.datasource.models import Table
+from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
+from apps.devices.forms import fields_add_device_selection
 from apps.datasource.modules.profiler import lock
 
 logger = logging.getLogger(__name__)
 
 class DevicesTable:
     @classmethod
-    def create(cls, name, device, **kwargs):
+    def create(cls, name, **kwargs):
         logger.debug('Creating Profiler DevivceTable table %s' % (name))
 
-        t = Table(name=name, module=__name__, device=device,
-                  duration=None, **kwargs)
+        t = Table(name=name, module=__name__, **kwargs)
         t.save()
+
+        fields_add_device_selection(t, keyword='profiler_device', label='Profiler', module='profiler', enabled=True)
         return t
 
 class TableQuery:
@@ -45,7 +48,16 @@ class TableQuery:
         """ Main execution method
         """
 
-        profiler = DeviceManager.get_device(self.table.device.id)
+        criteria = self.job.criteria
+        device = Device.objects.get(id=criteria.profiler_device)
+        if not device.enabled:
+            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
+            self.job.mark_error("Device '%s' disabled. "
+                                "See Configure->Edit Devices page to enable."
+                                % device.name)
+            return False
+            
+        profiler = DeviceManager.get_device(device.id)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
 
         columns = [col.name for col in self.table.get_columns(synthetic=False)]

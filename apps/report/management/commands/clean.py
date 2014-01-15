@@ -13,11 +13,11 @@ import optparse
 
 from django.core.management.base import BaseCommand
 from django.core import management
-from django.db.models import get_app, get_models
+from django.db.models import get_app, get_models, Count
 
 from project import settings
 from apps.report.models import Report, Widget, WidgetJob
-from apps.datasource.models import Table, Column, Job
+from apps.datasource.models import Table, TableField, Column, Job
 
 
 class Command(BaseCommand):
@@ -90,35 +90,32 @@ class Command(BaseCommand):
             rid = options['report_id']
 
             def del_table(table):
-                for column in Column.objects.filter(table=table.id):
-                    column.delete()
-                for job in Job.objects.filter(table=table.id):
-                    job.delete()
+                Column.objects.filter(table=table.id).delete()
+                Job.objects.filter(table=table.id).delete()
 
                 if (table.options is not None) and ('tables' in table.options):
                     for (name, tid) in table.options.tables.items():
                         for deptable in Table.objects.filter(id=int(tid)):
                             del_table(deptable)
 
-                for criteria in table.criteria.all():
-                    # try to delete only TableCriteria where this
-                    # table was the last reference
-                    if len(criteria.table_set.all()) == 1:
-                        criteria.delete()
-
                 table.delete()
 
-            for widget in Widget.objects.filter(report=rid):
-                for table in widget.tables.all():
-                    del_table(table)
-                for wjob in WidgetJob.objects.filter(widget=widget):
-                    wjob.delete()
-                widget.delete()
+            for section in Report.objects.get(id=rid).section_set.all():
+                for widget in section.widget_set.all():
+                    for table in widget.tables.all():
+                        del_table(table)
+                        for wjob in WidgetJob.objects.filter(widget=widget):
+                            wjob.delete()
+                    widget.delete()
 
+            # Delete all TableFields that are no longer referenced by any Tables or Sections
+            (TableField.objects
+             .annotate(sections=Count('section'),
+                       tables=Count('table'))
+             .filter(sections=0, tables=0)
+             .delete())
+            
             report = Report.objects.get(id=rid)
-            for criteria in report.criteria.all():
-                if len(criteria.report_set.all()) == 1:
-                    criteria.delete()
 
             report.delete()
 

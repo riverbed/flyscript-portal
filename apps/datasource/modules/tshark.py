@@ -15,25 +15,48 @@ import os
 import pandas
 from rvbd.common.jsondict import JsonDict
 
-from apps.datasource.models import Table
+from django import forms
+from django.forms.widgets import FileInput
+
+from apps.datasource.models import Table, TableField
+from apps.datasource.forms import FileSelectField, fields_add_resolution
 
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
-class TableOptions(JsonDict):
-    _default = {'pcapfile': None}
-    
 class ColumnOptions(JsonDict):
     _default = {'field': None,
                 'fieldtype': 'string',  # float, int, time
                 'operation': 'sum'}
     _required = ['field']
 
+
+def fields_add_pcapfile(obj,
+                        keyword = 'pcapfile',
+                        initial=None
+                        ):
+    field = TableField(keyword='pcapfile',
+                       label='PCAP File',
+                       field_cls=FileSelectField,
+                       field_kwargs={'widget': FileInput})
+    field.save()
+    obj.fields.add(field)
+    
 class TSharkTable:
     @classmethod
-    def create(cls, name, **kwargs):
-        return Table.create(name, module=__name__, **kwargs)
+    def create(cls, name, resolution=1, **kwargs):
+
+        if resolution and isinstance(resolution, int):
+            resolution = "%dsec" % resolution
+
+        criteria = {'resolution': resolution}
+
+        table = Table.create(name, module=__name__, criteria=criteria, **kwargs)
+        fields_add_resolution(table)
+        fields_add_pcapfile(table)
+        return table
+    
 
 def tofloat(x):
     try:
@@ -67,7 +90,7 @@ class TableQuery:
         #from IPython import embed; embed()
         table.apply_table_criteria(self.job.criteria)
 
-        pcapfile = table.options.pcapfile
+        pcapfile = self.job.criteria.pcapfile
 
         if not pcapfile:
             raise ValueError("No pcap file specified")
