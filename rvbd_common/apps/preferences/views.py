@@ -6,19 +6,17 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import pytz
-from django.http import Http404, HttpResponseRedirect
+import logging
+
+from django.http import HttpResponseRedirect
 from django.utils import timezone
-
-from apps.preferences.models import UserProfile
-from apps.preferences.forms import UserProfileForm
-
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from rvbd_common.apps.preferences.models import UserProfile
+from rvbd_common.apps.preferences.forms import UserProfileForm
 
-import logging
 logger = logging.getLogger(__name__)
 
 

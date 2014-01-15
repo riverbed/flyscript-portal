@@ -6,8 +6,8 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from django.conf.urls import patterns, include, url
-import apps.preferences.views as views
+from django.conf.urls import patterns, url
+import rvbd_common.apps.preferences.views as views
 
 urlpatterns = patterns(
     'apps.report.views',

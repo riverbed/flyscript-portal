@@ -22,7 +22,7 @@ urlpatterns = patterns('',
     url(r'^geolocation/', include('rvbd_common.apps.geolocation.urls')),
     url(r'^help/', include('rvbd_common.apps.help.urls')),
     url(r'^console/', include('rvbd_common.apps.console.urls')),
-    url(r'^preferences/', include('apps.preferences.urls')),
+    url(r'^preferences/', include('rvbd_common.apps.preferences.urls')),
     url(r'^plugins/', include('apps.plugins.urls')),
 
     # Examples:
