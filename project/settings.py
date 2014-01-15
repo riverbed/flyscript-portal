@@ -173,7 +173,7 @@ INSTALLED_APPS = (
     'apps.devices',
     'apps.report',
     'apps.geolocation',
-    'apps.console',
+    'rvbd_common.apps.console',
     'apps.help',
     'apps.preferences',
     'apps.plugins',

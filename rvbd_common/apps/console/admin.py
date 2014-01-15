@@ -7,7 +7,7 @@
 
 from django.contrib import admin
 
-from apps.console.models import Utility, Results, Parameter, ConsoleJob
+from rvbd_common.apps.console.models import Utility, Results, Parameter, ConsoleJob
 
 
 class UtilityAdmin(admin.ModelAdmin):

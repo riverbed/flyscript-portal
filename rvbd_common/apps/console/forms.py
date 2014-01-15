@@ -8,7 +8,7 @@
 from django import forms
 from django.forms.models import inlineformset_factory
 
-from apps.console.models import Utility, Parameter
+from rvbd_common.apps.console.models import Utility, Parameter
 
 
 class ExecuteForm(forms.ModelForm):

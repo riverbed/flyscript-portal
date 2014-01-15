@@ -21,7 +21,7 @@ urlpatterns = patterns('',
     url(r'^data/', include('apps.datasource.urls')),
     url(r'^geolocation/', include('apps.geolocation.urls')),
     url(r'^help/', include('apps.help.urls')),
-    url(r'^console/', include('apps.console.urls')),
+    url(r'^console/', include('rvbd_common.apps.console.urls')),
     url(r'^preferences/', include('apps.preferences.urls')),
     url(r'^plugins/', include('apps.plugins.urls')),
 

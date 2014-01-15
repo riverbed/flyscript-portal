@@ -21,9 +21,9 @@ except ImportError:
     # even be visible - this will silence code error checkers though
     from django.http import HttpResponse as StreamingHttpResponse
 
-from apps.console.models import Utility, Results, Parameter, ConsoleJob
-from apps.console.forms import (ExecuteForm, UtilityDetailForm, ParameterStringForm,
-                                ParameterDetailForm, get_utility_formset)
+from rvbd_common.apps.console.models import Utility, Results, Parameter
+from rvbd_common.apps.console.forms import ( UtilityDetailForm, ParameterStringForm,
+                                             get_utility_formset)
 
 from project.settings import PROJECT_ROOT, LOGGING, DEBUG
 
