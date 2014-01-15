@@ -10,7 +10,7 @@ import logging
 import threading
 
 from rvbd.common import UserAuth
-from apps.devices.models import Device
+from rvbd_common.apps.devices.models import Device
 
 logger = logging.getLogger(__name__)
 

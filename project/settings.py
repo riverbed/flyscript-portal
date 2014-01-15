@@ -170,7 +170,7 @@ INSTALLED_APPS = (
 
     # portal apps
     'rvbd_common.apps.datasource',
-    'apps.devices',
+    'rvbd_common.apps.devices',
     'rvbd_common.apps.report',
     'rvbd_common.apps.geolocation',
     'rvbd_common.apps.console',

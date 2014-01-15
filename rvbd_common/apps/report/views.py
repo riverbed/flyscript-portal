@@ -31,7 +31,7 @@ from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from rvbd_common.apps.datasource.models import Job, Table
 from rvbd_common.apps.datasource.serializers import TableSerializer
 from rvbd_common.apps.datasource.forms import TableFieldForm
-from apps.devices.models import Device
+from rvbd_common.apps.devices.models import Device
 from rvbd_common.apps.report.models import Report, Section, Widget, WidgetJob
 from rvbd_common.apps.report.serializers import ReportSerializer
 from rvbd_common.apps.report.utils import create_debug_zipfile

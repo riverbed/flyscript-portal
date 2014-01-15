@@ -5,6 +5,8 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+import logging
+
 from django.core.urlresolvers import reverse
 from django.forms.models import modelformset_factory
 from django.http import HttpResponseRedirect
@@ -13,13 +15,12 @@ from rest_framework import generics, views
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from rest_framework.response import Response
 
-from apps.devices.devicemanager import DeviceManager
-from apps.devices.forms import DeviceListForm, DeviceDetailForm
-from apps.devices.models import Device
-from apps.devices.serializers import DeviceSerializer
+from rvbd_common.apps.devices.devicemanager import DeviceManager
+from rvbd_common.apps.devices.forms import DeviceListForm, DeviceDetailForm
+from rvbd_common.apps.devices.models import Device
+from rvbd_common.apps.devices.serializers import DeviceSerializer
 from rvbd_common.apps.preferences.models import UserProfile
 
-import logging
 logger = logging.getLogger(__name__)
 
 

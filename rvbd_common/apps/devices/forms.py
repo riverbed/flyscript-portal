@@ -11,8 +11,8 @@ from libs.fields import Function
 
 from rvbd_common.apps.datasource.models import TableField
 
-from apps.devices.models import Device
-from apps.devices.devicemanager import DeviceManager
+from rvbd_common.apps.devices.models import Device
+from rvbd_common.apps.devices.devicemanager import DeviceManager
 
 
 class DeviceForm(forms.ModelForm):

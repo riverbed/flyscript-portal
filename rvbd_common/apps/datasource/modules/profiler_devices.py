@@ -12,9 +12,9 @@ import rvbd.profiler
 from rvbd.profiler.filters import TrafficFilter
 
 from rvbd_common.apps.datasource.models import Table
-from apps.devices.models import Device
-from apps.devices.devicemanager import DeviceManager
-from apps.devices.forms import fields_add_device_selection
+from rvbd_common.apps.devices.models import Device
+from rvbd_common.apps.devices.devicemanager import DeviceManager
+from rvbd_common.apps.devices.forms import fields_add_device_selection
 from rvbd_common.apps.datasource.modules.profiler import lock
 
 logger = logging.getLogger(__name__)

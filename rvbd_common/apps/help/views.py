@@ -13,7 +13,7 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.views.generic.base import View
 
-from apps.devices.devicemanager import DeviceManager
+from rvbd_common.apps.devices.devicemanager import DeviceManager
 from rvbd_common.apps.help.forms import ProfilerInputForm, SharkInputForm
 logger = logging.getLogger(__name__)
 

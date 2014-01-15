@@ -13,7 +13,7 @@ from django.core import management
 from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd_common.apps.report.models import Report
-from apps.devices.devicemanager import DeviceManager
+from rvbd_common.apps.devices.devicemanager import DeviceManager
 
 from project import settings
 from project.utils import Importer
