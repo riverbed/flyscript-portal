@@ -349,9 +349,9 @@ class TableFieldForm(forms.Form):
         for k in ['label', 'required', 'help_text', 'initial']:
             fkwargs[k] = getattr(tablefield, k)
 
-        f = tablefield.pre_process_func
-        if f is not None:
-            f.function(tablefield, fkwargs, f.params)
+        func = tablefield.pre_process_func
+        if func is not None:
+            func.function(tablefield, fkwargs, func.params)
 
         field = field_cls(**fkwargs)
         self.fields[field_id] = field
@@ -360,8 +360,11 @@ class TableFieldForm(forms.Form):
               (field_id not in self.data) and
               (tablefield.initial is not None)):
             self.data[field_id] = tablefield.initial
-    
 
+        f = field_cls(**fkwargs)
+        self.fields[field_id] = f
+        f.widget.attrs.update({'onchange': 'criteria_changed()'})
+        
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
         """

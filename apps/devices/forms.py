@@ -7,6 +7,10 @@
 
 from django import forms
 
+from libs.fields import Function
+
+from apps.datasource.models import TableField
+
 from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
 
@@ -62,3 +66,24 @@ class DeviceDetailForm(DeviceForm):
         choices = zip(modules, modules)
 
         self.fields['module'] = forms.ChoiceField(choices=choices)
+
+def fields_add_device_selection(obj, keyword='device',
+                                label='Device',
+                                module=None, enabled=None):
+    field = TableField(keyword=keyword, label=label,
+                       field_cls = forms.ChoiceField,
+                       pre_process_func = Function(device_selection_preprocess,
+                                                  {'module': module,
+                                                   'enabled': enabled}))
+    field.save()
+    obj.fields.add(field)
+
+def device_selection_preprocess(field, field_kwargs, params):
+    filter_ = {}
+    for k in ['module', 'enabled']:
+        if k in params and params[k] is not None:
+            filter_[k] = params[k]
+
+    choices = [(d.id, d.name) for d in Device.objects.filter(**filter_)]
+
+    field_kwargs['choices'] = choices

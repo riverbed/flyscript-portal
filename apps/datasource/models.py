@@ -36,7 +36,6 @@ from rvbd.common.utils import DictObject
 from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
 
 from apps.datasource.exceptions import *
-from apps.devices.models import Device
 from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
 
@@ -185,7 +184,6 @@ class TableField(models.Model):
 class Table(models.Model):
     name = models.CharField(max_length=200)
     module = models.CharField(max_length=200)         # source module name
-    device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
     sortcol = models.ForeignKey('Column', null=True, related_name='Column')
     rows = models.IntegerField(default=-1)
     filterexpr = models.CharField(null=True, max_length=400)
@@ -795,27 +793,16 @@ class Job(models.Model):
         
         with transaction.commit_on_success():
             logger.debug("%s: Starting job" % str(self))
-            if self.table.device and not self.table.device.enabled:
-                # User has disabled the device so lets wrap up here
-                
-                # would be better if we could mark COMPLETE vs ERROR, but then follow-up
-                # processing would occur which we want to avoid.  This short-circuits the
-                # process to return the message in the Widget window immediately.
-                logger.debug("%s: Device %s disabled, bypassing job" % (self, self.table.device))
-                self.mark_error('Device %s disabled.\n'
-                                'See Configure->Edit Devices page to enable.'
-                                % self.table.device.name)
-            else:
-                self.mark_progress(0)
+            self.mark_progress(0)
 
-                logger.debug("%s: Worker to run report" % str(self))
-                # Lookup the query class for this table
-                i = importlib.import_module(self.table.module)
-                queryclass = i.TableQuery
+            logger.debug("%s: Worker to run report" % str(self))
+            # Lookup the query class for this table
+            i = importlib.import_module(self.table.module)
+            queryclass = i.TableQuery
 
-                # Create an worker to do the work
-                worker = Worker(self, queryclass)
-                worker.start()
+            # Create an worker to do the work
+            worker = Worker(self, queryclass)
+            worker.start()
 
     def mark_error(self, message):
         logger.warning("%s failed: %s" % (self, message))

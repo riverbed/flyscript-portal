@@ -10,15 +10,10 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column, TableField
-from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules import profiler
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
-
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
-
 
 report = Report(title="QoS Report", position=15)
 report.save()
@@ -30,7 +25,7 @@ datafilter_field = TableField.create(keyword='datafilter', hidden=True,
 section = Section.create(report, title="Overall")
 
 # Define a Overall TimeSeries showing In/Out Utilization
-table = TimeSeriesTable.create('qos-overall-util', PROFILER, 
+table = TimeSeriesTable.create('qos-overall-util', 
                                duration=15, resolution=60,
                                interface=True)
 table.fields.add(interface_field)
@@ -43,7 +38,7 @@ Column.create(table, 'out_avg_util', 'Avg Outbound Util %', datatype='bytes', un
 yui3.TimeSeriesWidget.create(section, table, "Overall Utilization", width=12)
 
 # Define a Overall TimeSeries showing In/Out Totals
-table = TimeSeriesTable.create('qos-overall-total', PROFILER, 
+table = TimeSeriesTable.create('qos-overall-total', 
                                duration=15, resolution=15*60,
                                interface=True)
 table.fields.add(interface_field)
@@ -56,7 +51,7 @@ Column.create(table, 'out_total_bytes', 'Total Outbound Bytes', datatype='bytes'
 yui3.TimeSeriesWidget.create(section, table, "Overall In/Out Bandwidth", width=6)
 
 # Define a Overall TimeSeries showing In/Out Totals
-table = TimeSeriesTable.create('qos-overall-avg', PROFILER, 
+table = TimeSeriesTable.create('qos-overall-avg', 
                                duration=15, resolution=60,
                                interface=True)
 table.fields.add(interface_field)
@@ -71,7 +66,7 @@ yui3.TimeSeriesWidget.create(section, table, "Overall Average In/Out Bandwidth",
 ###
 # QOS Summary Tables
 for direction in ['inbound', 'outbound']:
-    table = GroupByTable.create('qos-%s-totals' % direction, PROFILER, groupby='qos', 
+    table = GroupByTable.create('qos-%s-totals' % direction, groupby='qos', 
                                 duration=15, resolution=60,
                                 interface=True)
     table.fields.add(interface_field)
@@ -98,7 +93,7 @@ for i,qos in enumerate(['AF11', 'EF', 'Default']):
     # QOS Tables
 
     for direction in ['inbound', 'outbound']:
-        table = TimeSeriesTable.create('qos-%d-%s' % (i, direction), PROFILER, 
+        table = TimeSeriesTable.create('qos-%d-%s' % (i, direction), 
                                        duration=15, resolution=60,
                                        interface=True)
         table.fields.add(interface_field)

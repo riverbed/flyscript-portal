@@ -10,7 +10,6 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
@@ -18,8 +17,6 @@ from apps.datasource.modules.analysis import  AnalysisTable
 from apps.datasource.modules.profiler_devices import DevicesTable
 import libs.business_hours as bizhours
 import libs.profiler_tools as protools
-
-PROFILER = Device.objects.get(name="profiler")
 
 report = Report(title="Business Hour Reporting - Profiler Interfaces", position=9,
                 field_order = ['endtime', 'duration', 'profiler_filterexpr',
@@ -35,7 +32,7 @@ bizhours.fields_add_business_hour_fields(section)
 #
 # Define by-interface table from Profiler
 #
-basetable = GroupByTable.create('bh-basetable', PROFILER, 'interface', duration=60,
+basetable = GroupByTable.create('bh-basetable', 'interface', duration=60,
                                 resolution=3600, interface=True)
 
 # Define all of your columns here associated with basetable
@@ -71,7 +68,7 @@ bustable_pre = bizhours.create('bh-bustable-pre', basetable,
 
 # Device Table
 
-devtable = DevicesTable.create('devtable', PROFILER)
+devtable = DevicesTable.create('devtable')
 Column.create(devtable, 'ipaddr', 'Device IP', iskey=True, isnumeric=False)
 Column.create(devtable, 'name', 'Device Name', isnumeric=False)
 Column.create(devtable, 'type', 'Flow Type', isnumeric=False)

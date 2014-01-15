@@ -10,7 +10,6 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.devices.models import Device
 from apps.report.models import Report, Section
 import apps.report.modules.yui3 as yui3
 import apps.report.modules.maps as maps
@@ -33,12 +32,8 @@ report.save()
 section = Section.create(report, title = 'Locations',
                          section_keywords = ['resolution', 'duration'])
                          
-#### Load devices that are defined
-PROFILER = Device.objects.get(name="profiler")
-SHARK1 = Device.objects.get(name="shark1")
-
 # Define a map and table, group by location
-table = GroupByTable.create('maploc', PROFILER, 'host_group', duration=60, resolution='auto')
+table = GroupByTable.create('maploc', 'host_group', duration=60, resolution='auto')
 
 Column.create(table, 'group_name',    label='Group Name', iskey=True)
 Column.create(table, 'response_time', label='Resp Time',  datatype='metric')
@@ -52,7 +47,7 @@ yui3.TableWidget.create(section, table, "Locations by Avg Bytes", width=6)
 section = Section.create(report, title = 'Profiler Overall',
                          section_keywords = ['resolution', 'duration'])
 
-table = TimeSeriesTable.create('ts1', PROFILER, duration=1440, resolution='15min')
+table = TimeSeriesTable.create('ts1', duration=1440, resolution='15min')
 
 Column.create(table, 'time',      label='Time',        datatype='time',  iskey=True)
 Column.create(table, 'avg_bytes', label='Avg Bytes/s', datatype='bytes', units='B/s')
@@ -63,7 +58,7 @@ yui3.TimeSeriesWidget.create(section, table, "Profiler Overall Traffic", width=6
 section = Section.create(report, title = 'Shark Traffic',
                          section_keywords = ['resolution', 'duration', ])
 
-t = SharkTable.create(name='Total Traffic Bytes', device=SHARK1,
+t = SharkTable.create(name='Total Traffic Bytes',
                       view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=15, resolution='1sec', aggregated=False)
 
