@@ -176,13 +176,13 @@ INSTALLED_APPS = (
     'rvbd_common.apps.console',
     'rvbd_common.apps.help',
     'rvbd_common.apps.preferences',
-    'apps.plugins',
+    'rvbd_common.apps.plugins',
 
     # 'standard' plugins
-    'apps.plugins.builtin.whois',
+    'rvbd_common.apps.plugins.builtin.whois',
 )
 
-from apps.plugins.loader import load_plugins
+from rvbd_common.apps.plugins.loader import load_plugins
 load_plugins()
 
 REST_FRAMEWORK = {

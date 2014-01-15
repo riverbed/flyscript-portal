@@ -5,12 +5,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-
-from django.conf.urls import patterns, url
-import apps.plugins.views as views
-
-urlpatterns = patterns(
-    'apps.plugins.views',
-    url(r'^$', views.PluginsListView.as_view(), name='plugins-list'),
-    url(r'^(?P<slug>[-\w]+)/$', views.PluginsDetailView.as_view(), name='plugins-detail'),
-)
+from rvbd_common.apps.plugins.base import Plugin
+from rvbd_common.apps.plugins.manager import plugins, register, unregister
+from rvbd_common.apps.plugins.loader import load_plugins

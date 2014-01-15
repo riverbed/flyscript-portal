@@ -7,13 +7,12 @@
 
 import json
 
-from django.http import Http404, HttpResponseRedirect, HttpResponse
-
-from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
+from django.http import Http404, HttpResponse
+from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from apps.plugins import plugins
+from rvbd_common.apps import plugins
 
 import logging
 logger = logging.getLogger(__name__)

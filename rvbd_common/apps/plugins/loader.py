@@ -8,7 +8,7 @@
 import sys
 import pkg_resources
 
-from apps.plugins import register
+from rvbd_common.apps.plugins import register
 
 
 def load_plugins():

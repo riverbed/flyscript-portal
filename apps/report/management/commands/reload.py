@@ -14,10 +14,10 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from apps.report.models import Report
 from apps.devices.devicemanager import DeviceManager
-from apps.plugins import plugins
 
 from project import settings
 from project.utils import Importer
+from rvbd_common.apps import plugins
 
 
 class Command(BaseCommand):

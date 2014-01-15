@@ -15,7 +15,7 @@ from apps.datasource.modules.profiler import GroupByTable
 from apps.datasource.modules.analysis import AnalysisTable
 
 # helper libraries
-from apps.plugins.builtin.whois.libs.whois import whois
+from rvbd_common.apps.plugins.builtin.whois.libs import whois
 
 #
 # Profiler report
