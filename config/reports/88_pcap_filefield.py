@@ -9,12 +9,10 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from django import forms
+from rvbd_common.apps.report.models import Report, Section
+from apps.datasource.models import Column
 
-from apps.report.models import Report, Section
-from apps.datasource.models import Table, Column
-
-import apps.report.modules.yui3 as yui3
+import rvbd_common.apps.report.modules.yui3 as yui3
 
 from apps.datasource.modules.tshark import TSharkTable
 from apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions

@@ -16,7 +16,7 @@ admin.autodiscover()
 urlpatterns = patterns('',
     (r'^favicon\.ico$', lambda x: HttpResponseRedirect('/static/images/favicon.ico')),
     url(r'^$', lambda x: HttpResponseRedirect('/report')),
-    url(r'^report/', include('apps.report.urls')),
+    url(r'^report/', include('rvbd_common.apps.report.urls')),
     url(r'^devices/', include('apps.devices.urls')),
     url(r'^data/', include('apps.datasource.urls')),
     url(r'^geolocation/', include('rvbd_common.apps.geolocation.urls')),

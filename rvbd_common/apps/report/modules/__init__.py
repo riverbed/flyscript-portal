@@ -4,12 +4,5 @@
 # MIT License set forth at:
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
+from rvbd_common.apps.report.modules import maps, yui3
 
-
-from django.conf.urls import patterns, url
-import rvbd_common.apps.preferences.views as views
-
-urlpatterns = patterns(
-    'rvbd_common.apps.report.views',
-    url(r'^$', views.PreferencesView.as_view(), name='preferences'),
-)

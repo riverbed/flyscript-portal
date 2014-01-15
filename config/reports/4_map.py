@@ -10,10 +10,10 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.datasource.modules.profiler import TimeSeriesTable, GroupByTable
-from apps.report.models import Report, Section, Table
-import apps.report.modules.maps as maps
-import apps.report.modules.yui3 as yui3
+from apps.datasource.modules.profiler import GroupByTable
+from rvbd_common.apps.report.models import Report, Section
+import rvbd_common.apps.report.modules.maps as maps
+import rvbd_common.apps.report.modules.yui3 as yui3
 
 #
 # Google Map example

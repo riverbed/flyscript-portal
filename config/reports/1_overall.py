@@ -10,9 +10,9 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.report.models import Report, Section
-import apps.report.modules.yui3 as yui3
-import apps.report.modules.maps as maps
+from rvbd_common.apps.report.models import Report, Section
+import rvbd_common.apps.report.modules.yui3 as yui3
+import rvbd_common.apps.report.modules.maps as maps
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.shark import SharkTable, create_shark_column
 

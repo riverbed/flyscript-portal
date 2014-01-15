@@ -9,8 +9,8 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from apps.datasource.models import Column
-from apps.report.models import Report, Section
-import apps.report.modules.yui3 as yui3
+from rvbd_common.apps.report.models import Report, Section
+import rvbd_common.apps.report.modules.yui3 as yui3
 from apps.datasource.modules.profiler import GroupByTable
 from apps.datasource.modules.analysis import AnalysisTable
 
