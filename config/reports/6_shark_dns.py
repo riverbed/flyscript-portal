@@ -11,7 +11,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 
 from rvbd_common.apps.report.models import Report, Section
 import rvbd_common.apps.report.modules.yui3 as yui3
-from apps.datasource.modules.shark import SharkTable, create_shark_column
+from rvbd_common.apps.datasource.modules.shark import SharkTable, create_shark_column
 
 ### Configure Shark View To Use
 

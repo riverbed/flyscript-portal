@@ -1,11 +1,8 @@
-import pandas
 import logging
-import time
 
+import pandas
 from rvbd.common.timeutils import datetime_to_seconds
 
-from apps.datasource.models import Job, Table, Column
-from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
 
 logger = logging.getLogger(__name__)
 

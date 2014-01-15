@@ -8,11 +8,11 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column
+from rvbd_common.apps.datasource.models import Column
 from rvbd_common.apps.report.models import Report, Section
 import rvbd_common.apps.report.modules.yui3 as yui3
-from apps.datasource.modules.profiler import GroupByTable
-from apps.datasource.modules.analysis import AnalysisTable
+from rvbd_common.apps.datasource.modules.profiler import GroupByTable
+from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
 
 # helper libraries
 from rvbd_common.apps.plugins.builtin.whois.libs import whois

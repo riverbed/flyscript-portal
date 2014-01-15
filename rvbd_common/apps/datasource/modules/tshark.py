@@ -9,17 +9,15 @@ import logging
 import threading
 import subprocess
 import shlex
-import re
 import os
 
 import pandas
 from rvbd.common.jsondict import JsonDict
 
-from django import forms
 from django.forms.widgets import FileInput
 
-from apps.datasource.models import Table, TableField
-from apps.datasource.forms import FileSelectField, fields_add_resolution
+from rvbd_common.apps.datasource.models import Table, TableField
+from rvbd_common.apps.datasource.forms import FileSelectField, fields_add_resolution
 
 
 logger = logging.getLogger(__name__)

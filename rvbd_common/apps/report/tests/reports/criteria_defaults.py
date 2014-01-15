@@ -1,5 +1,5 @@
-from apps.datasource.modules.analysis import AnalysisTable
-from apps.datasource.models import TableField, Column
+from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
+from rvbd_common.apps.datasource.models import TableField, Column
 
 from rvbd_common.apps.report.models import Report, Section
 from rvbd_common.apps.report.modules import raw

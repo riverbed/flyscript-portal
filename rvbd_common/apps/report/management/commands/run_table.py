@@ -16,8 +16,8 @@ from django.core.management.base import BaseCommand
 
 from rvbd.common.utils import Formatter
 
-from apps.datasource.models import Table, Job
-from apps.datasource.forms import TableFieldForm
+from rvbd_common.apps.datasource.models import Table, Job
+from rvbd_common.apps.datasource.forms import TableFieldForm
 from rvbd_common.apps.report.models import Report, Widget
 
 # not pretty, but pandas insists on warning about

@@ -10,12 +10,12 @@ import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 from rvbd_common.apps.report.models import Report, Section
-from apps.datasource.models import Column
+from rvbd_common.apps.datasource.models import Column
 
 import rvbd_common.apps.report.modules.yui3 as yui3
 
-from apps.datasource.modules.tshark import TSharkTable
-from apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions
+from rvbd_common.apps.datasource.modules.tshark import TSharkTable
+from rvbd_common.apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions
 
 import logging
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@
 
 
 from rest_framework import serializers
-from apps.datasource.models import Table, Column, Job
+from rvbd_common.apps.datasource.models import Table, Column, Job
 
 
 #

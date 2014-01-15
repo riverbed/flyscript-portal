@@ -10,7 +10,7 @@ from django.utils.datastructures import SortedDict
 
 from project import settings
 
-from apps.datasource.models import Job
+from rvbd_common.apps.datasource.models import Job
 from rvbd_common.apps.report.models import Report, Widget
 
 logger = logging.getLogger(__name__)

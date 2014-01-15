@@ -9,10 +9,10 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column
+from rvbd_common.apps.datasource.models import Column
 from rvbd_common.apps.report.models import Report, Section
 import rvbd_common.apps.report.modules.yui3 as yui3
-from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+from rvbd_common.apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 
 #
 # Profiler report

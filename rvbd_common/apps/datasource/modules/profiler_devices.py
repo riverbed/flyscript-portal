@@ -5,21 +5,17 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import time
 import logging
-import threading
-import datetime
 import pandas
 
 import rvbd.profiler
-from rvbd.profiler.filters import TimeFilter, TrafficFilter
-from rvbd.common.jsondict import JsonDict
+from rvbd.profiler.filters import TrafficFilter
 
-from apps.datasource.models import Table
+from rvbd_common.apps.datasource.models import Table
 from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
 from apps.devices.forms import fields_add_device_selection
-from apps.datasource.modules.profiler import lock
+from rvbd_common.apps.datasource.modules.profiler import lock
 
 logger = logging.getLogger(__name__)
 

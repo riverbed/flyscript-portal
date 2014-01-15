@@ -7,7 +7,6 @@
 
 import os
 import sys
-import pickle
 import logging
 import traceback
 import threading
@@ -18,26 +17,23 @@ import tokenize
 from StringIO import StringIO
 import random
 import datetime
+import string
+
 import pytz
 import pandas
-import string
-from decimal import Decimal
-
 from django.db import models
 from django.db.models import Max
-from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import F
-from django.db.models.signals import pre_delete 
+from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-from django import forms
-
 from rvbd.common.utils import DictObject
-from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
+from rvbd.common import timedelta_total_seconds
 
-from apps.datasource.exceptions import *
+from rvbd_common.apps.datasource.exceptions import *
 from libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
+
 
 logger = logging.getLogger(__name__)
 

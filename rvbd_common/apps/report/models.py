@@ -21,7 +21,7 @@ from django.utils.datastructures import SortedDict
 from django.core.exceptions import ObjectDoesNotExist
 
 from model_utils.managers import InheritanceManager
-from apps.datasource.models import Table, Job, TableField
+from rvbd_common.apps.datasource.models import Table, Job, TableField
 
 from libs.fields import PickledObjectField, SeparatedValuesField
 

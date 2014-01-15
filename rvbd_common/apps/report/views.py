@@ -12,6 +12,7 @@ import json
 import datetime
 import importlib
 import traceback
+import logging
 
 import pytz
 from django.http import HttpResponse, HttpResponseRedirect, Http404
@@ -27,15 +28,14 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
-from apps.datasource.models import Job, Table
-from apps.datasource.serializers import TableSerializer
-from apps.datasource.forms import TableFieldForm
+from rvbd_common.apps.datasource.models import Job, Table
+from rvbd_common.apps.datasource.serializers import TableSerializer
+from rvbd_common.apps.datasource.forms import TableFieldForm
 from apps.devices.models import Device
 from rvbd_common.apps.report.models import Report, Section, Widget, WidgetJob
 from rvbd_common.apps.report.serializers import ReportSerializer
 from rvbd_common.apps.report.utils import create_debug_zipfile
 
-import logging
 logger = logging.getLogger(__name__)
 
 

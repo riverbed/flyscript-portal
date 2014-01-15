@@ -12,9 +12,8 @@ import tempfile
 import dateutil.parser
 
 from libs.call_command import call_command
-from apps.datasource.models import Job
+from rvbd_common.apps.datasource.models import Job
 from rvbd_common.apps.report.models import Report, Widget
-import rvbd_common.apps.report.modules.raw as raw
 from . import reportrunner
 
 

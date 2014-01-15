@@ -9,7 +9,7 @@ from django import forms
 
 from libs.fields import Function
 
-from apps.datasource.models import TableField
+from rvbd_common.apps.datasource.models import TableField
 
 from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager

@@ -10,19 +10,16 @@ import logging
 import threading
 import datetime
 
-from django import forms
-
 import rvbd.profiler
 from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
-from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
-                                   timedelta_total_seconds)
+from rvbd.common.timeutils import (parse_timedelta, timedelta_total_seconds)
 
-from apps.datasource.models import Table, TableField
+from rvbd_common.apps.datasource.models import Table, TableField
 from apps.devices.models import Device
 from apps.devices.forms import fields_add_device_selection
 from apps.devices.devicemanager import DeviceManager
-from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+from rvbd_common.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 from libs.fields import Function
 
 logger = logging.getLogger(__name__)

@@ -7,26 +7,23 @@
 
 import shutil
 import tempfile
-import dateutil
 import datetime
 import copy
-import pytz
+import logging
 
+import dateutil
+import pytz
 from django import forms
-from django.utils.datastructures import SortedDict
 from django.forms.util import from_current_timezone
 from django.core.files.uploadedfile import UploadedFile
 from django.core import validators
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
-from django.forms.widgets import FileInput, FILE_INPUT_CONTRADICTION, TextInput
+from django.forms.widgets import FileInput, TextInput
 from django.forms import widgets
+from rvbd.common import parse_timedelta, timedelta_total_seconds
 
-from rvbd.common import datetime_to_seconds, parse_timedelta, timedelta_total_seconds
+from rvbd_common.apps.datasource.models import Criteria, TableField
 
-from apps.datasource.models import Criteria, TableField
-
-import logging
 logger = logging.getLogger(__name__)
 
 DURATIONS = ('1 min', '15 min', '1 hour',

@@ -6,5 +6,4 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import profiler
-import shark
+from rvbd_common.apps.datasource.modules import shark, profiler

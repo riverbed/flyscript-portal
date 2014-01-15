@@ -14,7 +14,7 @@ from django.core.management.base import BaseCommand
 
 from rvbd.common.utils import Formatter
 
-from apps.datasource.models import Job
+from rvbd_common.apps.datasource.models import Job
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about

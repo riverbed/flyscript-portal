@@ -5,13 +5,10 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-import time
 import logging
-import traceback
-import sys
 
 from rvbd.common.jsondict import JsonDict
-from apps.datasource.models import Column, Job, Table, BatchJobRunner
+from rvbd_common.apps.datasource.models import Column, Job, Table, BatchJobRunner
 
 logger = logging.getLogger(__name__)
 

@@ -9,10 +9,10 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column
+from rvbd_common.apps.datasource.models import Column
 from rvbd_common.apps.report.models import Report, Section
 import rvbd_common.apps.report.modules.yui3 as yui3
-from apps.datasource.modules.profiler_devices import DevicesTable
+from rvbd_common.apps.datasource.modules.profiler_devices import DevicesTable
 
 report = Report(title="Profiler Device List", position=10)
 report.save()

@@ -1,8 +1,7 @@
-import pandas
 import logging
-import time
-from apps.datasource.models import Job, Table, Column
-from apps.datasource.modules.analysis import  AnalysisTable, AnalysisException
+
+import pandas
+
 
 logger = logging.getLogger(__name__)
 

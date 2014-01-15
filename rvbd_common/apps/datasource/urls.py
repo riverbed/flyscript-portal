@@ -5,13 +5,13 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import patterns, url
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from apps.datasource.views import TableList, TableDetail
-from apps.datasource.views import TableColumnList, TableJobList
-from apps.datasource.views import ColumnList, ColumnDetail
-from apps.datasource.views import JobList, JobDetail, JobDetailData
+from rvbd_common.apps.datasource.views import TableList, TableDetail
+from rvbd_common.apps.datasource.views import TableColumnList, TableJobList
+from rvbd_common.apps.datasource.views import ColumnList, ColumnDetail
+from rvbd_common.apps.datasource.views import JobList, JobDetail, JobDetailData
 
 
 urlpatterns = patterns(

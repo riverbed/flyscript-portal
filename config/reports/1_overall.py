@@ -9,12 +9,12 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from apps.datasource.models import Column
+from rvbd_common.apps.datasource.models import Column
 from rvbd_common.apps.report.models import Report, Section
 import rvbd_common.apps.report.modules.yui3 as yui3
 import rvbd_common.apps.report.modules.maps as maps
-from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
-from apps.datasource.modules.shark import SharkTable, create_shark_column
+from rvbd_common.apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+from rvbd_common.apps.datasource.modules.shark import SharkTable, create_shark_column
 
 ### Configure Shark View To Use
 SHARK_VIEW_NAME = 'jobs/flyscript-portal'       # Note: must prefix job names with 'jobs/'

@@ -7,12 +7,8 @@
 
 import time
 import logging
-import datetime
 import threading
 
-from django import forms
-
-import pandas as pd
 from rvbd.shark import Shark
 from rvbd.shark.types import Operation, Value, Key
 from rvbd.shark.filters import SharkFilter, TimeFilter
@@ -20,13 +16,13 @@ from rvbd.shark._class_mapping import path_to_class
 from rvbd.common.exceptions import RvbdHTTPException
 from rvbd.common.jsondict import JsonDict
 from rvbd.common import timeutils
-from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
-                                   timedelta_total_seconds)
+from rvbd.common.timeutils import timedelta_total_seconds
+
 from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
 from apps.devices.forms import fields_add_device_selection
-from apps.datasource.models import Column, Table, TableField
-from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+from rvbd_common.apps.datasource.models import Column, Table, TableField
+from rvbd_common.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()

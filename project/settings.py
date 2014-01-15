@@ -169,7 +169,7 @@ INSTALLED_APPS = (
     'django_extensions',
 
     # portal apps
-    'apps.datasource',
+    'rvbd_common.apps.datasource',
     'apps.devices',
     'rvbd_common.apps.report',
     'rvbd_common.apps.geolocation',
