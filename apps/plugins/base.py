@@ -5,6 +5,8 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+import os
+
 from project.utils import Importer
 
 # portions and concepts used from sentry project:
@@ -44,7 +46,7 @@ class IPlugin(object):
     # Plugin components
     reports = []        # list of report modules
     libraries = []      # list of library directories
-                        # XXX do we need this?
+    datasources = []    # list of datasources
 
     _reports_loaded = False
 
@@ -52,8 +54,26 @@ class IPlugin(object):
         """ Returns boolean if this plugin is enabled. """
         return self.enabled or not self.can_disable
 
+    def get_libraries(self):
+        """ Returns list of library modules. """
+        if self.libraries and self.is_enabled():
+            import inspect
+            import pkgutil
+
+            class_file = inspect.getfile(self.__class__)
+            module_path = os.path.dirname(class_file)
+            libs = []
+            libpaths = [os.path.join(module_path, libdir) for
+                                                libdir in self.libraries]
+
+            for module in pkgutil.iter_modules(libpaths):
+                # just append the module name for now
+                libs.append(module[0])
+
+            return libs
+
     def load_reports(self):
-        if self.reports is not None and self.is_enabled():
+        if self.reports and self.is_enabled():
             module_path = self.__module__.rsplit('.', 1)[0]
 
             importer = Importer()
