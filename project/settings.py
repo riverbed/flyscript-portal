@@ -167,6 +167,8 @@ INSTALLED_APPS = (
     # third-party apps
     'rest_framework',
     'django_extensions',
+    'django_forms_bootstrap',
+    'announcements',
 
     # portal apps
     'rvbd_common.apps.datasource',

@@ -79,3 +79,33 @@
 #map_canvas img { max-width: none; }
 
 .navbar .nav > li { z-index: 10000; }
+
+/* MESSAGES */
+
+ul#messages {
+    margin: 0 0 10px 0;
+    padding: 0;
+    list-style: none;
+}
+ul#messages li {
+    padding: 5px 10px;
+    background: #EFD;
+    margin: 3px;
+    border: 1px solid #BC9;
+}
+ul#messages li a {
+    float: right;
+    color: #693;
+}
+
+/* ANNOUNCEMENTS */
+
+.announcements {
+    padding: 10px;
+}
+.announcement {
+    background: yellow;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}

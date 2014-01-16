@@ -8,6 +8,7 @@
 import json
 
 from django.http import Http404, HttpResponse
+from django.contrib import messages
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -56,7 +57,11 @@ class PluginsDetailView(APIView):
         # since we don't have helpful form cleaning, check for json 'false' too
         if (enabled == 'false' or enabled is False) and plugin.can_disable:
             plugin.enabled = False
+            msg = 'Plugin %s disabled.' % plugin.title
         else:
             plugin.enabled = True
+            msg = 'Plugin %s enabled.' % plugin.title
+
+        messages.add_message(request, messages.INFO, msg)
 
         return HttpResponse(json.dumps({'plugin': plugin.__dict__}))
