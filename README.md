@@ -10,6 +10,7 @@ Installation Overview
 Along with a working python installation, the following packages will need to
 be installed:
 
+- rvbd-common>=0.1   (included with the Portal project)
 - Django>=1.4.5
 - django-model-utils==1.2.0
 - djangorestframework==2.3.8
@@ -32,6 +33,9 @@ installed/checked by using the included requirements.txt file.  For example:
     $ cd /tmp
     $ git clone git@github.com:riverbed/flyscript-portal.git
     $ cd flyscript-portal
+    $ cd rvbd-common
+    $ python setup.py install
+    $ cd ..
     $ pip install -r requirements.txt
     
 After reading up on the [configuration](#configuration), see the sections below for
@@ -67,9 +71,12 @@ you have Python 2.7 installed successfully, follow the steps below:
             
     3. This will create a directory called `flyscript-portal`
 
-    4. Go into this directory and check things out
+    4. Go into this directory and check things out and install the core apps
     
             $ cd flyscript-portal
+            $ cd rvbd-common
+            $ python setup.py install
+            $ cd ..
             $ ls
     5. Leave this window open for the next step.
     
