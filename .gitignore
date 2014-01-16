@@ -13,6 +13,7 @@ initial_preferences.json
 
 build
 dist
+*.egg-info
 RELEASE-VERSION
 
 docs/html

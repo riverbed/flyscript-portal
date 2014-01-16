@@ -28,7 +28,7 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd_common',
+    name='rvbd-common',
     version='0.1',
 
     author='Riverbed Technology',
