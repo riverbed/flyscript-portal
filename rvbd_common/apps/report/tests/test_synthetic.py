@@ -27,7 +27,8 @@ class SyntheticTest(reportrunner.ReportRunnerTestCase):
             logger.debug("Widget %d, data: %s" % (i, data))
             logger.debug("Expected: %s" % expected)
             self.assertEqual(len(data), len(e))
-            
+
+            #from IPython import embed; embed()
             for k,v in e.iteritems():
                 self.assertEqual(data[k], v,
                                  "Time %s => %s vs %s" %
@@ -48,7 +49,8 @@ class SyntheticTest(reportrunner.ReportRunnerTestCase):
                 data[t] = (t1 % delta) / 60
 
         return data
-    
+
+
 class NoResample(SyntheticTest):
 
     report = 'synthetic_noresample' 
@@ -57,7 +59,8 @@ class NoResample(SyntheticTest):
         # This might break if run with project.settings.TIME_ZONE set to anything but UTC
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
                                 'duration': '15min'},
-                               [self.make_data(1385894700, 1385895600, 60)])
+                               [self.make_data(1385912700, 1385913600, 60)])
+
 
 class Resample(SyntheticTest):
 
@@ -68,19 +71,19 @@ class Resample(SyntheticTest):
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:00 am',  
                                 'duration': '15min',
                                 'resolution': '2min'},
-                               [self.make_data(1385894700, 1385895600, 120)])
+                               [self.make_data(1385912700, 1385913600, 120)])
 
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:01 am',  
                                 'duration': '16min',
                                 'resolution': '2min'},
-                               [self.make_data(1385894700, 1385895660, 120)])
+                               [self.make_data(1385912700, 1385913660, 120)])
 
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:01 am',  
                                 'duration': '15min',
                                 'resolution': '2min'},
-                               [self.make_data(1385894760, 1385895660, 120)])
+                               [self.make_data(1385912760, 1385913660, 120)])
 
         self.run_with_criteria({'endtime_0': '12/1/2013', 'endtime_1': '11:01 am',  
                                 'duration': '16min',
                                 'resolution': '2min'},
-                               [self.make_data(1385894700, 1385895660, 120)])
+                               [self.make_data(1385912700, 1385913660, 120)])
