@@ -141,15 +141,18 @@
           $("#id_debug").val(debugFlag ? "on" : "");
           $("#form-error-info").html("");
           form = $('form#criteriaform');
+          $("body").css("cursor", "wait");
           form.ajaxSubmit({
               dataType:"json",
               type: "post",
               url: form.attr('action'),
               success: function(data, textStatus) { 
-                   renderReport(data);
+                  $("body").css("cursor", "default");
+                  renderReport(data);
               },
               error: function(jqXHR, textStatus, errorThrown) { 
                   // we receive a 400 error on form validation problems
+                  $("body").css("cursor", "default");
                   if (jqXHR.status == 400) {
                       $("#criteria").collapse('show');
                       $("#form-error-info").html(jqXHR.responseText);
@@ -161,6 +164,40 @@
           });
           debugFlag = false;
       }
+
+      function update_criteria(data) {
+          $.each(data, function(i,w) { 
+              //alert('Updating ' + i + ',' + w + ' #' + w.id + '-span' + '\n' + w.html);
+              $('#' + w.id + '-span').html(w.html);
+          });
+      }
+      function criteria_changed() {
+          $("body").css("cursor", "wait");
+          form = $('form#criteriaform');
+          form.ajaxSubmit({
+              dataType:"json",
+              type: "post",
+              url: form.attr('action') + 'criteria/',
+              success: function(data, textStatus) { 
+                  $("body").css("cursor", "default");
+                  update_criteria(data);
+              },
+              error: function(jqXHR, textStatus, errorThrown) { 
+                  $("body").css("cursor", "default");
+                  alert("Failed: jqXHR: " + jqXHR.status + "\ntextStatus: " + textStatus);
+
+                  // we receive a 400 error on form validation problems
+                  if (jqXHR.status == 400) {
+                      $("#criteria").collapse('show');
+                      $("#form-error-info").html(jqXHR.responseText);
+                  }
+                  if (jqXHR.status == 500) {
+                      alert("an error occurred: " + textStatus + " : " + errorThrown);
+                  }
+              }
+          });
+      }
+
     </script>
     <style>
         .loading-indicator
@@ -230,7 +267,7 @@
                                                 {{ field.label_tag }} 
                                             </div>
                                             <div class="controls">
-                                                {{ field }}
+                                                <span id='{{ field.auto_id }}-span'>{{ field }}</span>
                                                 {% if field.errors %}
                                                     {% for err in field.errors %}
                                                         <p class="text-error">{{ err }}</p>
@@ -288,4 +325,5 @@
         </div> <!-- span12 -->
       </div> <!-- row-fluid -->
     </div>
+
 {% endblock %}

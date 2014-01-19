@@ -49,15 +49,13 @@ class TableQuery:
         """
 
         criteria = self.job.criteria
-        device = Device.objects.get(id=criteria.profiler_device)
-        if not device.enabled:
-            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
-            self.job.mark_error("Device '%s' disabled. "
-                                "See Configure->Edit Devices page to enable."
-                                % device.name)
+
+        if criteria.profiler_device == '':
+            logger.debug('%s: No profiler device selected' % (self.table))
+            self.job.mark_error("No Profiler Device Selected")
             return False
             
-        profiler = DeviceManager.get_device(device.id)
+        profiler = DeviceManager.get_device(criteria.profiler_device)
         report = rvbd.profiler.report.SingleQueryReport(profiler)
 
         columns = [col.name for col in self.table.get_columns(synthetic=False)]

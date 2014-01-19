@@ -74,16 +74,21 @@ def fields_add_device_selection(obj, keyword='device',
                        field_cls = forms.ChoiceField,
                        pre_process_func = Function(device_selection_preprocess,
                                                   {'module': module,
-                                                   'enabled': enabled}))
+                                                   'enabled': enabled}),
+                       required=True)
     field.save()
     obj.fields.add(field)
 
-def device_selection_preprocess(field, field_kwargs, params):
+def device_selection_preprocess(form, field, field_kwargs, params):
     filter_ = {}
     for k in ['module', 'enabled']:
         if k in params and params[k] is not None:
             filter_[k] = params[k]
 
-    choices = [(d.id, d.name) for d in Device.objects.filter(**filter_)]
+    devices = Device.objects.filter(**filter_)
+    if len(devices) == 0:
+        choices = [('', '<No devices available>')]
+    else:
+        choices = [(d.id, d.name) for d in devices]
 
     field_kwargs['choices'] = choices

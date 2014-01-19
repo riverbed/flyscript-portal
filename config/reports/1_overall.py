@@ -16,10 +16,6 @@ import apps.report.modules.maps as maps
 from apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
 from apps.datasource.modules.shark import SharkTable, create_shark_column
 
-### Configure Shark View To Use
-SHARK_VIEW_NAME = 'jobs/flyscript-portal'       # Note: must prefix job names with 'jobs/'
-SHARK_VIEW_SIZE = '10%'                         # Default size to use if job does not already exist
-
 #
 # Overall report
 #
@@ -59,7 +55,6 @@ section = Section.create(report, title = 'Shark Traffic',
                          section_keywords = ['resolution', 'duration', ])
 
 t = SharkTable.create(name='Total Traffic Bytes',
-                      view=SHARK_VIEW_NAME, view_size=SHARK_VIEW_SIZE,
                       duration=15, resolution='1sec', aggregated=False)
 
 create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')

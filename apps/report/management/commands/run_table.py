@@ -12,6 +12,9 @@ import datetime
 import optparse
 import pytz
 import sys
+import logging
+logger = logging.getLogger(__name__)
+
 from dateutil.tz import tzlocal
 
 from django.core.management.base import BaseCommand, CommandError
@@ -176,6 +179,8 @@ class Command(BaseCommand):
 
             if not form.is_valid(check_unknown=True):
                 self.console('Invalid criteria:')
+                logger.error('Invalid criteria: %s' %
+                             ','.join('%s:%s' % (k,v) for k,v in form.errors.iteritems()))
                 for k,v in form.errors.iteritems():
                     self.console('  %s: %s' % (k,','.join(v)))
                 

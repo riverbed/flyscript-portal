@@ -126,6 +126,7 @@ class TableField(models.Model):
     parent_keywords = SeparatedValuesField(null=True)
 
     pre_process_func = FunctionField(null=True)
+    dynamic = models.BooleanField(default=False)
     post_process_func = FunctionField(null=True)
     post_process_template = models.CharField(null=True, max_length=500)
 
@@ -140,8 +141,9 @@ class TableField(models.Model):
 
         if field.post_process_template is not None:
             f = string.Formatter()
-            for (_, keyword, _, _) in f.parse(field.post_process_template):
-                parent_keywords.append(keyword)
+            for (_, parent_keyword, _, _) in f.parse(field.post_process_template):
+                if parent_keyword is not None:
+                    parent_keywords.append(parent_keyword)
 
         field.parent_keywords = parent_keywords
         field.save()

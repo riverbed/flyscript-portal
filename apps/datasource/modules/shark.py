@@ -24,9 +24,12 @@ from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds,
                                    timedelta_total_seconds)
 from apps.devices.models import Device
 from apps.devices.devicemanager import DeviceManager
+
 from apps.devices.forms import fields_add_device_selection
 from apps.datasource.models import Column, Table, TableField
 from apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+
+from libs.fields import Function
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
@@ -39,9 +42,7 @@ def new_device_instance(*args, **kwargs):
 
 
 class TableOptions(JsonDict):
-    _default = {'view': None,
-                'view_size': '10%',
-                'aggregated': False}
+    _default = {'aggregated': False}
 
 
 class ColumnOptions(JsonDict):
@@ -64,17 +65,15 @@ def fields_add_filterexpr(obj,
 
 class SharkTable:
     @classmethod
-    def create(cls, name, view, view_size, duration,
+    def create(cls, name, duration,
                aggregated=False, filterexpr=None, resolution='1min', sortcol=None):
         """ Create a Shark table.
 
         `duration` is in minutes
 
         """
-        logger.debug('Creating Shark table %s (%s, %s)' % (name, view, duration))
-        options = TableOptions(view=view,
-                               view_size=view_size,
-                               aggregated=aggregated)
+        logger.debug('Creating Shark table %s (%s)' % (name, duration))
+        options = TableOptions(aggregated=aggregated)
         
         t = Table(name=name, module=__name__, 
                   filterexpr=filterexpr, options=options, sortcol=sortcol)
@@ -92,6 +91,19 @@ class SharkTable:
                                     label='Shark',
                                     module='shark',
                                     enabled=True)
+
+        #TableField.create(keyword='shark_source_type', label='Source Type', obj=t,
+        #                  field_cls = forms.ChoiceField,
+        #                  field_kwargs = {'choices': [('job', 'Capture Job'),
+        #                                              ('clip', 'Trace Clip')]})
+        
+        TableField.create(keyword='shark_source_name', label='Source', obj=t,
+                          field_cls = forms.ChoiceField,
+                          parent_keywords = ['shark_device'],
+                          #parent_keywords = ['shark_device', 'shark_source_type'],
+                          dynamic=True,
+                          pre_process_func = Function(shark_source_name_choices))
+        
         fields_add_time_selection(t, initial_duration=duration)
         fields_add_filterexpr(t)
         fields_add_resolution(t, initial=resolution,
@@ -101,6 +113,32 @@ class SharkTable:
         return t
 
 
+def shark_source_name_choices(form, id, field_kwargs, params):
+    shark_device = form.get_field_value('shark_device', id)
+    if shark_device == '':
+        label = 'Source'
+        choices = [('', '<No shark device>')]
+    else:
+        shark = DeviceManager.get_device(shark_device)
+        #source_type = form.get_field_value('shark_source_type', id)
+        source_type = 'job'
+
+        choices = []
+        if source_type == 'job':
+            for job in shark.get_capture_jobs():
+                choices.append (('jobs/' + job.name, job.name))
+            label = 'Capture Job'
+        elif source_type == 'clip':
+            # Not tested
+            label = 'Trace Clip'
+            for clip in shark.get_clips():
+                choices.append ((clip, clip))
+        else:
+            raise KeyError('Unknown source type: %s' % source_type)
+        
+    field_kwargs['label'] = label
+    field_kwargs['choices'] = choices
+            
 def create_shark_column(table, name, label=None, datatype='', units='', iskey=False,
                         issortcol=False, extractor=None, operation=None, default_value=None):
     options = ColumnOptions(extractor=extractor,
@@ -149,18 +187,16 @@ class TableQuery:
         """ Main execution method
         """
         criteria = self.job.criteria
-        device = Device.objects.get(id=criteria.shark_device)
-        if not device.enabled:
-            logger.debug("%s: Device '%s' disabled" % (self.table, device.name))
-            self.job.mark_error("Device '%s' disabled. "
-                                "See Configure->Edit Devices page to enable."
-                                % device.name)
+
+        if criteria.shark_device == '':
+            logger.debug('%s: No shark device selected' % (self.table))
+            self.job.mark_error("No Shark Device Selected")
             return False
             
         #self.fake_run()
         #return True
     
-        shark = DeviceManager.get_device(device.id)
+        shark = DeviceManager.get_device(criteria.shark_device)
 
         logger.debug("Creating columns for Shark table %d" % self.table.id)
 
@@ -224,10 +260,8 @@ class TableQuery:
         # Get source type from options
         try:
             with lock:
-                source = path_to_class(shark, self.table.options.view)
-                setup_capture_job(shark, 
-                                  self.table.options.view.split('/', 1)[1],
-                                  self.table.options.view_size)
+                source = path_to_class(shark, self.job.criteria.shark_source_name)
+
         except RvbdHTTPException, e:
             source = None
             raise e

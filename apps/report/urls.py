@@ -23,6 +23,10 @@ urlpatterns = patterns(
         views.ReportView.as_view(),
         name='report-view'),
 
+    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
+        views.ReportCriteriaChanged.as_view(),
+        name='report-criteria-changed'),
+
     url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/tables/$',
         views.ReportTableList.as_view(),
         name='report-table-list'),

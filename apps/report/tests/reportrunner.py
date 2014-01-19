@@ -53,9 +53,13 @@ class ReportRunnerTestCase(TestCase):
         logger.info("Running report %s with criteria:\n%s" %
                     (self.report, criteria))
 
-        response = self.client.post('/report/%s/' % self.report,
-                                    data=criteria)
-
+        try:
+            response = self.client.post('/report/%s/' % self.report,
+                                        data=criteria)
+        except:
+            self.assertTrue(expect_fail_report)
+            return
+            
         self.check_status(response, expect_fail_report)
         if expect_fail_report:
             return
