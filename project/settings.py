@@ -160,6 +160,10 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Uncomment the next line to enable the admin:
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
@@ -183,6 +187,10 @@ INSTALLED_APPS = (
     # 'standard' plugins
     'rvbd_common.apps.plugins.builtin.whois',
 )
+
+ADMIN_TOOLS_MENU = 'project.menu.CustomMenu'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'project.dashboard.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'project.dashboard.CustomAppIndexDashboard'
 
 from rvbd_common.apps.plugins.loader import load_plugins
 load_plugins()

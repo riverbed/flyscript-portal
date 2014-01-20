@@ -20,10 +20,10 @@ class WidgetAdmin(admin.ModelAdmin):
     list_display = ('title', 'section', 'module', 'uiwidget')
     list_filter = ('section', 'module', 'uiwidget', )
 
-admin.site.register(Widget, WidgetAdmin)
+#admin.site.register(Widget, WidgetAdmin)
 
 
 class WidgetJobAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(WidgetJob, WidgetJobAdmin)
+#admin.site.register(WidgetJob, WidgetJobAdmin)
