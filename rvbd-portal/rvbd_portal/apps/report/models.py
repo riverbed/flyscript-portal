@@ -41,7 +41,9 @@ def get_caller_name(current_module):
     frame = inspect.stack()[2]
     frm = frame[0]
     mod = inspect.getmodule(frm)
+    del frm
     return mod.__name__
+
 
 class Report(models.Model):
     """ Defines a Report as a collection of Sections and their Widgets. """

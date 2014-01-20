@@ -54,35 +54,46 @@ class IPlugin(object):
         """ Returns boolean if this plugin is enabled. """
         return self.enabled or not self.can_disable
 
+    def _get_sources(self, paths):
+        import inspect
+        import pkgutil
+
+        module_name = self.__module__.rsplit('.', 1)[0]
+
+        class_file = inspect.getfile(self.__class__)
+        module_path = os.path.dirname(class_file)
+        sourcepaths = [os.path.join(module_path, sdir) for sdir in paths]
+
+        for instance, source_name, _ in pkgutil.iter_modules(sourcepaths):
+            # append tuple of source_name, pkg_name
+            source_path = instance.path
+            rel_source_path = os.path.relpath(source_path, module_path)
+            pkg_name = '.'.join([module_name,
+                                 '.'.join(rel_source_path.split(os.path.sep)),
+                                 source_name])
+            yield (source_name, pkg_name)
+
+    def get_reports(self):
+        """ Returns list of library modules. """
+        if self.reports and self.is_enabled():
+            return self._get_sources(self.reports)
+
     def get_libraries(self):
         """ Returns list of library modules. """
         if self.libraries and self.is_enabled():
-            import inspect
-            import pkgutil
+            return self._get_sources(self.libraries)
 
-            class_file = inspect.getfile(self.__class__)
-            module_path = os.path.dirname(class_file)
-            libs = []
-            libpaths = [os.path.join(module_path, libdir) for
-                                                libdir in self.libraries]
-
-            for module in pkgutil.iter_modules(libpaths):
-                # just append the module name for now
-                libs.append(module[0])
-
-            return libs
+    def get_datasources(self):
+        """ Returns list of library modules. """
+        if self.datasources and self.is_enabled():
+            return self._get_sources(self.datasources)
 
     def load_reports(self):
         if self.reports and self.is_enabled():
-            module_path = self.__module__.rsplit('.', 1)[0]
-
             importer = Importer()
 
-            for report in self.reports:
-                path, module = report.split('.', 1)
-                name = '.'.join([module_path, path, module])
-
-                importer.import_file(module, name)
+            for report_name, pkg_name in self.get_reports():
+                importer.import_file(report_name, pkg_name)
             self._reports_loaded = True
 
 

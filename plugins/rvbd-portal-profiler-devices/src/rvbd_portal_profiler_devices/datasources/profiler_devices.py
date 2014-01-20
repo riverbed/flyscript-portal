@@ -19,16 +19,22 @@ from rvbd_portal.apps.datasource.modules.profiler import lock
 
 logger = logging.getLogger(__name__)
 
+
 class DevicesTable:
     @classmethod
     def create(cls, name, **kwargs):
-        logger.debug('Creating Profiler DevivceTable table %s' % (name))
+        logger.debug('Creating Profiler DevivceTable table %s' % name)
 
         t = Table(name=name, module=__name__, **kwargs)
         t.save()
 
-        fields_add_device_selection(t, keyword='profiler_device', label='Profiler', module='profiler', enabled=True)
+        fields_add_device_selection(t,
+                                    keyword='profiler_device',
+                                    label='Profiler',
+                                    module='profiler',
+                                    enabled=True)
         return t
+
 
 class TableQuery:
     # Used by Table to actually run a query
@@ -57,7 +63,8 @@ class TableQuery:
         columns = [col.name for col in self.table.get_columns(synthetic=False)]
 
         # This returns an array of rows, one row per device
-        # Each row is a dict containing elements such as id, ipaddr, name, type, type_id, and version
+        # Each row is a dict containing elements such as:
+        #      id, ipaddr, name, type, type_id, and version
         with lock:
             devicedata = profiler.api.devices.get_all()
 

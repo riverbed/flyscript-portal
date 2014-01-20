@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-business-hours
+rvbd-portal-profiler-devices
 ==========
 
-A plugin for FlyScript Portal to enable Business Hour reports
+A datasource plugin for FlyScript Portal to create Profiiler Device tables
 
 """
 from setuptools import setup, find_packages
@@ -13,7 +13,6 @@ tests_require = []
 
 install_requires = [
     'Django>=1.5.1,<1.6',
-    'rvbd-portal-profiler-devices>=0.0.1',
     # flyscript-portal should be here too
 ]
 
@@ -29,7 +28,7 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-business-hours',
+    name='rvbd-portal-profiler-devices',
     version='0.0.1',
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
@@ -48,7 +47,7 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'business_hours = rvbd_portal_business_hours.plugin:BusinessHoursPlugin'
+            'profiler_devices = rvbd_portal_profiler_devices.plugin:ProfilerDevicesPlugin'
         ],
     },
     classifiers=[

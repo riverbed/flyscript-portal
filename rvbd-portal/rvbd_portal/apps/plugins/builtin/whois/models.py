@@ -17,7 +17,7 @@ class WhoisReport(Plugin):
     enabled = True
     can_disable = True
 
-    reports = ['reports.5_whois']
+    reports = ['reports']
     libraries = ['libs']
 
 

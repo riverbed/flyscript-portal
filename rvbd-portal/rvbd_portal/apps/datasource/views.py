@@ -12,10 +12,10 @@ from rest_framework.reverse import reverse
 from rest_framework import generics
 
 from rvbd_portal.apps.datasource.serializers import (TableSerializer,
-                                         ColumnSerializer,
-                                         JobSerializer,
-                                         JobDataSerializer,
-                                         JobListSerializer)
+                                                     ColumnSerializer,
+                                                     JobSerializer,
+                                                     JobDataSerializer,
+                                                     JobListSerializer)
 from rvbd_portal.apps.datasource.models import Table, Column, Job, Criteria
 
 
@@ -121,4 +121,3 @@ class JobDetail(generics.RetrieveAPIView):
 class JobDetailData(generics.RetrieveAPIView):
     model = Job
     serializer_class = JobDataSerializer
-

@@ -42,12 +42,12 @@
 
 {% block header_row %}
     <h3>Plugins List</h3>
-    <h4>List of installed plugins to Portal</h4>
+    <h4>List of installed Portal plugins</h4>
 {% endblock %}
 
 {% block content %}
     <div class="container-fluid">
-        <table border="0" class="table table-bordered block-centered" style="max-width: 50%">
+        <table border="0" class="table table-bordered block-centered" style="max-width: 80%">
             <thead>
             <tr>
                 <th>Enabled</th>
@@ -65,7 +65,7 @@
                 {% endif %}
                 {% for plugin in plugins %}
                     <tr {% if not plugin.enabled %}class="row-disabled"{% endif %}>
-                        <td><input id="id_{{plugin.slug}}" name="{{plugin.slug}}" type="checkbox" {% if plugin.is_enabled %}checked{% endif %}></td>
+                        <td style="text-align: center"><input id="id_{{plugin.slug}}" name="{{plugin.slug}}" type="checkbox" {% if plugin.is_enabled %}checked{% endif %}></td>
                         <td>{{ plugin.title }}</td>
                         <td>{{ plugin.description }}</td>
                         <td>{{ plugin.version }}</td>

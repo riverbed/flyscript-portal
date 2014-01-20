@@ -8,14 +8,14 @@
 from rvbd_portal.apps.plugins import Plugin
 
 
-class BusinessHoursPlugin(Plugin):
-    title = 'Business Hours Report Plugin'
-    description = 'A business hours plugin with reports and support libraries'
+class ProfilerDevicesPlugin(Plugin):
+    title = 'Profiler-Devices Plugin'
+    description = 'A Portal datasource plugin with example report'
     version = '0.0.1'
     author = 'Riverbed Technology'
 
     enabled = True
     can_disable = True
 
+    datasources = ['datasources']
     reports = ['reports']
-    libraries = ['libs']
