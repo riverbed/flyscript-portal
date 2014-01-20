@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from rvbd_common.apps.report.models import Report
+from rvbd_portal.apps.report.models import Report
 
 
 class ReportSerializer(serializers.ModelSerializer):

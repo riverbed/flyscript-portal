@@ -6,4 +6,4 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-from rvbd_common.apps.datasource.modules import shark, profiler
+from rvbd_portal.apps.datasource.modules import shark, profiler

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from rvbd_common.apps.devices.models import Device
+from rvbd_portal.apps.devices.models import Device
 
 
 class DeviceSerializer(serializers.ModelSerializer):

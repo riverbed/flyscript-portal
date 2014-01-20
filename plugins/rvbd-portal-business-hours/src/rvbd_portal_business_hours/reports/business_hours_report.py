@@ -6,15 +6,15 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-from rvbd_common.apps.datasource.models import Column
-from rvbd_common.apps.devices.models import Device
-from rvbd_common.apps.report.models import Report, Section
-import rvbd_common.apps.report.modules.yui3 as yui3
-from rvbd_common.apps.datasource.modules.profiler import GroupByTable
-from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
-from rvbd_common.apps.datasource.modules.profiler_devices import DevicesTable
+from rvbd_portal.apps.datasource.models import Column
+from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.report.models import Report, Section
+import rvbd_portal.apps.report.modules.yui3 as yui3
+from rvbd_portal.apps.datasource.modules.profiler import GroupByTable
+from rvbd_portal.apps.datasource.modules.analysis import AnalysisTable
+from rvbd_portal.apps.datasource.modules.profiler_devices import DevicesTable
 
-import rvbd_common.libs.profiler_tools as protools
+import rvbd_portal.libs.profiler_tools as protools
 
 import rvbd_portal_business_hours.libs.business_hours as bizhours
 

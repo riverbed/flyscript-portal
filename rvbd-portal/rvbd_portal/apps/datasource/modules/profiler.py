@@ -15,12 +15,12 @@ from rvbd.profiler.filters import TimeFilter, TrafficFilter
 from rvbd.common.jsondict import JsonDict
 from rvbd.common.timeutils import (parse_timedelta, timedelta_total_seconds)
 
-from rvbd_common.apps.datasource.models import Table, TableField
-from rvbd_common.apps.devices.models import Device
-from rvbd_common.apps.devices.forms import fields_add_device_selection
-from rvbd_common.apps.devices.devicemanager import DeviceManager
-from rvbd_common.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
-from rvbd_common.libs.fields import Function
+from rvbd_portal.apps.datasource.models import Table, TableField
+from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.devices.forms import fields_add_device_selection
+from rvbd_portal.apps.devices.devicemanager import DeviceManager
+from rvbd_portal.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+from rvbd_portal.libs.fields import Function
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()

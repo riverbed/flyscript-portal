@@ -7,11 +7,11 @@
 
 
 from django.conf.urls import patterns, url
-import rvbd_common.apps.help.views as views
+import rvbd_portal.apps.help.views as views
 
 
 urlpatterns = patterns(
-    'rvbd_common.apps.help.views',
+    'rvbd_portal.apps.help.views',
     #url(r'^$', views.ReportView.as_view()),
 
     url(r'^(?P<device_type>[a-z]+)/$',

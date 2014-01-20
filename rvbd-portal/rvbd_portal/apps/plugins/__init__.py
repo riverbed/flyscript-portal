@@ -5,6 +5,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-from rvbd_common.apps.plugins.base import Plugin
-from rvbd_common.apps.plugins.manager import plugins, register, unregister
-from rvbd_common.apps.plugins.loader import load_plugins
+from rvbd_portal.apps.plugins.base import Plugin
+from rvbd_portal.apps.plugins.manager import plugins, register, unregister
+from rvbd_portal.apps.plugins.loader import load_plugins

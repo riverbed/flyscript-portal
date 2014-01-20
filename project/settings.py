@@ -122,8 +122,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'rvbd_common.apps.report.middleware.exceptions.ReloadExceptionHandler',
-    'rvbd_common.apps.report.middleware.timezones.TimezoneMiddleware',
+    'rvbd_portal.apps.report.middleware.exceptions.ReloadExceptionHandler',
+    'rvbd_portal.apps.report.middleware.timezones.TimezoneMiddleware',
     #'project.middleware.LoginRequiredMiddleware',
 )
 
@@ -149,7 +149,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.tz",
     "django.contrib.messages.context_processors.messages",
 #    "project.context_processors.django_version",
-    'rvbd_common.apps.report.context_processors.report_list_processor',
+    'rvbd_portal.apps.report.context_processors.report_list_processor',
 )
 
 INSTALLED_APPS = (
@@ -169,20 +169,20 @@ INSTALLED_APPS = (
     'django_extensions',
 
     # portal apps
-    'rvbd_common.apps.datasource',
-    'rvbd_common.apps.devices',
-    'rvbd_common.apps.report',
-    'rvbd_common.apps.geolocation',
-    'rvbd_common.apps.console',
-    'rvbd_common.apps.help',
-    'rvbd_common.apps.preferences',
-    'rvbd_common.apps.plugins',
+    'rvbd_portal.apps.datasource',
+    'rvbd_portal.apps.devices',
+    'rvbd_portal.apps.report',
+    'rvbd_portal.apps.geolocation',
+    'rvbd_portal.apps.console',
+    'rvbd_portal.apps.help',
+    'rvbd_portal.apps.preferences',
+    'rvbd_portal.apps.plugins',
 
     # 'standard' plugins
-    'rvbd_common.apps.plugins.builtin.whois',
+    'rvbd_portal.apps.plugins.builtin.whois',
 )
 
-from rvbd_common.apps.plugins.loader import load_plugins
+from rvbd_portal.apps.plugins.loader import load_plugins
 load_plugins()
 
 REST_FRAMEWORK = {

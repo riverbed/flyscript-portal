@@ -16,8 +16,8 @@ from rvbd.common.jsondict import JsonDict
 
 from django.forms.widgets import FileInput
 
-from rvbd_common.apps.datasource.models import Table, TableField
-from rvbd_common.apps.datasource.forms import FileSelectField, fields_add_resolution
+from rvbd_portal.apps.datasource.models import Table, TableField
+from rvbd_portal.apps.datasource.forms import FileSelectField, fields_add_resolution
 
 
 logger = logging.getLogger(__name__)

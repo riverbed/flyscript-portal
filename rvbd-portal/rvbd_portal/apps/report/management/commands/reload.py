@@ -12,12 +12,12 @@ from django.core.management.base import BaseCommand
 from django.core import management
 from django.core.exceptions import ObjectDoesNotExist
 
-from rvbd_common.apps.report.models import Report
-from rvbd_common.apps.devices.devicemanager import DeviceManager
+from rvbd_portal.apps.report.models import Report
+from rvbd_portal.apps.devices.devicemanager import DeviceManager
 
 from project import settings
 from project.utils import Importer
-from rvbd_common.apps.plugins import plugins
+from rvbd_portal.apps.plugins import plugins
 
 
 class Command(BaseCommand):

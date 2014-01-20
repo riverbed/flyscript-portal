@@ -7,7 +7,7 @@
 
 from django.contrib import admin
 
-from rvbd_common.apps.report.models import Report, Widget, WidgetJob
+from rvbd_portal.apps.report.models import Report, Widget, WidgetJob
 
 
 class ReportAdmin(admin.ModelAdmin):

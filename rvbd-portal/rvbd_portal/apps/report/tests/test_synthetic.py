@@ -7,8 +7,8 @@
 
 import logging
 
-from rvbd_common.apps.datasource.models import Job
-from rvbd_common.apps.report.tests import reportrunner
+from rvbd_portal.apps.datasource.models import Job
+from rvbd_portal.apps.report.tests import reportrunner
 
 logger = logging.getLogger(__name__)
 

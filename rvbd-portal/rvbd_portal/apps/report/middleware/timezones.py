@@ -7,7 +7,7 @@
 
 from django.utils import timezone
 
-from rvbd_common.apps.preferences.models import UserProfile
+from rvbd_portal.apps.preferences.models import UserProfile
 
 
 class TimezoneMiddleware(object):

@@ -9,12 +9,12 @@
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
-from rvbd_common.apps.datasource.models import Column
-from rvbd_common.apps.report.models import Report, Section
-import rvbd_common.apps.report.modules.yui3 as yui3
-import rvbd_common.apps.report.modules.maps as maps
-from rvbd_common.apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
-from rvbd_common.apps.datasource.modules.shark import SharkTable, create_shark_column
+from rvbd_portal.apps.datasource.models import Column
+from rvbd_portal.apps.report.models import Report, Section
+import rvbd_portal.apps.report.modules.yui3 as yui3
+import rvbd_portal.apps.report.modules.maps as maps
+from rvbd_portal.apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+from rvbd_portal.apps.datasource.modules.shark import SharkTable, create_shark_column
 
 #
 # Overall report

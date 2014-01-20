@@ -1,9 +1,9 @@
-from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
-from rvbd_common.apps.datasource.models import Column
+from rvbd_portal.apps.datasource.modules.analysis import AnalysisTable
+from rvbd_portal.apps.datasource.models import Column
 
-from rvbd_common.apps.report.models import Report, Section
-from rvbd_common.apps.report.modules import raw
-from rvbd_common.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+from rvbd_portal.apps.report.models import Report, Section
+from rvbd_portal.apps.report.modules import raw
+from rvbd_portal.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
 
 from . import synthentic_functions as funcs
 

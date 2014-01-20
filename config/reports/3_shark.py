@@ -9,9 +9,9 @@
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
 
-from rvbd_common.apps.report.models import Report, Section
-import rvbd_common.apps.report.modules.yui3 as yui3
-from rvbd_common.apps.datasource.modules.shark import SharkTable, create_shark_column
+from rvbd_portal.apps.report.models import Report, Section
+import rvbd_portal.apps.report.modules.yui3 as yui3
+from rvbd_portal.apps.datasource.modules.shark import SharkTable, create_shark_column
 
 #
 # Define a Shark Report and Table

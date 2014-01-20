@@ -13,8 +13,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from rvbd.common.utils import DictObject
 
-from rvbd_common.apps.geolocation.models import *
-from rvbd_common.apps.geolocation.geoip import Lookup
+from rvbd_portal.apps.geolocation.models import *
+from rvbd_portal.apps.geolocation.geoip import Lookup
 
 # Create your views here.
 

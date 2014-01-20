@@ -7,10 +7,10 @@
 
 
 from django.conf.urls import patterns, url
-import rvbd_common.apps.plugins.views as views
+import rvbd_portal.apps.plugins.views as views
 
 urlpatterns = patterns(
-    'rvbd_common.apps.plugins.views',
+    'rvbd_portal.apps.plugins.views',
     url(r'^$', views.PluginsListView.as_view(), name='plugins-list'),
     url(r'^(?P<slug>[-\w]+)/$', views.PluginsDetailView.as_view(), name='plugins-detail'),
 )

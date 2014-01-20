@@ -10,7 +10,7 @@ from django.conf.urls import patterns, include, url
 from django.views.generic import DetailView, ListView
 
 urlpatterns = patterns(
-    'rvbd_common.apps.console.views',
+    'rvbd_portal.apps.console.views',
     url(r'^$', 'main'),
     url(r'^reload$', 'refresh'),
     url(r'(?P<script_id>[0-9]+)/detail$', 'detail'),

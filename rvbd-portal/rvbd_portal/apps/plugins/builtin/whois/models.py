@@ -5,7 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-from rvbd_common.apps.plugins import Plugin, register
+from rvbd_portal.apps.plugins import Plugin, register
 
 
 class WhoisReport(Plugin):

@@ -8,10 +8,10 @@
 from django.conf.urls import patterns, url
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from rvbd_common.apps.datasource.views import TableList, TableDetail
-from rvbd_common.apps.datasource.views import TableColumnList, TableJobList
-from rvbd_common.apps.datasource.views import ColumnList, ColumnDetail
-from rvbd_common.apps.datasource.views import JobList, JobDetail, JobDetailData
+from rvbd_portal.apps.datasource.views import TableList, TableDetail
+from rvbd_portal.apps.datasource.views import TableColumnList, TableJobList
+from rvbd_portal.apps.datasource.views import ColumnList, ColumnDetail
+from rvbd_portal.apps.datasource.views import JobList, JobDetail, JobDetailData
 
 
 urlpatterns = patterns(

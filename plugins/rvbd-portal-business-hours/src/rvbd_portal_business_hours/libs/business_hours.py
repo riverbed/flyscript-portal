@@ -10,9 +10,9 @@ from django import forms
 
 from rvbd.common.timeutils import datetime_to_seconds, timedelta_total_seconds
 
-from rvbd_common.apps.datasource.models import Job, Table, Column, TableField, BatchJobRunner
-from rvbd_common.apps.datasource.modules.analysis import AnalysisTable, AnalysisException
-from rvbd_common.apps.datasource.forms import fields_add_time_selection
+from rvbd_portal.apps.datasource.models import Job, Table, Column, TableField, BatchJobRunner
+from rvbd_portal.apps.datasource.modules.analysis import AnalysisTable, AnalysisException
+from rvbd_portal.apps.datasource.forms import fields_add_time_selection
 
 
 logger = logging.getLogger(__name__)

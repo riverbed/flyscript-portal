@@ -1,13 +1,13 @@
 from django import forms
 
-from rvbd_common.apps.datasource.modules.analysis import AnalysisTable
-from rvbd_common.apps.datasource.models import TableField, Column
-from rvbd_common.libs.fields import Function
+from rvbd_portal.apps.datasource.modules.analysis import AnalysisTable
+from rvbd_portal.apps.datasource.models import TableField, Column
+from rvbd_portal.libs.fields import Function
 
-from rvbd_common.apps.report.models import Report, Section
-from rvbd_common.apps.report.modules import raw
+from rvbd_portal.apps.report.models import Report, Section
+from rvbd_portal.apps.report.modules import raw
 
-from rvbd_common.apps.report.tests.reports import criteria_functions as funcs
+from rvbd_portal.apps.report.tests.reports import criteria_functions as funcs
 
 report = Report(title='Criteria Pre Process' )
 report.save()

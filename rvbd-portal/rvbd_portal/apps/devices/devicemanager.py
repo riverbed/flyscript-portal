@@ -10,7 +10,7 @@ import logging
 import threading
 
 from rvbd.common import UserAuth
-from rvbd_common.apps.devices.models import Device
+from rvbd_portal.apps.devices.models import Device
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,8 @@ class DeviceManager(object):
 
         with lock:
             if ds.id not in cls.devices:
-                import rvbd_common.apps.datasource.modules
-                module = rvbd_common.apps.datasource.modules.__dict__[ds.module]
+                import rvbd_portal.apps.datasource.modules
+                module = rvbd_portal.apps.datasource.modules.__dict__[ds.module]
                 create_func = module.new_device_instance
 
                 logger.debug("Creating new Device: %s(%s:%s)" % (ds.module,
@@ -52,8 +52,8 @@ class DeviceManager(object):
             function defined.
         """
         modules = []
-        import rvbd_common.apps.datasource.modules
-        for k, v in rvbd_common.apps.datasource.modules.__dict__.iteritems():
+        import rvbd_portal.apps.datasource.modules
+        for k, v in rvbd_portal.apps.datasource.modules.__dict__.iteritems():
             if hasattr(v, 'new_device_instance'):
                 modules.append(k)
         return modules

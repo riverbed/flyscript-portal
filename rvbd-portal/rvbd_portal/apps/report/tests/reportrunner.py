@@ -10,8 +10,8 @@ from django.utils.datastructures import SortedDict
 
 from project import settings
 
-from rvbd_common.apps.datasource.models import Job
-from rvbd_common.apps.report.models import Report, Widget
+from rvbd_portal.apps.datasource.models import Job
+from rvbd_portal.apps.report.models import Report, Widget
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ReportRunnerTestCase(TestCase):
         initial_data = glob.glob(os.path.join(localdir, '*.json'))
         management.call_command('loaddata', *initial_data)
 
-        path = 'rvbd_common.apps.report.tests.reports.' + cls.report
+        path = 'rvbd_portal.apps.report.tests.reports.' + cls.report
         logger.info("Loading report: %s" % path)
         management.call_command('reload', report_name=path)
 

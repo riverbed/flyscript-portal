@@ -16,8 +16,8 @@ from django.core import management
 from django.db.models import get_app, get_models, Count
 
 from project import settings
-from rvbd_common.apps.report.models import Report, WidgetJob
-from rvbd_common.apps.datasource.models import Table, TableField, Column, Job
+from rvbd_portal.apps.report.models import Report, WidgetJob
+from rvbd_portal.apps.datasource.models import Table, TableField, Column, Job
 
 
 class Command(BaseCommand):

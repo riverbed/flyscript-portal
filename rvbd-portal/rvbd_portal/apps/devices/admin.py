@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.contrib import admin
-from rvbd_common.apps.devices.models import Device
+from rvbd_portal.apps.devices.models import Device
 
 
 class DeviceAdmin(admin.ModelAdmin):

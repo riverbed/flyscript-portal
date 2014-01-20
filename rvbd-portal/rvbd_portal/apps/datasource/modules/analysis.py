@@ -8,7 +8,7 @@
 import logging
 
 from rvbd.common.jsondict import JsonDict
-from rvbd_common.apps.datasource.models import Column, Job, Table, BatchJobRunner
+from rvbd_portal.apps.datasource.models import Column, Job, Table, BatchJobRunner
 
 logger = logging.getLogger(__name__)
 

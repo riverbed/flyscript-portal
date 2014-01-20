@@ -28,13 +28,13 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
-from rvbd_common.apps.datasource.models import Job, Table
-from rvbd_common.apps.datasource.serializers import TableSerializer
-from rvbd_common.apps.datasource.forms import TableFieldForm
-from rvbd_common.apps.devices.models import Device
-from rvbd_common.apps.report.models import Report, Section, Widget, WidgetJob
-from rvbd_common.apps.report.serializers import ReportSerializer
-from rvbd_common.apps.report.utils import create_debug_zipfile
+from rvbd_portal.apps.datasource.models import Job, Table
+from rvbd_portal.apps.datasource.serializers import TableSerializer
+from rvbd_portal.apps.datasource.forms import TableFieldForm
+from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.report.models import Report, Section, Widget, WidgetJob
+from rvbd_portal.apps.report.serializers import ReportSerializer
+from rvbd_portal.apps.report.utils import create_debug_zipfile
 
 logger = logging.getLogger(__name__)
 

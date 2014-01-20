@@ -30,8 +30,8 @@ from django.dispatch import receiver
 from rvbd.common.utils import DictObject
 from rvbd.common import timedelta_total_seconds
 
-from rvbd_common.apps.datasource.exceptions import *
-from rvbd_common.libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
+from rvbd_portal.apps.datasource.exceptions import *
+from rvbd_portal.libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
 from project import settings
 
 

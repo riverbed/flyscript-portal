@@ -5,7 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-from rvbd_common.apps.report.models import Report
+from rvbd_portal.apps.report.models import Report
 
 
 def report_list_processor(request):

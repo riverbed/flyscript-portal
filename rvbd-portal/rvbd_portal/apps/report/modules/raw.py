@@ -9,7 +9,7 @@ import datetime
 
 from rvbd.common.timeutils import datetime_to_seconds
 
-from rvbd_common.apps.report.models import Widget
+from rvbd_portal.apps.report.models import Widget
 
 import logging
 logger = logging.getLogger(__name__)

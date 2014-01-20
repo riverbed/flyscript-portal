@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-rvbd_common
+rvbd_portal
 ==========
 
 Core apps for Riverbed FlyScript Portal

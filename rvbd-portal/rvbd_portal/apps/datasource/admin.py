@@ -8,7 +8,7 @@
 
 from django.contrib import admin
 
-from rvbd_common.apps.datasource.models import Table, Column, Job
+from rvbd_portal.apps.datasource.models import Table, Column, Job
 
 
 class TableAdmin(admin.ModelAdmin):

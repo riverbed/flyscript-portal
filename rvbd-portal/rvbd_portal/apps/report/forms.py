@@ -8,7 +8,7 @@
 
 from django import forms
 
-from rvbd_common.apps.report.models import Report, Widget
+from rvbd_portal.apps.report.models import Report, Widget
 
 import logging
 logger = logging.getLogger(__name__)

@@ -18,9 +18,9 @@ from django.core.management.base import BaseCommand
 
 from rvbd.common.utils import Formatter
 
-from rvbd_common.apps.datasource.models import Table, Job
-from rvbd_common.apps.datasource.forms import TableFieldForm
-from rvbd_common.apps.report.models import Report, Widget
+from rvbd_portal.apps.datasource.models import Table, Job
+from rvbd_portal.apps.datasource.forms import TableFieldForm
+from rvbd_portal.apps.report.models import Report, Widget
 
 # not pretty, but pandas insists on warning about
 # some deprecated behavior we really don't care about

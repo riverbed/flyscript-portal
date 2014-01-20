@@ -12,7 +12,7 @@ urlpatterns = patterns(
     '',
 
     url(r'^ipaddr/(?P<addr>[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)$',
-        'rvbd_common.apps.geolocation.views.getIPAddress'),
+        'rvbd_portal.apps.geolocation.views.getIPAddress'),
     url(r'^location/(?P<name>.+)$',
-        'rvbd_common.apps.geolocation.views.getLocation')
+        'rvbd_portal.apps.geolocation.views.getLocation')
     )

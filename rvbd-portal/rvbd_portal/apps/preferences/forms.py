@@ -7,7 +7,7 @@
 
 from django import forms
 
-from rvbd_common.apps.preferences.models import UserProfile
+from rvbd_portal.apps.preferences.models import UserProfile
 
 
 class UserProfileForm(forms.ModelForm):

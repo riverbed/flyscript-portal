@@ -13,7 +13,7 @@ import pygeoip
 from pygeoip.util import ip2long
 from rvbd.common.utils import DictObject
 
-from rvbd_common.apps.geolocation.models import Location
+from rvbd_portal.apps.geolocation.models import Location
 
 
 GEOLOCATION_DATA_FILE = '/tmp/GeoLiteCity.dat1'

@@ -15,11 +15,11 @@ from rest_framework import generics, views
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 from rest_framework.response import Response
 
-from rvbd_common.apps.devices.devicemanager import DeviceManager
-from rvbd_common.apps.devices.forms import DeviceListForm, DeviceDetailForm
-from rvbd_common.apps.devices.models import Device
-from rvbd_common.apps.devices.serializers import DeviceSerializer
-from rvbd_common.apps.preferences.models import UserProfile
+from rvbd_portal.apps.devices.devicemanager import DeviceManager
+from rvbd_portal.apps.devices.forms import DeviceListForm, DeviceDetailForm
+from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.devices.serializers import DeviceSerializer
+from rvbd_portal.apps.preferences.models import UserProfile
 
 logger = logging.getLogger(__name__)
 

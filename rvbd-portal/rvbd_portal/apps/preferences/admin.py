@@ -9,7 +9,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 
-from rvbd_common.apps.preferences.models import UserProfile
+from rvbd_portal.apps.preferences.models import UserProfile
 
 
 class UserProfileInline(admin.StackedInline):

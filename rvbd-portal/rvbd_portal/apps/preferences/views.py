@@ -14,8 +14,8 @@ from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from rvbd_common.apps.preferences.models import UserProfile
-from rvbd_common.apps.preferences.forms import UserProfileForm
+from rvbd_portal.apps.preferences.models import UserProfile
+from rvbd_portal.apps.preferences.forms import UserProfileForm
 
 logger = logging.getLogger(__name__)
 

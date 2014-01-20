@@ -21,9 +21,9 @@ from django.utils.datastructures import SortedDict
 from django.core.exceptions import ObjectDoesNotExist
 
 from model_utils.managers import InheritanceManager
-from rvbd_common.apps.datasource.models import Table, Job, TableField
+from rvbd_portal.apps.datasource.models import Table, Job, TableField
 
-from rvbd_common.libs.fields import PickledObjectField, SeparatedValuesField
+from rvbd_portal.libs.fields import PickledObjectField, SeparatedValuesField
 
 logger = logging.getLogger(__name__)
 

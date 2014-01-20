@@ -26,7 +26,7 @@ from django.forms.widgets import FileInput, TextInput
 from django.forms import widgets
 from rvbd.common import parse_timedelta, timedelta_total_seconds
 
-from rvbd_common.apps.datasource.models import Criteria, TableField
+from rvbd_portal.apps.datasource.models import Criteria, TableField
 
 logger = logging.getLogger(__name__)
 

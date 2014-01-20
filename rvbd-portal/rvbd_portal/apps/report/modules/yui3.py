@@ -12,8 +12,8 @@ import logging
 from rvbd.common import timeutils
 from rvbd.common.jsondict import JsonDict
 
-from rvbd_common.libs.nicescale import NiceScale
-from rvbd_common.apps.report.models import Axes, Widget
+from rvbd_portal.libs.nicescale import NiceScale
+from rvbd_portal.apps.report.models import Axes, Widget
 
 logger = logging.getLogger(__name__)
 

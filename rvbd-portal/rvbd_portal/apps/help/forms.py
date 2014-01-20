@@ -9,7 +9,7 @@ from django import forms
 
 from rvbd.profiler import _constants
 
-from rvbd_common.apps.devices.models import Device
+from rvbd_portal.apps.devices.models import Device
 
 
 def get_device_choices(device_type):

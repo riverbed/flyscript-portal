@@ -6,7 +6,7 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 from django.contrib import admin
-from rvbd_common.apps.geolocation.models import Location
+from rvbd_portal.apps.geolocation.models import Location
 
 
 class LocationAdmin(admin.ModelAdmin):

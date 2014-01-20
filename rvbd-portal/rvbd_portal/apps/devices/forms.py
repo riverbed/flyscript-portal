@@ -7,12 +7,12 @@
 
 from django import forms
 
-from rvbd_common.libs.fields import Function
+from rvbd_portal.libs.fields import Function
 
-from rvbd_common.apps.datasource.models import TableField
+from rvbd_portal.apps.datasource.models import TableField
 
-from rvbd_common.apps.devices.models import Device
-from rvbd_common.apps.devices.devicemanager import DeviceManager
+from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.devices.devicemanager import DeviceManager
 
 
 class DeviceForm(forms.ModelForm):
