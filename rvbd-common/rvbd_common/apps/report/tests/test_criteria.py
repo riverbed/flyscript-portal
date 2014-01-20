@@ -12,7 +12,7 @@ import tempfile
 import dateutil.parser
 
 from rvbd_common.apps.datasource.models import Job
-from rvbd_common.apps.report.models import Report, Widget
+from rvbd_common.apps.report.models import Report, Widget, Section
 from . import reportrunner
 from rvbd_common.libs.call_command import call_command
 
@@ -101,7 +101,7 @@ class CriteriaTest(reportrunner.ReportRunnerTestCase):
                                  "Key %s => %s vs %s" %
                                  (k, v, returned_criteria[k]))
             
-class TimeSelection(CriteriaTest):
+class CriteriaTimeSelection(CriteriaTest):
 
     report = 'criteria_timeselection' 
 
@@ -125,7 +125,7 @@ class TimeSelection(CriteriaTest):
                                expect_fail_report=True)
 
 
-class PreProcess(CriteriaTest):
+class CriteriaPreProcess(CriteriaTest):
 
     report = 'criteria_preprocess' 
 
@@ -138,7 +138,7 @@ class PreProcess(CriteriaTest):
 
 
 
-class PostProcess(CriteriaTest):
+class CriteriaPostProcess(CriteriaTest):
 
     report = 'criteria_postprocess' 
 
@@ -146,7 +146,7 @@ class PostProcess(CriteriaTest):
         self.run_with_criteria({'w' : '1', 'x' : '2', 'y': '5'},
                                {'wx' : '3', 'wy' : '6', 'xy': '7'})
 
-class SharedFields(CriteriaTest):
+class CriteriaSharedFields(CriteriaTest):
 
     report = 'criteria_sharedfields' 
 
@@ -155,7 +155,7 @@ class SharedFields(CriteriaTest):
                                [ {'x': '1', 'y': '12'},
                                  {'x': '1', 'y': '22'} ])
 
-class PostProcessErrors(CriteriaTest):
+class CriteriaPostProcessErrors(CriteriaTest):
 
     report = 'criteria_postprocesserrors' 
 
@@ -168,7 +168,7 @@ class PostProcessErrors(CriteriaTest):
                                expect_fail_job=True)
 
 
-class Parents(CriteriaTest):
+class CriteriaParents(CriteriaTest):
 
     report = 'criteria_parents' 
 
@@ -180,7 +180,7 @@ class Parents(CriteriaTest):
                                 'section_computed' : 'section_computed:report_computed:top',
                                 'table_computed' : 'table_computed:section_computed:report_computed:top'})
                                
-class Defaults(CriteriaTest):
+class CriteriaDefaults(CriteriaTest):
 
     report = 'criteria_defaults' 
 
@@ -218,3 +218,59 @@ class Defaults(CriteriaTest):
                                 'table-2': 't2'})
 
 
+class CriteriaSectionKeywords(CriteriaTest):
+
+    report = 'criteria_sectionkeywords' 
+
+    def test(self):
+        report = Report.objects.get(slug__endswith=self.report)
+        section0 = Section.objects.get(report=report, title="Section 0")
+        section1 = Section.objects.get(report=report, title="Section 1")
+        self.run_report_with_criteria({'__s%s_k1' % section0.id: 'v1',
+                                       '__s%s_k1' % section1.id: 'v2'},
+                                      
+                                      [{'k1' : 'v1'},
+                                       {'k1' : 'v2'}])
+
+
+class CriteriaChangingChoices(CriteriaTest):
+
+    report = 'criteria_changingchoices' 
+
+    def test(self):
+        self.run_with_criteria({'first' : 'a',
+                                'second' : 'a-1'})
+
+        self.run_with_criteria({'first' : 'b',
+                                'second' : 'b-2'})
+
+        self.run_with_criteria({'first' : 'b',
+                                'second' : 'a-1'},
+                               expect_fail_report=True)
+
+        self.run_with_criteria({'first' : 'a',
+                                'second' : 'b-2'},
+                               expect_fail_report=True)
+
+class CriteriaChangingChoicesWithSections(CriteriaTest):
+
+    report = 'criteria_changingchoiceswithsections' 
+
+    def test(self):
+        report = Report.objects.get(slug__endswith=self.report)
+        section0 = Section.objects.get(report=report, title="Section 0")
+        section1 = Section.objects.get(report=report, title="Section 1")
+        self.run_report_with_criteria({'__s%s_first' % section0.id: 'a',
+                                       '__s%s_second' % section0.id : 'a-1',
+                                       '__s%s_first' % section1.id: 'b',
+                                       '__s%s_second' % section1.id : 'b-2'},
+
+                                      [{'first' : 'a', 'second' : 'a-1'},
+                                       {'first' : 'b', 'second' : 'b-2'} ])
+
+class CriteriaCircularDependency(CriteriaTest):
+
+    report = 'criteria_circulardependency' 
+
+    def test(self):
+        self.run_report_with_criteria({}, expect_fail_report=True)

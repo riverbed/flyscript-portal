@@ -239,6 +239,41 @@ class ReportView(views.APIView):
             return HttpResponse(str(form.errors), status=400)
 
 
+class ReportCriteriaChanged(views.APIView):
+    """ Main handler for /report/{id}
+    """
+    model = Report
+    serializer_class = ReportSerializer
+    renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
+
+    def post(self, request, report_slug=None):
+        # handle REST calls
+        if report_slug is None:
+            return self.http_method_not_allowed(request)
+
+        logger.debug("Received POST for report %s, with params: %s" %
+                     (report_slug, request.POST))
+
+        try:
+            report = Report.objects.get(slug=report_slug)
+        except:
+            raise Http404
+
+        fields_by_section = report.collect_fields_by_section()
+        all_fields = SortedDict()
+        [all_fields.update(c) for c in fields_by_section.values()]
+
+        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields,
+                              data=request.POST, files=request.FILES)
+
+        response = []
+
+        for field in form.dynamic_fields():
+            response.append({'id': field.auto_id,
+                             'html': str(field)})
+        return HttpResponse(json.dumps(response))
+
+
 class ReportTableList(generics.ListAPIView):
     model = Table
     serializer_class = TableSerializer
@@ -272,7 +307,7 @@ class WidgetJobsList(views.APIView):
         form = TableFieldForm(fields, use_widgets=False,
                               hidden_fields=report.hidden_fields, include_hidden=True,
                               data=req_json, files=request.FILES)
-
+        
         if not form.is_valid():
             raise ValueError("Widget internal criteria form is invalid:\n%s" % (form.errors.as_text()))
             

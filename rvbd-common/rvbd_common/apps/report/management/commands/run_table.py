@@ -11,6 +11,8 @@ import time
 import datetime
 import optparse
 import sys
+import logging
+logger = logging.getLogger(__name__)
 
 from django.core.management.base import BaseCommand
 
@@ -171,6 +173,8 @@ class Command(BaseCommand):
 
             if not form.is_valid(check_unknown=True):
                 self.console('Invalid criteria:')
+                logger.error('Invalid criteria: %s' %
+                             ','.join('%s:%s' % (k,v) for k,v in form.errors.iteritems()))
                 for k,v in form.errors.iteritems():
                     self.console('  %s: %s' % (k,','.join(v)))
                 

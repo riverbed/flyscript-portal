@@ -194,7 +194,10 @@ class Section(models.Model):
                                     mode=default_field_mode or SectionFieldMode.INHERIT)
         critmode.save()
 
-        if section_keywords:
+        if section_keywords is not None:
+            if not isinstance(section_keywords,list):
+                section_keywords = [section_keywords]
+                
             for keyword in section_keywords:
                 critmode = SectionFieldMode(section=section,
                                             keyword=keyword,
@@ -216,13 +219,13 @@ class Section(models.Model):
         fields = []
 
         # All fields attached to the section
-        for f in self.fields.filter(hidden=False):
+        for f in self.fields.filter(hidden=False).order_by('id'):
             fields.append(f)
 
         # All fields attached to any Widget's Tables
         for w in Widget.objects.filter(section=self):
             for t in w.tables.all():
-                for f in t.fields.filter(hidden=False):
+                for f in t.fields.filter(hidden=False).order_by('id'):
                     fields.append(f)
 
         fields_by_section = SortedDict()
@@ -234,7 +237,7 @@ class Section(models.Model):
             if self.fields_mode(f.keyword) is SectionFieldMode.SECTION:
                 # Section fields are prefixed with the section id
                 # in the field map
-                id = "s%s_%s" % (self.id, f.keyword)
+                id = "__s%s_%s" % (self.id, f.keyword)
                 if id not in fields_by_section[self.id]:
                     fields_by_section[self.id][id] = f
             else:
@@ -340,16 +343,16 @@ class Widget(models.Model):
         fields = SortedDict()
 
         # All fields attached to the section's report
-        for f in self.section.report.fields.all():
+        for f in self.section.report.fields.all().order_by('id'):
             fields[f.keyword] = f
 
         # All fields attached to the section
-        for f in self.section.fields.all():
+        for f in self.section.fields.all().order_by('id'):
             fields[f.keyword] = f
 
         # All fields attached to any Widget's Tables
         for t in self.tables.all():
-            for f in t.fields.all():
+            for f in t.fields.all().order_by('id'):
                 fields[f.keyword] = f
 
         return fields

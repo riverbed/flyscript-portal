@@ -17,7 +17,7 @@
     "fields": {
       "username": "admin", 
       "name": "shark1", 
-      "enabled": true, 
+      "enabled": false, 
       "module": "shark", 
       "host": "cam-shark12.lab.nbttech.com", 
       "port": 443
@@ -29,7 +29,7 @@
     "fields": {
       "username": "admin", 
       "name": "eng-profiler", 
-      "enabled": true, 
+      "enabled": false, 
       "module": "profiler", 
       "host": "eng-profiler.lab.nbttech.com", 
       "port": 443

@@ -77,15 +77,16 @@ class Command(BaseCommand):
             DeviceManager.clear()
             modules = [report_name, 'config.reports.%s' % report_name]
             success = False
+            errors = []
             for module in modules:
                 try:
                     importer.import_file(report_name, module)
                     success = True
-                except ImportError:
-                    pass
-
+                except ImportError as e:
+                    errors.append(e)
+                    
             if not success:
-                raise ImportError("No module found matching '%s'" % report_name)
+                raise ImportError("Failed to import module '%s': %s" % (report_name, str(errors)))
 
             return
 

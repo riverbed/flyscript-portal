@@ -9,12 +9,16 @@ import shutil
 import tempfile
 import datetime
 import copy
+import pytz
+import re
+from collections import deque
 import logging
 
 import dateutil
 import pytz
 from django import forms
-from django.forms.util import from_current_timezone
+from django.utils.datastructures import SortedDict
+from django.forms.util import from_current_timezone, ErrorDict
 from django.core.files.uploadedfile import UploadedFile
 from django.core import validators
 from django.core.exceptions import ValidationError
@@ -321,13 +325,19 @@ class TableFieldForm(forms.Form):
         self._tablefields = tablefields
         self._use_widgets = use_widgets
         self._hidden_fields = hidden_fields
-        
-        for field_id, tablefield in tablefields.iteritems():
+
+        for id_ in self.compute_field_precedence():
+            tablefield = self._tablefields[id_]
             if include_hidden or not (tablefield.hidden or
                                       (hidden_fields and
                                        tablefield.keyword in hidden_fields)):
-                self.add_field(field_id, tablefield)
+                self.add_field(id_, tablefield)
 
+    def add_field_error(self, field_id, msg):
+        if self._errors is None:
+            self._errors = ErrorDict()
+        self._errors[field_id] = self.error_class([msg])
+        
     def add_field(self, field_id, tablefield):
         if field_id in self.fields:
             # Already added this field
@@ -348,20 +358,97 @@ class TableFieldForm(forms.Form):
 
         func = tablefield.pre_process_func
         if func is not None:
-            func.function(tablefield, fkwargs, func.params)
-
+            try:
+                func.function(self, field_id, fkwargs, func.params)
+            except Exception as e:
+                logger.exception('Pre processing failed: %s' % field_id)
+                msg = ("Pre-process function '%s' returned an exception: %s" %
+                       (str(func.function.func_name), str(e)))
+                self.add_field_error(field_id, msg)
+                
         field = field_cls(**fkwargs)
         self.fields[field_id] = field
         
         if (  (self.data is not None) and
-              (field_id not in self.data) and
-              (tablefield.initial is not None)):
-            self.data[field_id] = tablefield.initial
-
+              (field_id not in self.data)):
+            if (tablefield.initial is not None):
+                self.data[field_id] = tablefield.initial
+            elif ('choices' in fkwargs) and len(fkwargs['choices']) > 0:
+                self.data[field_id] = fkwargs['choices'][0][0]  
+                
         f = field_cls(**fkwargs)
         self.fields[field_id] = f
         f.widget.attrs.update({'onchange': 'criteria_changed()'})
+
+    def compute_field_precedence(self):
+        ids = self._tablefields.keys()
+
+        # List of fields that are still unset after this iteration
+        unprocessed_ids = deque(ids)
+        ordered_ids = []
+
+        last_not_ready_id = None
         
+        # ids is the *complete* list of fields that must be processed
+        while unprocessed_ids:
+            id_ = unprocessed_ids.popleft()
+            tablefield = self._tablefields[id_]
+
+            ready = True
+            if tablefield.parent_keywords is not None:
+                # ids take two forms:
+                #   - <keyword>
+                #   - __s<sectionid>_<keyword>
+                
+                m = re.match('^(__s[0-9]_)(.*)$', id_)
+                if m:
+                    section = m.group(1)
+                    keyword = m.group(2)
+                else:
+                    section = None
+                    keyword = id_
+
+                for parent_keyword in tablefield.parent_keywords:
+                    # Now, parents are <keyword> only, they never reference
+                    # a section.  If the field in question has a section
+                    # look first to see if a keyword in the same section exists
+                    # at all, and if it does whether it's processed
+                    
+
+                    if section and (section + parent_keyword) in ids:
+                        check_keyword = section+parent_keyword
+                    else:
+                        check_keyword = parent_keyword
+
+                    if check_keyword not in ids:
+                        raise CriteriaError('Field %s references unknown parent keyword: %s' %
+                                            (tablefield.keyword, parent_keyword))
+
+                    if check_keyword not in ordered_ids:
+                        ready = False
+                        break
+
+            if not ready:
+                if last_not_ready_id == id_:
+                    unprocessed_ids.append(id_)
+                    raise CriteriaError(('Failed to resolve all field, ' 
+                                         'may have circular dependencies: %s') %
+                                        ([str(i) for i in  unprocessed_ids]))
+                elif last_not_ready_id is None:
+                    last_not_ready_id = id_
+                        
+                # Add this back to the list
+                unprocessed_ids.append(id_)
+            else:
+                ordered_ids.append(id_)
+                last_not_ready_id = None
+
+        return ordered_ids
+                
+    def dynamic_fields(self):
+        return [self[id] for id, tablefield in self._tablefields.iteritems()
+                if tablefield.dynamic]
+            
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
         """
@@ -403,72 +490,37 @@ class TableFieldForm(forms.Form):
                 data[k] = v
         criteria = Criteria(**data)
         
-        # Since the form is valid, propagate values down from
-        # parent TableFields down to thier children
+        for id_ in self.compute_field_precedence():
+            tablefield = self._tablefields[id_]
 
-        fieldset = self._tablefields.values()
-        fieldset_keywords = [f.keyword for f in fieldset]
-
-        # List of fields that are still unset after this iteration
-        unprocessed_fields = copy.copy(fieldset)
-        processed_keywords = set()
-
-        # The fieldset is the *complete* list of fields that must
-        # end up in the criteria.  Any "hidden" fields (TableField.hidden)
-        # will not show up in the cleaned_data and must be filled in either
-        # by post_process_template or the post_process_function.
-        #
-        # Iterate until all fields in the fieldset show up in the criteria
-        while unprocessed_fields:
-            next_field = None
-
-            # Iterate through the fieldset (note, this is initially all fields, but
-            # after this loop it gets set to unprocessed_fields
-            for field in unprocessed_fields:
-
-                if field.parent_keywords and not set(field.parent_keywords).issubset(processed_keywords):
-                    # This field still has unprocessed parents
-                    continue
-
-                next_field = field
-                break
-
-            if next_field is None:
-                raise CriteriaError(('Failed to resolve all criteria, remaining fields ' +
-                                     'may have circular dependencies: %s') %
-                                    ([f.keyword for f in unprocessed_fields]))
-            
-            if field.post_process_template:
+            if tablefield.post_process_template:
                 # Resolve the fields criteria value by the <string>.format() function
                 # using a template.
                 try:
-                    criteria[field.keyword] = field.post_process_template.format(**criteria)
+                    criteria[tablefield.keyword] = tablefield.post_process_template.format(**criteria)
                 except:
                     raise (CriteriaTemplateError
                            ("Failed to resolve field %s template: %s" %
-                            (field.keyword, field.post_process_template)))
+                            (tablefield.keyword, tablefield.post_process_template)))
 
-            elif field.post_process_func is not None:
+            elif tablefield.post_process_func is not None:
                 # Call the post process function
-                f = field.post_process_func
+                f = tablefield.post_process_func
                 try:
-                    f.function(field, criteria, f.params)
+                    f.function(self, tablefield.keyword, criteria, f.params)
                 except Exception as e:
                     raise (CriteriaPostProcessError
                            ('Field %s function %s raised an exception: %s %s' %
-                            (field, f.function, type(e), e)))
+                            (tablefield, f.function, type(e), e)))
 
-                if field.keyword not in criteria:
+                if tablefield.keyword not in criteria:
                     raise (CriteriaPostProcessError
                            ('Field %s function %s failed to set criteria.%s value' %
-                            (field, f.function, field.keyword)))
-            elif field.keyword not in criteria:
-                raise CriteriaError('Field %s has no value and no post-process hooks' %
-                                    field)
-
-            unprocessed_fields.remove(field)
-            processed_keywords.add(field.keyword)
-
+                            (tablefield, f.function, tablefield.keyword)))
+            elif tablefield.keyword not in criteria:
+                raise CriteriaError('Field %s has no value and no post-process '
+                                    'function or template' %
+                                    tablefield)
                 
         return criteria
 
@@ -491,3 +543,21 @@ class TableFieldForm(forms.Form):
             if isinstance(v, datetime.datetime) and v.tzinfo is None:
                 self.cleaned_data[k] = v.replace(tzinfo = tzinfo)
 
+    def get_field_value(self, keyword, fromfield_id):
+        trykeywords = []
+        
+        m = re.match('(__s[0-9]_)', fromfield_id)
+        if m:
+            s = m.group(1)
+            trykeywords.append(s + keyword)
+
+        trykeywords.append(keyword)
+
+        for k in trykeywords:
+            if self.data and k in self.data:
+                return self.data[k]
+
+            if self.initial and k in self.initial:
+                return self.initial[k]
+
+        raise KeyError('Could not get a value for keyword: %s' % keyword)

@@ -21,10 +21,8 @@ class ReportRunnerTestCase(TestCase):
     
     @classmethod
     def setUpClass(cls):
-        initial_data = glob.glob(os.path.join(settings.PROJECT_ROOT,
-                                              'rvbd_common',
-                                              'apps', 'report', 'tests',
-                                              '*.json'))
+        localdir = os.path.dirname(__file__)
+        initial_data = glob.glob(os.path.join(localdir, '*.json'))
         management.call_command('loaddata', *initial_data)
 
         path = 'rvbd_common.apps.report.tests.reports.' + cls.report
@@ -53,9 +51,13 @@ class ReportRunnerTestCase(TestCase):
         logger.info("Running report %s with criteria:\n%s" %
                     (self.report, criteria))
 
-        response = self.client.post('/report/%s/' % self.report,
-                                    data=criteria)
-
+        try:
+            response = self.client.post('/report/%s/' % self.report,
+                                        data=criteria)
+        except:
+            self.assertTrue(expect_fail_report)
+            return
+            
         self.check_status(response, expect_fail_report)
         if expect_fail_report:
             return
