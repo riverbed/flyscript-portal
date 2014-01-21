@@ -17,7 +17,7 @@
     "fields": {
       "username": "admin", 
       "name": "shark1", 
-      "enabled": false, 
+      "enabled": true, 
       "module": "shark", 
       "host": "cam-shark12.lab.nbttech.com", 
       "port": 443

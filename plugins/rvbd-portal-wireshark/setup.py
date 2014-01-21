@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-tshark
+rvbd-portal-wireshark
 ==========
 
-A datasource plugin for FlyScript Portal to create tshark tables
+A datasource plugin for FlyScript Portal to create wireshark tables
 
 """
 from setuptools import setup, find_packages
@@ -28,13 +28,13 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-tshark',
+    name='rvbd-portal-wireshark',
     version='0.1',
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
     description='A datasource plugin for FlyScript Portal '
-                'providing tshark device interfaces',
+                'providing wireshark device interfaces',
     long_description=__doc__,
     license=LICENSE,
     package_dir={'': 'src'},
@@ -47,7 +47,7 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'tshark = rvbd_portal_tshark.plugin:TSharkPlugin'
+            'wireshark = rvbd_portal_wireshark.plugin:WireSharkPlugin'
         ],
     },
     classifiers=[
