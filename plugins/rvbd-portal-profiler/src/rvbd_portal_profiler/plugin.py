@@ -8,8 +8,8 @@
 from rvbd_portal.apps.plugins import Plugin
 
 
-class ProfilerDevicesPlugin(Plugin):
-    title = 'Profiler-Devices Plugin'
+class ProfilerPlugin(Plugin):
+    title = 'Profiler Datasource Plugin'
     description = 'A Portal datasource plugin with example report'
     version = '0.1'
     author = 'Riverbed Technology'

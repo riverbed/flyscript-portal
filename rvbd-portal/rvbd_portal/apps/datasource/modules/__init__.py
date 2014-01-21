@@ -5,5 +5,3 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
-
-from rvbd_portal.apps.datasource.modules import shark, profiler
