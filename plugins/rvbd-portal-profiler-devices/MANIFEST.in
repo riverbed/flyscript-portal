@@ -1,3 +1,0 @@
-include setup.py README.rst MANIFEST.in LICENSE
-recursive-include src/ *
-global-exclude *~

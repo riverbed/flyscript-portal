@@ -13,7 +13,7 @@ from rvbd_portal.apps.datasource.models import Column
 from rvbd_portal.apps.report.models import Report, Section
 import rvbd_portal.apps.report.modules.yui3 as yui3
 
-from rvbd_portal_profiler_devices.datasources.profiler_devices import DevicesTable
+from rvbd_portal_profiler.datasources.profiler_devices import DevicesTable
 
 report = Report(title="Profiler Device List", position=10)
 report.save()

@@ -13,7 +13,7 @@ from rvbd_portal.apps.datasource.modules.analysis import AnalysisTable
 import rvbd_portal.libs.profiler_tools as protools
 
 from rvbd_portal_profiler.datasources.profiler import GroupByTable
-from rvbd_portal_profiler_devices.datasources.profiler_devices import DevicesTable
+from rvbd_portal_profiler.datasources.profiler_devices import DevicesTable
 
 import rvbd_portal_business_hours.libs.business_hours as bizhours
 
