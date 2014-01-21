@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-profiler
+rvbd-portal-shark
 ==========
 
-A datasource plugin for FlyScript Portal to create Profiiler tables
+A datasource plugin for FlyScript Portal to create Shark tables
 
 """
 from setuptools import setup, find_packages
@@ -28,7 +28,7 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-profiler',
+    name='rvbd-portal-shark',
     version='0.1',
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
@@ -47,7 +47,7 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'profiler = rvbd_portal_profiler.plugin:ProfilerPlugin'
+            'shark = rvbd_portal_shark.plugin:SharkPlugin'
         ],
     },
     classifiers=[

@@ -15,7 +15,7 @@ import rvbd_portal.apps.report.modules.yui3 as yui3
 import rvbd_portal.apps.report.modules.maps as maps
 
 from rvbd_portal_profiler.datasources.profiler import GroupByTable, TimeSeriesTable
-from rvbd_portal.apps.datasource.modules.shark import SharkTable, create_shark_column
+from rvbd_portal_shark.datasources.shark import SharkTable, create_shark_column
 
 #
 # Overall report
