@@ -11,7 +11,6 @@ import threading
 
 from django import forms
 
-from rvbd.shark import Shark
 from rvbd.shark.types import Operation, Value, Key
 from rvbd.shark.filters import SharkFilter, TimeFilter
 from rvbd.shark._class_mapping import path_to_class
@@ -21,7 +20,6 @@ from rvbd.common import timeutils
 from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds, 
                                    timedelta_total_seconds)
 
-from rvbd_portal.apps.devices.models import Device
 from rvbd_portal.apps.devices.devicemanager import DeviceManager
 from rvbd_portal.apps.devices.forms import fields_add_device_selection
 from rvbd_portal.apps.datasource.models import Column, Table, TableField
@@ -31,12 +29,6 @@ from rvbd_portal.libs.fields import Function
 
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
-
-
-def new_device_instance(*args, **kwargs):
-    # Used by DeviceManger to create a Shark instance
-    shark = Shark(*args, **kwargs)
-    return shark
 
 
 class TableOptions(JsonDict):

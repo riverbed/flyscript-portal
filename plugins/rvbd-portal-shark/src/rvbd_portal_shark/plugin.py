@@ -17,5 +17,6 @@ class SharkPlugin(Plugin):
     enabled = True
     can_disable = True
 
+    devices = ['devices']
     datasources = ['datasources']
     reports = ['reports']

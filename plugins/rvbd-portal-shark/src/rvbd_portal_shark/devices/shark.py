@@ -5,7 +5,10 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+from rvbd.shark import Shark
 
-class TableComputeSyntheticError(Exception):
-    """ Exception raised if something goes wrong with Table.compute_synthetic. """
-    pass
+
+def new_device_instance(*args, **kwargs):
+    # Used by DeviceManger to create a Shark instance
+    shark = Shark(*args, **kwargs)
+    return shark

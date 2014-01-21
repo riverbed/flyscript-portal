@@ -6,6 +6,6 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-class TableComputeSyntheticError(Exception):
-    """ Exception raised if something goes wrong with Table.compute_synthetic. """
+class DeviceModuleNotFound(Exception):
+    """ Exception raised if module for a specified device is not found. """
     pass
