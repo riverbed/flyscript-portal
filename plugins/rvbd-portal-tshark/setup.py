@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-shark
+rvbd-portal-tshark
 ==========
 
-A datasource plugin for FlyScript Portal to create Shark tables
+A datasource plugin for FlyScript Portal to create tshark tables
 
 """
 from setuptools import setup, find_packages
@@ -28,13 +28,13 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-shark',
+    name='rvbd-portal-tshark',
     version='0.1',
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
     description='A datasource plugin for FlyScript Portal '
-                'providing Shark device interfaces',
+                'providing tshark device interfaces',
     long_description=__doc__,
     license=LICENSE,
     package_dir={'': 'src'},
@@ -47,7 +47,7 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'shark = rvbd_portal_shark.plugin:SharkPlugin'
+            'tshark = rvbd_portal_tshark.plugin:TSharkPlugin'
         ],
     },
     classifiers=[

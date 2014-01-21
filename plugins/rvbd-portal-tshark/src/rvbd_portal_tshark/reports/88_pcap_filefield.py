@@ -14,8 +14,8 @@ from rvbd_portal.apps.datasource.models import Column
 
 import rvbd_portal.apps.report.modules.yui3 as yui3
 
-from rvbd_portal.apps.datasource.modules.tshark import TSharkTable
-from rvbd_portal.apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions
+from rvbd_portal_tshark.datasources.tshark import TSharkTable
+from rvbd_portal_tshark.datasources.tshark import ColumnOptions as TSharkColumnOptions
 
 import logging
 logger = logging.getLogger(__name__)
