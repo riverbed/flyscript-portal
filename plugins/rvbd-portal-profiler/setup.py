@@ -30,6 +30,7 @@ This software is distributed "AS IS" as set forth in the License.
 setup(
     name='rvbd-portal-profiler',
     version='0.1',
+
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
@@ -37,8 +38,8 @@ setup(
                 'providing Profiler device interfaces',
     long_description=__doc__,
     license=LICENSE,
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
+
+    packages=find_packages(),
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
@@ -50,6 +51,7 @@ setup(
             'profiler = rvbd_portal_profiler.plugin:ProfilerPlugin'
         ],
     },
+
     classifiers=[
         'Framework :: Django',
         'Intended Audience :: Developers',
