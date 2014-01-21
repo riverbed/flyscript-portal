@@ -74,8 +74,7 @@ def fields_add_device_selection(obj, keyword='device',
                        field_cls = forms.ChoiceField,
                        pre_process_func = Function(device_selection_preprocess,
                                                   {'module': module,
-                                                   'enabled': enabled}),
-                       required=True)
+                                                   'enabled': enabled}))
     field.save()
     obj.fields.add(field)
 
