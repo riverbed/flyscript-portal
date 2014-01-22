@@ -14,7 +14,7 @@ INDEX_NAME = os.path.join(PLUGINS_DIR, 'plugin_index.html')
 
 
 def show_help():
-    print "%s [install|uninstall]" % sys.argv[0]
+    print "%s [install|uninstall|develop]" % sys.argv[0]
     print 
     print "Install or remove all of the included Portal plugins."
 
@@ -46,9 +46,12 @@ def create_sdists():
         os.system('python setup.py sdist --dist-dir %s' % SDIST_DIR)
 
 
-def install_package(path):
+def install_package(path, develop=False):
     """ pip install the package at `path`. """
-    os.system('pip install --find-links %s %s' % (SDIST_DIR, path))
+    if develop:
+        os.system('pip install --no-deps -e %s' % path)
+    else:
+        os.system('pip install --find-links %s %s' % (SDIST_DIR, path))
 
 
 def uninstall_package(pkg_name):
@@ -77,10 +80,10 @@ def find_plugins():
             yield pkg_name, root
 
 
-def install_plugins():
+def install_plugins(develop=False):
     uninstall_plugins()
     for pkg_name, pkg_dir in find_plugins():
-        install_package(pkg_dir)
+        install_package(pkg_dir, develop=develop)
 
 
 def uninstall_plugins():
@@ -89,12 +92,13 @@ def uninstall_plugins():
 
 
 if __name__ == '__main__':
-
     if 'install' in sys.argv:
         create_sdists()
         install_plugins()
     elif 'uninstall' in sys.argv:
         uninstall_plugins()
+    elif 'develop' in sys.argv:
+        install_plugins(develop=True)
     else:
         show_help()
 
