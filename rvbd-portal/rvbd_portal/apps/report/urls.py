@@ -17,7 +17,11 @@ urlpatterns = patterns(
     url(r'^reload$', 'reload_config',
         name='reload-all'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/$',
+        views.ReportView.as_view(),
+        name='report-view'),
+
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/$',
         views.ReportView.as_view(),
         name='report-view'),
 
@@ -29,7 +33,11 @@ urlpatterns = patterns(
         views.ReportTableList.as_view(),
         name='report-table-list'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/reload$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/reload$',
+        'reload_config',
+        name='reload-report'),
+
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/reload$',
         'reload_config',
         name='reload-report'),
 

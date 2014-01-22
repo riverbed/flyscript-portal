@@ -49,17 +49,31 @@ class Report(models.Model):
     """ Defines a Report as a collection of Sections and their Widgets. """
     title = models.CharField(max_length=200)
     position = models.IntegerField(default=0)
-    sourcefile = models.CharField(max_length=200)
+    enabled = models.BooleanField(default=True)
+
     slug = models.SlugField(unique=True)
+    namespace = models.CharField(max_length=100, default='default')
+    sourcefile = models.CharField(max_length=200)
+
     fields = models.ManyToManyField(TableField, null=True)
     field_order = SeparatedValuesField(null=True,
-                                       default= ['starttime', 'endtime',
-                                                 'duration', 'filterexpr'])
+                                       default=['starttime', 'endtime',
+                                                'duration', 'filterexpr'])
     hidden_fields = SeparatedValuesField(null=True)
-    
+
     def __init__(self, *args, **kwargs):
         if 'sourcefile' not in kwargs:
             kwargs['sourcefile'] = get_caller_name(self)
+
+        if 'namespace' not in kwargs:
+            if kwargs['sourcefile'].startswith('config.'):
+                kwargs['namespace'] = 'default'
+            else:
+                # sourcefile 'rvbd_portal_wireshark.reports.88_pcap_filefield'
+                # will have namespace 'wireshark'
+                ns = kwargs['sourcefile'].split('.')[0]
+                ns = ns.replace('rvbd_portal_', '')
+                kwargs['namespace'] = ns
 
         super(Report, self).__init__(*args, **kwargs)
         

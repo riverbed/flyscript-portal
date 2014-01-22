@@ -39,12 +39,17 @@ from rvbd_portal.apps.report.utils import create_debug_zipfile
 logger = logging.getLogger(__name__)
 
 
-def reload_config(request, report_slug=None):
+def reload_config(request, namespace=None, report_slug=None):
     """ Reload all reports or one specific report
     """
-    if report_slug:
+    if namespace and report_slug:
         logger.debug("Reloading %s report" % report_slug)
-        management.call_command('reload', report_name=report_slug)
+        management.call_command('reload',
+                                namespace=namespace,
+                                report_name=report_slug)
+    elif namespace:
+        logger.debug("Reloading reports under namespace %s" % namespace)
+        management.call_command('reload', namespace=namespace)
     else:
         logger.debug("Reloading all reports")
         management.call_command('reload')
@@ -52,6 +57,8 @@ def reload_config(request, report_slug=None):
     if ('HTTP_REFERER' in request.META and
         'reload' not in request.META['HTTP_REFERER']):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    elif hasattr(request, 'QUERY_PARAMS') and 'next' in request.QUERY_PARAMS:
+        return HttpResponseRedirect(request.QUERY_PARAMS['next'])
     else:
         return HttpResponseRedirect(reverse('report-view-root'))
 
@@ -81,11 +88,17 @@ class ReportView(views.APIView):
     serializer_class = ReportSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
-    def get(self, request, report_slug=None):
+    def get(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if request.accepted_renderer.format != 'html':
-            if report_slug:
-                queryset = Report.objects.get(slug=report_slug)
+            if namespace and report_slug:
+                queryset = Report.objects.get(namespace=namespace,
+                                              slug=report_slug)
+            elif report_slug:
+                queryset = Report.objects.get(namespace='default',
+                                              slug=report_slug)
+            elif namespace:
+                queryset = Report.objects.filter(namespace='default')
             else:
                 queryset = Report.objects.all()
             serializer = ReportSerializer(instance=queryset)
@@ -93,12 +106,19 @@ class ReportView(views.APIView):
 
         # handle HTML calls
         try:
+            if namespace is None:
+                namespace = 'default'
+
             if report_slug is None:
-                reports = Report.objects.order_by('position')
+                reports = (Report.objects.filter(namespace=namespace)
+                                         .order_by('position'))
+                kwargs = {'report_slug': reports[0].slug,
+                          'namespace': namespace}
                 return HttpResponseRedirect(reverse('report-view',
-                                                    args=[reports[0].slug]))
+                                                    kwargs=kwargs))
             else:
-                report = Report.objects.get(slug=report_slug)
+                report = Report.objects.get(namespace=namespace,
+                                            slug=report_slug)
         except:
             raise Http404
 
@@ -158,7 +178,7 @@ class ReportView(views.APIView):
                                    'show_sections': (len(section_map) > 1) },
                                   context_instance=RequestContext(request))
 
-    def post(self, request, report_slug=None):
+    def post(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if report_slug is None:
             return self.http_method_not_allowed(request)

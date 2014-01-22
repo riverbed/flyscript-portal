@@ -225,7 +225,7 @@
           <div class="collapse in" id="criteria">
             <div class="widget-content">
 {% if formstyle == "inline" %}
-                <form class="form-inline" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
+                <form class="form-inline" action="{% url 'report-view' report.namespace report.slug %}" method="post" id="criteriaform"
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
                     {% for field in form.visible_fields %}
@@ -244,7 +244,7 @@
                     {% endfor %}
                 </form>
 {% elif formstyle == "horizontal" %}
-                <form class="form-horizontal" action="/report/{{ report.slug }}/" method="post" id="criteriaform" 
+                <form class="form-horizontal" action="{% url 'report-view' report.namespace report.slug %}" method="post" id="criteriaform"
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
                     <fieldset>

@@ -71,5 +71,6 @@ function reloadingModal(url, allReports) {
     }
 
     modal.modal('show');
-    window.location.href = url;
+    var next = window.location.href;
+    window.location.href = url + "?next=" + next;
 };
