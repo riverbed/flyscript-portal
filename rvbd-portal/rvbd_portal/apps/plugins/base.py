@@ -44,9 +44,10 @@ class IPlugin(object):
     can_disable = True
 
     # Plugin components
-    reports = []        # list of report modules
+    reports = []        # list of report module directories
     libraries = []      # list of library directories
-    datasources = []    # list of datasources
+    datasources = []    # list of datasource directories
+    devices = []        # list of device directories
 
     _reports_loaded = False
 
@@ -75,18 +76,19 @@ class IPlugin(object):
 
     def get_reports(self):
         """ Returns list of library modules. """
-        if self.reports and self.is_enabled():
-            return self._get_sources(self.reports)
+        return self._get_sources(self.reports)
 
     def get_libraries(self):
         """ Returns list of library modules. """
-        if self.libraries and self.is_enabled():
-            return self._get_sources(self.libraries)
+        return self._get_sources(self.libraries)
 
     def get_datasources(self):
         """ Returns list of library modules. """
-        if self.datasources and self.is_enabled():
-            return self._get_sources(self.datasources)
+        return self._get_sources(self.datasources)
+
+    def get_devices(self):
+        """ Returns list of device modules. """
+        return self._get_sources(self.devices)
 
     def load_reports(self):
         if self.reports and self.is_enabled():

@@ -89,6 +89,11 @@ class PluginManager(object):
                 return plugin
         raise KeyError(slug)
 
+    def devices(self):
+        for plugin in self.enabled():
+            for p in plugin.get_devices():
+                yield p
+
     def register(self, cls):
         self.add('%s.%s' % (cls.__module__, cls.__name__))
         return cls

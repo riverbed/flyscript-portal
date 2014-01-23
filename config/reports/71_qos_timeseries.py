@@ -12,8 +12,10 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from rvbd_portal.apps.datasource.models import Column, TableField
 from rvbd_portal.apps.report.models import Report, Section
 import rvbd_portal.apps.report.modules.yui3 as yui3
-from rvbd_portal.apps.datasource.modules import profiler
-from rvbd_portal.apps.datasource.modules.profiler import GroupByTable, TimeSeriesTable
+
+from rvbd_portal_profiler.datasources import profiler
+from rvbd_portal_profiler.datasources.profiler import (GroupByTable,
+                                                       TimeSeriesTable)
 
 report = Report(title="QoS Report", position=15)
 report.save()

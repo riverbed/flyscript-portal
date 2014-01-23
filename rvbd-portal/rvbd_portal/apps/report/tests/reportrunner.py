@@ -52,7 +52,7 @@ class ReportRunnerTestCase(TestCase):
                     (self.report, criteria))
 
         try:
-            response = self.client.post('/report/%s/' % self.report,
+            response = self.client.post('/report/rvbd_portal/%s/' % self.report,
                                         data=criteria)
         except:
             self.assertTrue(expect_fail_report)

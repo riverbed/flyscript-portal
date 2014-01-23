@@ -105,6 +105,20 @@ Widget.prototype.render = function(data)
     $('#' + this.divid).html(data);
 }
 
+function padzeros(n, p) {
+    var pad = new Array(1 + p).join('0');
+    return (pad + n).slice(-pad.length);
+}
+
+Widget.prototype.formatTimeMs = function(t, precision) {
+    var d = new Date(t);
+    return d.getHours() + 
+        ':' + padzeros(d.getMinutes(),2) +
+        ':' + padzeros(d.getSeconds(),2) +
+        '.' + padzeros(d.getMilliseconds(),3);
+    // return date.toString();
+}
+
 Widget.prototype.formatTime = function(t, precision) {
     var date = new Date(t);
     return date.toString();

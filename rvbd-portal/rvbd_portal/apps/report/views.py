@@ -39,12 +39,17 @@ from rvbd_portal.apps.report.utils import create_debug_zipfile
 logger = logging.getLogger(__name__)
 
 
-def reload_config(request, report_slug=None):
+def reload_config(request, namespace=None, report_slug=None):
     """ Reload all reports or one specific report
     """
-    if report_slug:
+    if namespace and report_slug:
         logger.debug("Reloading %s report" % report_slug)
-        management.call_command('reload', report_name=report_slug)
+        management.call_command('reload',
+                                namespace=namespace,
+                                report_name=report_slug)
+    elif namespace:
+        logger.debug("Reloading reports under namespace %s" % namespace)
+        management.call_command('reload', namespace=namespace)
     else:
         logger.debug("Reloading all reports")
         management.call_command('reload')
@@ -52,6 +57,8 @@ def reload_config(request, report_slug=None):
     if ('HTTP_REFERER' in request.META and
         'reload' not in request.META['HTTP_REFERER']):
         return HttpResponseRedirect(request.META['HTTP_REFERER'])
+    elif hasattr(request, 'QUERY_PARAMS') and 'next' in request.QUERY_PARAMS:
+        return HttpResponseRedirect(request.QUERY_PARAMS['next'])
     else:
         return HttpResponseRedirect(reverse('report-view-root'))
 
@@ -74,6 +81,7 @@ def download_debug(request):
 # currently valid: 'inline' or 'horizontal'
 FORMSTYLE = 'horizontal'
 
+
 class ReportView(views.APIView):
     """ Main handler for /report/{id}
     """
@@ -81,11 +89,17 @@ class ReportView(views.APIView):
     serializer_class = ReportSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
-    def get(self, request, report_slug=None):
+    def get(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if request.accepted_renderer.format != 'html':
-            if report_slug:
-                queryset = Report.objects.get(slug=report_slug)
+            if namespace and report_slug:
+                queryset = Report.objects.get(namespace=namespace,
+                                              slug=report_slug)
+            elif report_slug:
+                queryset = Report.objects.get(namespace='default',
+                                              slug=report_slug)
+            elif namespace:
+                queryset = Report.objects.filter(namespace='default')
             else:
                 queryset = Report.objects.all()
             serializer = ReportSerializer(instance=queryset)
@@ -93,12 +107,19 @@ class ReportView(views.APIView):
 
         # handle HTML calls
         try:
+            if namespace is None:
+                namespace = 'default'
+
             if report_slug is None:
-                reports = Report.objects.order_by('position')
+                reports = (Report.objects.filter(namespace=namespace)
+                                         .order_by('position'))
+                kwargs = {'report_slug': reports[0].slug,
+                          'namespace': namespace}
                 return HttpResponseRedirect(reverse('report-view',
-                                                    args=[reports[0].slug]))
+                                                    kwargs=kwargs))
             else:
-                report = Report.objects.get(slug=report_slug)
+                report = Report.objects.get(namespace=namespace,
+                                            slug=report_slug)
         except:
             raise Http404
 
@@ -125,16 +146,19 @@ class ReportView(views.APIView):
         # representing common report level fields
         fields_by_section = report.collect_fields_by_section()
 
-        # Merge all the fields into a single dict for use by the Django Form # logic
+        # Merge fields into a single dict for use by the Django Form # logic
         all_fields = SortedDict()
         [all_fields.update(c) for c in fields_by_section.values()]
-        form = TableFieldForm(all_fields, hidden_fields=report.hidden_fields, initial=form_init)
+        form = TableFieldForm(all_fields,
+                              hidden_fields=report.hidden_fields,
+                              initial=form_init)
 
         # Build a section map that indicates which section each field
         # belongs in when displayed
         section_map = []
         if fields_by_section[0]:
-            section_map.append({'title': 'Common', 'parameters': fields_by_section[0]})
+            section_map.append({'title': 'Common',
+                                'parameters': fields_by_section[0]})
 
         for s in Section.objects.filter(report=report).order_by('position'):
             show = False
@@ -144,21 +168,22 @@ class ReportView(views.APIView):
                     break
                 
             if show:
-                section_map.append({'title': s.title, 'parameters': fields_by_section[s.id]})
+                section_map.append({'title': s.title,
+                                    'parameters': fields_by_section[s.id]})
 
         return render_to_response('report.html',
                                   {'report': report,
                                    'developer': profile.developer,
                                    'maps_version': profile.maps_version,
                                    'maps_api_key': profile.maps_api_key,
-                                   'endtime' : 'endtime' in form.fields,
+                                   'endtime': 'endtime' in form.fields,
                                    'formstyle': FORMSTYLE,
                                    'form': form,
                                    'section_map': section_map,
-                                   'show_sections': (len(section_map) > 1) },
+                                   'show_sections': (len(section_map) > 1)},
                                   context_instance=RequestContext(request))
 
-    def post(self, request, report_slug=None):
+    def post(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if report_slug is None:
             return self.http_method_not_allowed(request)
@@ -220,7 +245,9 @@ class ReportView(views.APIView):
                 for w in row:
                     widget_def = {"widgettype": w.widgettype().split("."),
                                   "posturl": reverse('widget-job-list',
-                                                     args=(report.slug, w.id)),
+                                                     args=(report.namespace,
+                                                           report.slug,
+                                                           w.id)),
                                   "options": w.uioptions,
                                   "widgetid": w.id,
                                   "row": w.row,
@@ -246,7 +273,7 @@ class ReportCriteriaChanged(views.APIView):
     serializer_class = ReportSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
-    def post(self, request, report_slug=None):
+    def post(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if report_slug is None:
             return self.http_method_not_allowed(request)
@@ -279,10 +306,13 @@ class ReportTableList(generics.ListAPIView):
     serializer_class = TableSerializer
 
     def get(self, request, *args, **kwargs):
-        report = Report.objects.get(slug=kwargs['report_slug'])
-        widgets = report.widget_set.all()
-        queryset = (table for widget in widgets for table in widget.tables.all())
-        serializer = TableSerializer(instance=queryset)
+        report = Report.objects.get(namespace=kwargs['namespace'],
+                                    slug=kwargs['report_slug'])
+        qs = (table
+              for section in report.section_set.all()
+              for widget in section.widget_set.all()
+              for table in widget.tables.all())
+        serializer = TableSerializer(instance=qs)
         return Response(serializer.data)
 
 
@@ -290,12 +320,12 @@ class WidgetJobsList(views.APIView):
 
     parser_classes = (JSONParser,)
 
-    def post(self, request, report_slug, widget_id, format=None):
+    def post(self, request, namespace, report_slug, widget_id, format=None):
         logger.debug("Received POST for report %s, widget %s: %s" %
                      (report_slug, widget_id, request.POST))
 
         try:
-            report = Report.objects.get(slug=report_slug)
+            report = Report.objects.get(namespace=namespace, slug=report_slug)
             widget = Widget.objects.get(id=widget_id)
         except:
             raise Http404
@@ -305,11 +335,13 @@ class WidgetJobsList(views.APIView):
         fields = widget.collect_fields()
 
         form = TableFieldForm(fields, use_widgets=False,
-                              hidden_fields=report.hidden_fields, include_hidden=True,
+                              hidden_fields=report.hidden_fields,
+                              include_hidden=True,
                               data=req_json, files=request.FILES)
         
         if not form.is_valid():
-            raise ValueError("Widget internal criteria form is invalid:\n%s" % (form.errors.as_text()))
+            raise ValueError("Widget internal criteria form is invalid:\n%s" %
+                             (form.errors.as_text()))
             
         if form.is_valid():
             logger.debug('Form passed validation: %s' % form)
@@ -333,11 +365,12 @@ class WidgetJobsList(views.APIView):
                              (str(wjob), report_slug, job.handle))
 
                 return Response({"joburl": reverse('report-job-detail',
-                                                   args=[report_slug,
+                                                   args=[namespace,
+                                                         report_slug,
                                                          widget_id,
                                                          wjob.id])})
             except Exception as e:
-                logger.exception("Failed to start job, an exception occured")
+                logger.exception("Failed to start job, an exception occurred")
                 return HttpResponse(str(e), status=400)
 
         else:
@@ -347,7 +380,7 @@ class WidgetJobsList(views.APIView):
 
 class WidgetJobDetail(views.APIView):
 
-    def get(self, request, report_slug, widget_id, job_id, format=None):
+    def get(self, request, namespace, report_slug, widget_id, job_id, format=None):
         wjob = WidgetJob.objects.get(id=job_id)
 
         job = wjob.job
@@ -375,7 +408,8 @@ class WidgetJobDetail(views.APIView):
                     resp = job.json()
                     resp['status'] = Job.ERROR
                     resp['message'] = "No data returned"
-                    logger.debug("%s marked Error: No data returned" % str(wjob))
+                    logger.debug("%s marked Error: No data returned" %
+                                 str(wjob))
                 elif (hasattr(i, 'authorized') and 
                       not i.authorized(request.user.userprofile)[0]):
                     _, msg = i.authorized(request.user.userprofile)
@@ -390,11 +424,13 @@ class WidgetJobDetail(views.APIView):
                     resp = job.json(data)
                     logger.debug("%s complete" % str(wjob))
             except:
-                logger.exception("Widget %s Job %s processing failed" % (job.id, widget.id))
+                logger.exception("Widget %s Job %s processing failed" %
+                                 (job.id, widget.id))
                 resp = job.json()
                 resp['status'] = Job.ERROR
                 ei = sys.exc_info()
-                resp['message'] = str(traceback.format_exception_only(ei[0], ei[1]))
+                resp['message'] = str(traceback.format_exception_only(ei[0],
+                                                                      ei[1]))
             
             wjob.delete()
             

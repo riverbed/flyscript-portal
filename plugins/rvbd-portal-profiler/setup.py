@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-profiler-devices
+rvbd-portal-profiler
 ==========
 
-A datasource plugin for FlyScript Portal to create Profiiler Device tables
+A datasource plugin for FlyScript Portal to create Profiiler tables
 
 """
 from setuptools import setup, find_packages
@@ -28,17 +28,18 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-profiler-devices',
-    version='0.0.1',
+    name='rvbd-portal-profiler',
+    version='0.1',
+
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
-    description='A business hours plugin for FlyScript Portal '
-                'providing reports and support libraries',
+    description='A datasource plugin for FlyScript Portal '
+                'providing Profiler device interfaces',
     long_description=__doc__,
     license=LICENSE,
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
+
+    packages=find_packages(),
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
@@ -47,9 +48,10 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'profiler_devices = rvbd_portal_profiler_devices.plugin:ProfilerDevicesPlugin'
+            'profiler = rvbd_portal_profiler.plugin:ProfilerPlugin'
         ],
     },
+
     classifiers=[
         'Framework :: Django',
         'Intended Audience :: Developers',

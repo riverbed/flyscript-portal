@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-rvbd-portal-business-hours
+rvbd-portal-shark
 ==========
 
-A plugin for FlyScript Portal to enable Business Hour reports
+A datasource plugin for FlyScript Portal to create Shark tables
 
 """
 from setuptools import setup, find_packages
@@ -13,7 +13,6 @@ tests_require = []
 
 install_requires = [
     'Django>=1.5.1,<1.6',
-    'rvbd-portal-profiler>=0.1',
     # flyscript-portal should be here too
 ]
 
@@ -29,14 +28,14 @@ This software is distributed "AS IS" as set forth in the License.
 """
 
 setup(
-    name='rvbd-portal-business-hours',
-    version='0.0.1',
+    name='rvbd-portal-shark',
+    version='0.1',
 
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
-    description='A business hours plugin for FlyScript Portal '
-                'providing reports and support libraries',
+    description='A datasource plugin for FlyScript Portal '
+                'providing Shark device interfaces',
     long_description=__doc__,
     license=LICENSE,
 
@@ -49,7 +48,7 @@ setup(
     include_package_data=True,
     entry_points={
         'portal.plugins': [
-            'business_hours = rvbd_portal_business_hours.plugin:BusinessHoursPlugin'
+            'shark = rvbd_portal_shark.plugin:SharkPlugin'
         ],
     },
 

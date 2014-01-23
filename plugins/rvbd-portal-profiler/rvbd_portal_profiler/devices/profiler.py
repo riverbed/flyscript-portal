@@ -5,7 +5,9 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+import rvbd.profiler
 
-class TableComputeSyntheticError(Exception):
-    """ Exception raised if something goes wrong with Table.compute_synthetic. """
-    pass
+
+def new_device_instance(*args, **kwargs):
+    # Used by DeviceManager to create a Profiler instance
+    return rvbd.profiler.Profiler(*args, **kwargs)

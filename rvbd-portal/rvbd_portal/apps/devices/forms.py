@@ -62,7 +62,7 @@ class DeviceDetailForm(DeviceForm):
     def __init__(self, *args, **kwargs):
         super(DeviceDetailForm, self).__init__(*args, **kwargs)
 
-        modules = DeviceManager.list_modules()
+        modules = DeviceManager.get_modules()
         choices = zip(modules, modules)
 
         self.fields['module'] = forms.ChoiceField(choices=choices)

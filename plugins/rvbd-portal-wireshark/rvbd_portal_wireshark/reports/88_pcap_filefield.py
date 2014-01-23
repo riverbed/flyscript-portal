@@ -14,8 +14,8 @@ from rvbd_portal.apps.datasource.models import Column
 
 import rvbd_portal.apps.report.modules.yui3 as yui3
 
-from rvbd_portal.apps.datasource.modules.tshark import TSharkTable
-from rvbd_portal.apps.datasource.modules.tshark import ColumnOptions as TSharkColumnOptions
+from rvbd_portal_wireshark.datasources.wireshark import WireSharkTable
+from rvbd_portal_wireshark.datasources.wireshark import ColumnOptions as WireSharkColumnOptions
 
 import logging
 logger = logging.getLogger(__name__)
@@ -35,12 +35,12 @@ section = Section.create(report)
 # Table: Process Internal.pcap
 #
 
-table = TSharkTable.create('pcap', resolution=60, resample=True)
+table = WireSharkTable.create('pcap', resolution=60, resample=True)
 
 Column.create(table, 'pkttime', datatype='time', iskey=True,
-              options=TSharkColumnOptions(field='frame.time_epoch'))
+              options=WireSharkColumnOptions(field='frame.time_epoch'))
 Column.create(table, 'iplen', 
-              options=TSharkColumnOptions(field='ip.len', fieldtype='int'))
+              options=WireSharkColumnOptions(field='ip.len', fieldtype='int'))
 Column.create(table, 'iplen-bits', synthetic=True,
               compute_expression='8*{iplen}',
               resample_operation='sum')

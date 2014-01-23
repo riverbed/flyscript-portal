@@ -7,10 +7,14 @@
 
 
 import logging
+import importlib
 import threading
 
 from rvbd.common import UserAuth
+
 from rvbd_portal.apps.devices.models import Device
+from rvbd_portal.apps.devices.exceptions import DeviceModuleNotFound
+from rvbd_portal.apps.plugins import plugins
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +38,16 @@ class DeviceManager(object):
 
         with lock:
             if ds.id not in cls.devices:
-                import rvbd_portal.apps.datasource.modules
-                module = rvbd_portal.apps.datasource.modules.__dict__[ds.module]
-                create_func = module.new_device_instance
+                for module, pkg in plugins.devices():
+                    if ds.module == module:
+                        i = importlib.import_module(pkg)
+                        break
+                else:
+                    msg = 'Module %s for device %s not found.' % (ds.module,
+                                                                  ds.name)
+                    raise DeviceModuleNotFound(msg)
+
+                create_func = i.new_device_instance
 
                 logger.debug("Creating new Device: %s(%s:%s)" % (ds.module,
                                                                  ds.host,
@@ -47,13 +58,6 @@ class DeviceManager(object):
         return cls.devices[ds.id]
 
     @classmethod
-    def list_modules(cls):
-        """ Returns list of modules which have 'new_device_instance'
-            function defined.
-        """
-        modules = []
-        import rvbd_portal.apps.datasource.modules
-        for k, v in rvbd_portal.apps.datasource.modules.__dict__.iteritems():
-            if hasattr(v, 'new_device_instance'):
-                modules.append(k)
-        return modules
+    def get_modules(cls):
+        """ Returns list of device modules. """
+        return [module for module, pkg in plugins.devices()]

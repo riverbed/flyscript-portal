@@ -15,6 +15,7 @@ build
 dist
 *.egg-info
 RELEASE-VERSION
+plugins/sdist
 
 docs/html
 

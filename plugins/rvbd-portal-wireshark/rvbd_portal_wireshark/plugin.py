@@ -8,10 +8,12 @@
 from rvbd_portal.apps.plugins import Plugin
 
 
-class ProfilerDevicesPlugin(Plugin):
-    title = 'Profiler-Devices Plugin'
-    description = 'A Portal datasource plugin with example report'
-    version = '0.0.1'
+class WireSharkPlugin(Plugin):
+    title = 'WireShark Datasource Plugin'
+    description = ('A Portal datasource plugin with example report for '
+                   'WireShark devices.  Utilizes the `tshark` command-line '
+                   'application.')
+    version = '0.1'
     author = 'Riverbed Technology'
 
     enabled = True

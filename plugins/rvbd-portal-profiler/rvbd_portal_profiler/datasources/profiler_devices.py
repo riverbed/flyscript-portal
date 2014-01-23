@@ -12,10 +12,10 @@ import rvbd.profiler
 from rvbd.profiler.filters import TrafficFilter
 
 from rvbd_portal.apps.datasource.models import Table
-from rvbd_portal.apps.devices.models import Device
 from rvbd_portal.apps.devices.devicemanager import DeviceManager
 from rvbd_portal.apps.devices.forms import fields_add_device_selection
-from rvbd_portal.apps.datasource.modules.profiler import lock
+
+from rvbd_portal_profiler.datasources.profiler import lock
 
 logger = logging.getLogger(__name__)
 

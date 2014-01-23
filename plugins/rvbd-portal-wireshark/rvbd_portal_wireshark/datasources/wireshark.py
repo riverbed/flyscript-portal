@@ -23,6 +23,7 @@ from rvbd_portal.apps.datasource.forms import FileSelectField, fields_add_resolu
 logger = logging.getLogger(__name__)
 lock = threading.Lock()
 
+
 class ColumnOptions(JsonDict):
     _default = {'field': None,
                 'fieldtype': 'string',  # float, int, time
@@ -40,8 +41,9 @@ def fields_add_pcapfile(obj,
                        field_kwargs={'widget': FileInput})
     field.save()
     obj.fields.add(field)
-    
-class TSharkTable:
+
+
+class WireSharkTable(object):
     @classmethod
     def create(cls, name, resolution=1, **kwargs):
 
@@ -62,15 +64,18 @@ def tofloat(x):
     except:
         return 0
 
+
 def toint(x):
     try:
         return int(x)
     except:
         return 0
 
+
 def totimeint(s):
     (a, b) = s.split(".")
     return int(a) * 1000000000 + int(b)
+
 
 class TableQuery:
     # Used by Table to actually run a query

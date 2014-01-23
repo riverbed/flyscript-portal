@@ -17,27 +17,35 @@ urlpatterns = patterns(
     url(r'^reload$', 'reload_config',
         name='reload-all'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/$',
         views.ReportView.as_view(),
         name='report-view'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/$',
+        views.ReportView.as_view(),
+        name='report-view'),
+
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
         views.ReportCriteriaChanged.as_view(),
         name='report-criteria-changed'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/tables/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/tables/$',
         views.ReportTableList.as_view(),
         name='report-table-list'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/reload$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/reload$',
         'reload_config',
         name='reload-report'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/reload$',
+        'reload_config',
+        name='reload-report'),
+
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/$',
         views.WidgetJobsList.as_view(),
         name='widget-job-list'),
     
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/(?P<job_id>[0-9]+)/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/(?P<job_id>[0-9]+)/$',
         views.WidgetJobDetail.as_view(),
         name='report-job-detail'),
 

@@ -42,7 +42,24 @@ class Command(BaseCommand):
                              dest='report_dir',
                              default=None,
                              help='Reload reports from this directory.'),
+
+        optparse.make_option('--namespace',
+                             action='store',
+                             dest='namespace',
+                             default=None,
+                             help='Reload reports under this namespace.'),
     )
+
+    def import_module(self, module):
+
+        #module = report.sourcefile
+        report_name = module.split('.')[-1]
+        try:
+            self.importer.import_file(report_name, module)
+        except ImportError as e:
+            msg = "Failed to import module '%s': %s" % (report_name,
+                                                        str(e))
+            raise ImportError(msg)
 
     def handle(self, *args, **options):
         self.stdout.write('Reloading report objects ... ')
@@ -50,64 +67,68 @@ class Command(BaseCommand):
         management.call_command('clean_pyc', path=settings.PROJECT_ROOT)
         management.call_command('syncdb', interactive=False)
 
-        importer = Importer(buf=self.stdout)
+        self.importer = Importer(buf=self.stdout)
 
         if options['report_id']:
             # single report
-            pk = int(options['report_id'])
-            report_name = Report.objects.get(pk=pk).sourcefile
+            report_id = options['report_id']
+            pk = int(report_id)
+            report = Report.objects.get(pk=pk)
+
             management.call_command('clean',
                                     applications=False,
-                                    report_id=options['report_id'],
+                                    report_id=report_id,
                                     clear_cache=True,
                                     clear_logs=False)
+
+            DeviceManager.clear()
+            self.import_module(report.sourcefile)
+
         elif options['report_name']:
-            # single report
-            report_name = options['report_name']
+            name = options['report_name']
             try:
-                report_id = Report.objects.get(sourcefile__endswith=report_name).id
+                report = Report.objects.get(sourcefile__endswith=name)
+                report_id = report.id
+
                 management.call_command('clean',
                                         applications=False,
                                         report_id=report_id,
                                         clear_cache=True,
                                         clear_logs=False)
+                self.import_module(report.sourcefile)
             except ObjectDoesNotExist:
-                pass
+                self.import_module(name)
 
             DeviceManager.clear()
-            modules = [report_name, 'config.reports.%s' % report_name]
-            success = False
-            errors = []
-            for module in modules:
-                try:
-                    importer.import_file(report_name, module)
-                    success = True
-                except ImportError as e:
-                    errors.append(e)
-                    
-            if not success:
-                raise ImportError("Failed to import module '%s': %s" % (report_name, str(errors)))
 
-            return
+        elif options['namespace']:
+            reports = Report.objects.filter(namespace=options['namespace'])
+
+            for report in reports:
+                management.call_command('clean',
+                                        applications=False,
+                                        report_id=report.id,
+                                        clear_cache=True,
+                                        clear_logs=False)
+                self.import_module(report.sourcefile)
 
         else:
             # clear all data
-            report_name = None
             management.call_command('clean',
                                     applications=True,
                                     report_id=None,
                                     clear_cache=True,
                                     clear_logs=False)
 
-        # start with fresh device instances
-        DeviceManager.clear()
+            # start with fresh device instances
+            DeviceManager.clear()
 
-        report_dir = os.path.join(settings.PROJECT_ROOT,
-                                  options['report_dir'] or 'config')
+            report_dir = os.path.join(settings.PROJECT_ROOT,
+                                      options['report_dir'] or 'config')
 
-        importer.import_directory(report_dir, report_name=report_name)
+            self.importer.import_directory(report_dir, report_name=None)
 
-        for plugin in plugins.enabled():
-            if plugin.reports:
-                #from IPython import embed; embed()
-                plugin.load_reports()
+            for plugin in plugins.enabled():
+                if plugin.reports:
+                    #from IPython import embed; embed()
+                    plugin.load_reports()

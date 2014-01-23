@@ -192,8 +192,15 @@ class TimeSeriesWidget(object):
         series = []
         w_axes = Axes(widget.options.axes)
 
+        # Setup the time axis
+        axes = {"time": {"keys": ["time"],
+                         "position": "bottom",
+                         "type": "time",
+                         "styles": {"label": {"fontSize": "8pt", "rotation": "-45"}}}}
+
         # Create a better time format depending on t0/t1
         t_dataindex = colinfo['time'].dataindex
+
         #print ("t_dataindex: %d, data[0]: %s, data[1]: %s" % (t_dataindex, str(data[0]), str(data[1])))
         t0 = data[0][t_dataindex]
         t1 = data[-1][t_dataindex]
@@ -201,12 +208,12 @@ class TimeSeriesWidget(object):
             t0 = datetime.datetime.fromtimestamp(t0)
             t1 = datetime.datetime.fromtimestamp(t1)
 
-        # Setup the time axis
-        axes = {"time": {"keys": ["time"],
-                         "position": "bottom",
-                         "type": "time",
-                         "labelFormat": "%k:%M",
-                         "styles": {"label": {"fontSize": "8pt"}}}}
+        if (t1 - t0).seconds < 2:
+            axes['time']['formatter'] = 'formatTimeMs'
+        elif (t1 - t0).seconds < 120:
+            axes['time']['labelFormat'] = '%k:%M:%S'
+        else:
+            axes['time']['labelFormat'] = '%k:%M'
 
         # Setup the other axes, checking the axis for each column
         for colname in valuecolnames:

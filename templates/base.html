@@ -14,7 +14,7 @@
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"> Reports <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                   {% for d in reports %}
-                  <li><a href="{% url 'report-view' d.slug %}">{{ d.title }}</a></li>
+                  <li><a href="{% url 'report-view' d.namespace d.slug %}">{{ d.title }}</a></li>
                   {% endfor %}
                 </ul>
               </li>
