@@ -13,6 +13,7 @@ tests_require = []
 
 install_requires = [
     'Django>=1.5.1,<1.6',
+    'rvbd-portal-profiler>=0.1',
     # flyscript-portal should be here too
 ]
 
@@ -30,6 +31,7 @@ This software is distributed "AS IS" as set forth in the License.
 setup(
     name='rvbd-portal-business-hours',
     version='0.0.1',
+
     author='Riverbed Technology',
     author_email='eng-github@riverbed.com',
     url='',
@@ -37,8 +39,8 @@ setup(
                 'providing reports and support libraries',
     long_description=__doc__,
     license=LICENSE,
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
+
+    packages=find_packages(),
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
@@ -50,6 +52,7 @@ setup(
             'business_hours = rvbd_portal_business_hours.plugin:BusinessHoursPlugin'
         ],
     },
+
     classifiers=[
         'Framework :: Django',
         'Intended Audience :: Developers',

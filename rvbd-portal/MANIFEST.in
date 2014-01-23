@@ -1,0 +1,13 @@
+include README.rst
+include MANIFEST.in
+include LICENSE
+recursive-include rvbd_portal/apps/console/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/datasource/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/devices/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/geolocation/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/help/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/plugins/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/preferences/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/report/templates *.html *.js *.css
+recursive-include rvbd_portal/apps/report/static *.html *.js *.css
+global-exclude *~
