@@ -25,7 +25,7 @@ urlpatterns = patterns(
         views.ReportView.as_view(),
         name='report-view'),
 
-    url(r'^(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
         views.ReportCriteriaChanged.as_view(),
         name='report-criteria-changed'),
 

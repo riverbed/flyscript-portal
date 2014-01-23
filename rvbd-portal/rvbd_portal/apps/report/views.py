@@ -266,7 +266,7 @@ class ReportCriteriaChanged(views.APIView):
     serializer_class = ReportSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
 
-    def post(self, request, report_slug=None):
+    def post(self, request, namespace=None, report_slug=None):
         # handle REST calls
         if report_slug is None:
             return self.http_method_not_allowed(request)
