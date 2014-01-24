@@ -38,45 +38,57 @@ class CustomIndexDashboard(Dashboard):
             ]
         ))
 
-        # append an app list module for "Applications"
-        self.children.append(modules.AppList(
-            _('Applications'),
-            exclude=('django.contrib.*',),
-        ))
-
         # append an app list module for "Administration"
         self.children.append(modules.AppList(
             _('Administration'),
-            models=('django.contrib.*',),
+            models=(
+                'django.contrib.*',
+                'announcements.*',
+                'rvbd_portal.apps.devices.*',
+                'rvbd_portal.apps.geolocation.*',
+            ),
+        ))
+
+        # append an app list module for "Applications"
+        self.children.append(modules.AppList(
+            _('System Models'),
+            models=('rvbd_portal.apps.*',),
+            exclude=('rvbd_portal.apps.devices.*',
+                     'rvbd_portal.apps.geolocation.*',)
         ))
 
         # append a recent actions module
         self.children.append(modules.RecentActions(_('Recent Actions'), 5))
 
         # append a feed module
-        self.children.append(modules.Feed(
-            _('Latest Django News'),
-            feed_url='http://www.djangoproject.com/rss/weblog/',
-            limit=5
-        ))
+#        self.children.append(modules.Feed(
+#            _('Latest Django News'),
+#            feed_url='http://www.djangoproject.com/rss/weblog/',
+#            limit=5
+#        ))
 
         # append another link list module for "support".
         self.children.append(modules.LinkList(
             _('Support'),
             children=[
                 {
+                    'title': _('FlyScript Splash Page'),
+                    'url': 'https://splash.riverbed.com/community/product-lines/flyscript',
+                    'external': True,
+                },
+                {
+                    'title': _('FlyScript Portal Github'),
+                    'url': 'http://pythonhosted.org/flyscript/index.html',
+                    'external': True,
+                },
+                {
+                    'title': _('FlyScript Documentation'),
+                    'url': 'https://github.com/riverbed/flyscript-portal',
+                    'external': True,
+                    },
+                {
                     'title': _('Django documentation'),
                     'url': 'http://docs.djangoproject.com/',
-                    'external': True,
-                },
-                {
-                    'title': _('Django "django-users" mailing list'),
-                    'url': 'http://groups.google.com/group/django-users',
-                    'external': True,
-                },
-                {
-                    'title': _('Django irc channel'),
-                    'url': 'irc://irc.freenode.net/django',
                     'external': True,
                 },
             ]

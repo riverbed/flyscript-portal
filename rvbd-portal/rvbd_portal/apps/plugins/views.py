@@ -9,6 +9,7 @@ import json
 
 from django.http import Http404, HttpResponse
 from django.contrib import messages
+from rest_framework.permissions import IsAdminUser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -23,6 +24,7 @@ class PluginsListView(APIView):
     """ Display list of installed plugins """
 
     renderer_classes = (TemplateHTMLRenderer, )
+    permission_classes = (IsAdminUser,)
 
     def get(self, request):
         changed = request.QUERY_PARAMS.get('changed', False)
@@ -36,6 +38,7 @@ class PluginsDetailView(APIView):
     """ Display detail of specific plugin """
 
     renderer_classes = (TemplateHTMLRenderer, )
+    permission_classes = (IsAdminUser,)
 
     def get(self, request, slug, *args, **kwargs):
         try:

@@ -11,7 +11,7 @@ from rvbd_portal.apps.report.models import Report, Widget, WidgetJob
 
 
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ('title', 'position', 'sourcefile', 'slug')
+    list_display = ('title', 'enabled', 'position', 'sourcefile', 'slug')
 
 admin.site.register(Report, ReportAdmin)
 
