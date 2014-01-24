@@ -13,14 +13,14 @@
 
 <div class="announcements">
     {% for announcement in announcements_list %}
-        <div id="id_announcement_{{ forloop.counter }}" class="announcement">
-            <strong>{{ announcement.title }}</strong><br />
-            {{ announcement.content }}
+        <div id="id_announcement_{{ forloop.counter }}" class="alert alert-block">
             {% if announcement.dismiss_url %}
-                <a href="#" onclick="dismiss_announcement('{{ announcement.dismiss_url }}', 'id_announcement_{{ forloop.counter }}')" class="ajax">
-                    Clear
-                </a>
+                <button href="#" onclick="dismiss_announcement('{{ announcement.dismiss_url }}', 'id_announcement_{{ forloop.counter }}')" data-dismiss="alert" class="close">
+                    &times;
+                </button>
             {% endif %}
+            <h4>{{ announcement.title }}</h4>
+            {{ announcement.content }}
         </div>
     {% endfor %}
 </div>

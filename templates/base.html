@@ -49,8 +49,8 @@
                             {% if user.is_superuser %}
                                 <li class="divider"></li>
                                 <li><a href="{% url 'device-list' %}"><i class="icon-pencil"></i> Edit Devices</a></li>
-                                <li><a href="{% url 'plugins-list' %}"><i class="icon-briefcase"></i> Edit Plugins</a></li>
-                                <li><a href="/admin"><i class="icon-briefcase"></i> Enter Admin Panel</a></li>
+                                <li><a href="{% url 'plugins-list' %}"><i class="icon-resize-small"></i> Edit Plugins</a></li>
+                                <li><a href="/admin"><i class="icon-wrench"></i> Enter Admin Panel</a></li>
                             {% endif %}
                             <li class="divider"></li>
                             {% if reports and 'report' in request.path %}
