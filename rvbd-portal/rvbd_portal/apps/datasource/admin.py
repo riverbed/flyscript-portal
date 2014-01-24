@@ -8,7 +8,7 @@
 
 from django.contrib import admin
 
-from rvbd_portal.apps.datasource.models import Table, Column, Job
+from rvbd_portal.apps.datasource.models import Table, Column, Job, TableField
 
 
 class TableAdmin(admin.ModelAdmin):
@@ -28,4 +28,16 @@ admin.site.register(Column, ColumnAdmin)
 class JobAdmin(admin.ModelAdmin):
     list_display = ('table', 'status', 'progress', 'message')
 
-admin.site.register(Job, JobAdmin)
+#admin.site.register(Job, JobAdmin)
+
+
+class TableFieldAdmin(admin.ModelAdmin):
+    list_display = (
+        'label', 'help_text', 'initial', 'required',
+        'hidden', 'field_cls', 'field_kwargs',  'parent_keywords',
+        'pre_process_func', 'post_process_func', 'post_process_template',
+    )
+
+admin.site.register(TableField, TableFieldAdmin)
+
+

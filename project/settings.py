@@ -49,8 +49,6 @@ TIME_ZONE = 'UTC'
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
 
-SITE_ID = 1
-
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
@@ -156,10 +154,13 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Uncomment the next line to enable the admin:
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
@@ -167,6 +168,8 @@ INSTALLED_APPS = (
     # third-party apps
     'rest_framework',
     'django_extensions',
+    'django_forms_bootstrap',
+    'announcements',
 
     # portal apps
     'rvbd_portal.apps.datasource',
@@ -181,6 +184,11 @@ INSTALLED_APPS = (
     # 'standard' plugins
     'rvbd_portal.apps.plugins.builtin.whois',
 )
+
+ADMIN_TOOLS_MENU = 'project.menu.CustomMenu'
+ADMIN_TOOLS_THEMING_CSS = 'css/theming.css'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'project.dashboard.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'project.dashboard.CustomAppIndexDashboard'
 
 from rvbd_portal.apps.plugins.loader import load_plugins
 load_plugins()

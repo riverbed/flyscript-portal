@@ -13,22 +13,22 @@ from rvbd_portal.apps.console.models import Utility, Results, Parameter, Console
 class UtilityAdmin(admin.ModelAdmin):
     list_display = ('name', 'path', 'islogfile')
 
-admin.site.register(Utility, UtilityAdmin)
+#admin.site.register(Utility, UtilityAdmin)
 
 
 class ResultsAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(Results, ResultsAdmin)
+#admin.site.register(Results, ResultsAdmin)
 
 
 class ParameterAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(Parameter, ParameterAdmin)
+#admin.site.register(Parameter, ParameterAdmin)
 
 
 class ConsoleJobAdmin(admin.ModelAdmin):
     pass
 
-admin.site.register(ConsoleJob, ConsoleJobAdmin)
+#admin.site.register(ConsoleJob, ConsoleJobAdmin)

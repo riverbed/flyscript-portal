@@ -1,0 +1,26 @@
+<script>
+    function dismiss_announcement(url, id) {
+        $.post(
+            url,
+            {"csrfmiddlewaretoken": "{{ csrf_token }}"},
+            function(data) {
+                $('#'+id).fadeOut();
+            },
+            "json"
+        );
+    };
+</script>
+
+<div class="announcements">
+    {% for announcement in announcements_list %}
+        <div id="id_announcement_{{ forloop.counter }}" class="alert alert-block">
+            {% if announcement.dismiss_url %}
+                <button href="#" onclick="dismiss_announcement('{{ announcement.dismiss_url }}', 'id_announcement_{{ forloop.counter }}')" data-dismiss="alert" class="close">
+                    &times;
+                </button>
+            {% endif %}
+            <h4>{{ announcement.title }}</h4>
+            {{ announcement.content }}
+        </div>
+    {% endfor %}
+</div>

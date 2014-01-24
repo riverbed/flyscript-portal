@@ -30,7 +30,7 @@
     <div class="navbar navbar-inverse ">
       <div class="navbar-inner">
         <div class="container">
-        <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/flyscript.png'/ style="max-width:None;"> FlyScript&nbsp;Portal </a>
+        <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/flyscript.png' style="max-width:None;"> FlyScript&nbsp;Portal </a>
           <div class="nav-collapse collapse">
             <ul class="nav">
               {% block navbar_left %}
@@ -50,6 +50,14 @@
         </div>
       </div>
     </div>
+
+    {% load announcements_tags %}
+    {% announcements as announcements_list %}
+
+    {% if announcements_list %}
+        {% include "annoucements.html" %}
+    {% endif %}
+
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span6">
@@ -63,6 +71,15 @@
         </div>
       </div>
     </div>
+
+    {% if messages %}
+        <ul id="messages">
+            {% for message in messages %}
+                <li id="message_{{ forloop.counter }}"><a href="#" onclick="$('#message_{{ forloop.counter }}').fadeOut(); return false;"><small>clear</small></a> {{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
     {% block content %}{% endblock %}
   </body>
 </html>

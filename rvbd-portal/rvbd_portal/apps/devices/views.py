@@ -13,6 +13,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, views
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from rvbd_portal.apps.devices.devicemanager import DeviceManager
@@ -30,6 +31,7 @@ class DeviceDetail(views.APIView):
     model = Device
     serializer_class = DeviceSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
+    permission_classes = (IsAdminUser,)
 
     def get(self, request, device_id=None):
         if request.accepted_renderer.format == 'html':
@@ -66,6 +68,8 @@ class DeviceDetail(views.APIView):
 
 class DeviceDelete(views.APIView):
     # XXX remove this once we can RESTify the delete method
+    permission_classes = (IsAdminUser,)
+
     def get(self, request, device_id):
         device = get_object_or_404(Device, pk=device_id)
         device.delete()
@@ -76,6 +80,7 @@ class DeviceList(generics.ListAPIView):
     model = Device
     serializer_class = DeviceSerializer
     renderer_classes = (TemplateHTMLRenderer, JSONRenderer)
+    permission_classes = (IsAdminUser,)
 
     def get(self, request, *args, **kwargs):
         queryset = Device.objects.order_by('id')

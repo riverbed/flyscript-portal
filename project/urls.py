@@ -25,15 +25,15 @@ urlpatterns = patterns('',
     url(r'^preferences/', include('rvbd_portal.apps.preferences.urls')),
     url(r'^plugins/', include('rvbd_portal.apps.plugins.urls')),
 
-    # Examples:
-    # url(r'^$', 'flybox.views.home', name='home'),
-    # url(r'^flybox/', include('flybox.foo.urls')),
+    # third party packages
+    url(r'^announcements/', include('announcements.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin_tools/', include('admin_tools.urls')),
 
     # Account login
     url(r'^accounts/login/$', 'django.contrib.auth.views.login', 
