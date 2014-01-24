@@ -446,7 +446,6 @@ class TableFieldForm(forms.Form):
                         check_keyword = parent_keyword
 
                     if check_keyword not in ids:
-                        __import__('IPython').core.debugger.Pdb().set_trace()
                         raise CriteriaError('Field %s references unknown parent keyword: %s' %
                                             (tablefield.keyword, parent_keyword))
 

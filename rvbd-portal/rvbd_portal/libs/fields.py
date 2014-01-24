@@ -115,11 +115,11 @@ class PickledObjectField(models.Field):
         if value is not None:
             try:
                 value = dbsafe_decode(value, self.compress)
+
             except (AttributeError, SyntaxError, ImportError):
                 raise
                     
             except Exception as e:
-                logger.exception("to_python")
                 # If the value is a definite pickle; and an error is raised in
                 # de-pickling it should be allowed to propogate.
                 if isinstance(value, PickledObject):
