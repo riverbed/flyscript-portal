@@ -41,7 +41,7 @@ def fields_add_filterexpr(obj,
 
 def fields_add_filterexprs_field(obj, keyword):
     field = obj.fields.get(keyword = 'profiler_filterexpr')
-    field.post_process_func = Function(function=_fields_combine_filterexprs)
+    field.post_process_func = Function(function=_post_process_combine_filterexprs)
 
     parent_keywords = set(field.parent_keywords or [])
     parent_keywords.add(keyword)
@@ -50,11 +50,13 @@ def fields_add_filterexprs_field(obj, keyword):
     
     return field
     
-def _fields_combine_filterexprs(field, criteria, params):
+def _post_process_combine_filterexprs(form, id, criteria, params):
     exprs = []
     if (  'profiler_filterexpr' in criteria and
           criteria.profiler_filterexpr != ''):
         exprs.append(criteria.profiler_filterexpr)
+
+    field = form.get_tablefield(id)
     for parent in field.parent_keywords:
         expr = criteria[parent]
         if expr is not None and expr != '':

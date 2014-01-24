@@ -446,6 +446,7 @@ class TableFieldForm(forms.Form):
                         check_keyword = parent_keyword
 
                     if check_keyword not in ids:
+                        __import__('IPython').core.debugger.Pdb().set_trace()
                         raise CriteriaError('Field %s references unknown parent keyword: %s' %
                                             (tablefield.keyword, parent_keyword))
 
@@ -568,6 +569,9 @@ class TableFieldForm(forms.Form):
             if isinstance(v, datetime.datetime) and v.tzinfo is None:
                 self.cleaned_data[k] = v.replace(tzinfo = tzinfo)
 
+    def get_tablefield(self, id):
+        return self._tablefields[id]
+    
     def get_field_value(self, keyword, fromfield_id):
         trykeywords = []
         

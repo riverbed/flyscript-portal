@@ -96,8 +96,7 @@ class Report(models.Model):
         if self.fields:
             report_fields = {}
             for f in self.fields.all():
-                if not f.hidden:
-                    report_fields[f.keyword] = f
+                report_fields[f.keyword] = f
                                            
             fields_by_section[0].update(report_fields)
 
@@ -235,13 +234,13 @@ class Section(models.Model):
         fields = []
 
         # All fields attached to the section
-        for f in self.fields.filter(hidden=False).order_by('id'):
+        for f in self.fields.all().order_by('id'):
             fields.append(f)
 
         # All fields attached to any Widget's Tables
         for w in Widget.objects.filter(section=self):
             for t in w.tables.all():
-                for f in t.fields.filter(hidden=False).order_by('id'):
+                for f in t.fields.all().order_by('id'):
                     fields.append(f)
 
         fields_by_section = SortedDict()
