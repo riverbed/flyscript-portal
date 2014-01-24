@@ -18,9 +18,10 @@ from StringIO import StringIO
 import random
 import datetime
 import string
-
 import pytz
 import pandas
+import numpy
+
 from django.db import models
 from django.db.models import Max
 from django.db import transaction
@@ -866,6 +867,20 @@ class Job(models.Model):
             all_columns = self.table.get_columns()
             all_col_names = [c.name for c in all_columns]
             vals = df.ix[:, all_col_names].values.tolist()
+
+            # Straggling numpy data types may cause problems
+            # downstream (json encoding, for example), so strip
+            # things down to just native ints and floats
+            cleaned = []
+            for row in vals:
+                cleaned_row = []
+                for v in row:
+                    if isinstance(v, numpy.number):
+                        v = numpy.asscalar(v)
+                    cleaned_row.append(v)
+                cleaned.append(cleaned_row)
+
+            return cleaned
         else:
             vals = []
         return vals
