@@ -24,7 +24,7 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from django.forms.widgets import FileInput, TextInput
 from django.forms import widgets
-from rvbd.common import parse_timedelta, timedelta_total_seconds
+from rvbd.common.timeutils import parse_timedelta, timedelta_total_seconds, timedelta_str
 
 from rvbd_portal.apps.datasource.models import Criteria, TableField
 
@@ -95,7 +95,7 @@ class TimeWidget(forms.TimeInput):
               $("#id_{name}").timepicker({{ 
                  step: 15, 
                  scrollDefaultNow:true,
-                 timeFormat:"g:i a"
+                 timeFormat:"g:i:s a"
               }});
               $("#timenow").click(function() {{ 
                  $("#id_{name}").timepicker("setTime", new Date()); 
@@ -209,21 +209,46 @@ class DurationField(forms.ChoiceField):
     def __init__(self, **kwargs):
         self._special_values = kwargs.pop('special_values', None)
         initial = kwargs.pop('initial', None)
-        if (  (initial is not None) and
-              (self._special_values is None or (initial not in self._special_values))):
+        if (initial is not None) and \
+               (self._special_values is None or (initial not in self._special_values)):
             initial_td = parse_timedelta(initial)
+            initial_valid = False
+        else:
+            initial_td = None
+            initial_valid = True
+        choices = []
 
-            m = None
-            for v,label in kwargs['choices']:
-                if (self._special_values is not None and v in self._special_values):
-                    continue
-                if parse_timedelta(v) == initial_td:
-                    m = v
-                    break
-            if m:
-                initial = v
+        # Rebuild the choices list to ensure that the value is normalized using timedelta_str
+        for choice in kwargs.pop('choices'):
+            td = None
+            if not (isinstance(choice, list) or isinstance(choice, tuple)):
+                if (self._special_values is None or choice not in self._special_values):
+                    td = parse_timedelta(choice)
+                    td_str = timedelta_str(td)
+                    value = td_str
+                    label = td_str
+                else:
+                    value = choice
+                    label = choice
+
             else:
-                raise KeyError('Initial duration is invalid: %s' % initial)
+                (value, label) = choice
+                if (self._special_values is None or value not in self._special_values):
+                    td = parse_timedelta(value)
+                    value = timedelta_str(td)
+
+            choice = (value, label)
+            choices.append(choice)
+
+            if initial_td is not None and initial_td == td:
+                initial = value
+                initial_valid = True
+
+        kwargs['choices'] = choices
+        logger.debug("Choices: %s" % choices)
+        if not initial_valid:
+            raise KeyError('Initial duration is invalid: %s' % initial)
+
         super(DurationField, self).__init__(initial=initial, **kwargs)
               
     def to_python(self, value):
@@ -245,7 +270,7 @@ class DurationField(forms.ChoiceField):
         pass
 
 
-def fields_add_time_selection(obj, initial_duration=None):
+def fields_add_time_selection(obj, initial_duration=None, durations=None):
     #starttime = TableField(keyword = 'starttime',
     #                            label = 'Start Time',
     #                            field_cls = DateTimeField,
@@ -254,6 +279,9 @@ def fields_add_time_selection(obj, initial_duration=None):
     #starttime.save()
     #obj.criteria.add(starttime)
 
+    if durations is None:
+        durations = DURATIONS
+        
     endtime = TableField(keyword = 'endtime',
                          label = 'End Time',
                          field_cls = DateTimeField,
@@ -269,17 +297,14 @@ def fields_add_time_selection(obj, initial_duration=None):
          initial = initial_duration,
          field_cls = DurationField,
          #field_kwargs = { 'widget': DurationWidget },
-         field_kwargs = { 'choices': zip(DURATIONS, DURATIONS) },
+         field_kwargs = { 'choices': durations },
          required=False))
     duration.save()
     obj.fields.add(duration)
 
 
 def fields_add_resolution(obj, initial=None,
-                          resolutions= [('1min', '1 minute'),
-                                        ('15min', '15 minutes'),
-                                        ('hour', 'Hour'),
-                                        ('6hour', '6 Hour')],
+                          resolutions= ['1m', '15m', '1h', '6h'],
                           special_values=None
                           ):
 

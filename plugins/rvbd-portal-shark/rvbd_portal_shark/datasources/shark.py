@@ -55,8 +55,11 @@ def fields_add_filterexpr(obj,
 
 class SharkTable:
     @classmethod
-    def create(cls, name, duration,
-               aggregated=False, filterexpr=None, resolution='1min', sortcol=None):
+    def create(cls, name,
+               duration='1m', durations=None,
+               resolution='1m', resolutions=None,
+               aggregated=False, filterexpr=None,
+               sortcol=None):
         """ Create a Shark table.
 
         `duration` is in minutes
@@ -69,13 +72,15 @@ class SharkTable:
                   filterexpr=filterexpr, options=options, sortcol=sortcol)
         t.save()
 
-        if resolution not in ['1ms', '1sec', '1min', '15min']:
-            raise KeyError("Invalid resolution %s, must be one of: %s" %
-                           (resolution, ', '.join(['1ms', '1sec', '1min', '15min'])))
-
+        if durations is None:
+            durations = ['1m', '15m']
+            
         if isinstance(duration, int):
-            duration = "%d min" % duration
+            duration = "%dm" % duration
 
+        if resolutions is None:
+            resolutions = ['1s', '1m']
+        
         fields_add_device_selection(t,
                                     keyword='shark_device',
                                     label='Shark',
@@ -94,12 +99,10 @@ class SharkTable:
                           dynamic=True,
                           pre_process_func = Function(shark_source_name_choices))
         
-        fields_add_time_selection(t, initial_duration=duration)
+        fields_add_time_selection(t, initial_duration = duration, durations = durations)
+        fields_add_resolution(t, initial = resolution, resolutions = resolutions)
         fields_add_filterexpr(t)
-        fields_add_resolution(t, initial=resolution,
-                              resolutions = [('1sec', '1 second'),
-                                             ('1min', '1 minute'),
-                                             ('15min', '15 minutes')])
+
         return t
 
 
@@ -256,10 +259,21 @@ class TableQuery:
             source = None
             raise e
 
+        resolution = criteria.resolution
+        if resolution.seconds == 1:
+            sampling_time_msec = 1000
+        elif resolution.microseconds == 1000:
+            sampling_time_msec = 1
+            if criteria.duration > parse_timedelta('1s'):
+                raise ValueError("Cannot run a millisecond report with a duration longer than 1 second")
+        else:
+            sampling_time_msec = 1000
+ 
         # Setup the view
         if source is not None:
             with lock:
-                view = shark.create_view(source, columns, filters=filters, sync=False)
+                view = shark.create_view(source, columns, filters=filters, sync=False,
+                                         sampling_time_msec=sampling_time_msec)
         else:
             # XXX raise other exception
             return None

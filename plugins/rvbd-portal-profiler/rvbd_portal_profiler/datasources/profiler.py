@@ -108,11 +108,7 @@ class ProfilerTable(object):
         
         fields_add_filterexpr(t)
         fields_add_resolution(t, initial=resolution,
-                              resolutions = [('auto', 'Automatic'),
-                                             ('1min', '1 minute'),
-                                             ('15min', '15 minutes'),
-                                             ('hour', 'Hour'),
-                                             ('6hour', '6 Hour')],
+                              resolutions = [('auto', 'Automatic'), '1min', '15min', 'hour', '6hour'],
                               special_values = ['auto'])
         return t
 

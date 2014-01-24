@@ -5,6 +5,7 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
 # This software is distributed "AS IS" as set forth in the License.
 
+import logging
 
 from copy import deepcopy
 from base64 import b64encode, b64decode
@@ -17,6 +18,7 @@ except ImportError:
 from django.db import models
 from django.utils.encoding import force_unicode
 
+logger = logging.getLogger(__name__)
 
 # see http://djangosnippets.org/snippets/1694/
 # and http://djangosnippets.org/snippets/2346/
@@ -118,6 +120,7 @@ class PickledObjectField(models.Field):
                 # de-pickling it should be allowed to propogate.
                 if isinstance(value, PickledObject):
                     raise
+
         return value
 
     def get_prep_value(self, value):
