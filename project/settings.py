@@ -283,3 +283,8 @@ APPS_DATASOURCE = {
 }
 
 TESTING = 'test' in sys.argv
+
+try:
+    from project.settings_local import *
+except ImportError:
+    pass

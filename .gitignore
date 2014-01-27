@@ -16,6 +16,7 @@ dist
 *.egg-info
 RELEASE-VERSION
 plugins/sdist
+project/settings_local.py
 
 docs/html
 
