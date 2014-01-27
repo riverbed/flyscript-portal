@@ -37,19 +37,37 @@ MAPS_VERSIONS = ('DISABLED',            # Google Maps Versions
 MAPS_VERSION_CHOICES = zip(MAPS_VERSIONS, map(str.title, MAPS_VERSIONS))
 
 
-def create_preference_fixture():
+def create_preference_fixture(initial_admin_only=True):
     """Dump preferences to JSON file for safe keeping.
 
     Marks all preference objects as "not seen" so they will still
     appear after a reset to confirm choices.
+
+    `initial_admin_only` set to True will only store preferences
+    where the user id exists in the initial_admin_user file to
+    avoid conflicts on database reloads.
     """
     buf = StringIO()
     management.call_command('dumpdata', 'preferences', stdout=buf)
     buf.seek(0)
     preferences = list()
-    for pref in json.load(buf):
-        pref['fields']['profile_seen'] = False
-        preferences.append(pref)
+
+    if initial_admin_only:
+        admin_file = os.path.join(PROJECT_ROOT,
+                                  'initial_data',
+                                  'initial_admin_user.json')
+        with open(admin_file) as f:
+            admin_ids = set(x['pk'] for x in json.load(f))
+
+        for pref in json.load(buf):
+            pref['fields']['profile_seen'] = False
+            if pref['fields']['user'] in admin_ids:
+                preferences.append(pref)
+
+    else:
+        for pref in json.load(buf):
+            pref['fields']['profile_seen'] = False
+            preferences.append(pref)
 
     fname = os.path.join(PROJECT_ROOT,
                          'initial_data',
