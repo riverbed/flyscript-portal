@@ -8,13 +8,13 @@
 from rvbd_portal.apps.plugins import Plugin
 
 
-class SolarwindsPlugin(Plugin):
-    title = 'Solarwinds Datasource Plugin'
+class SharepointPlugin(Plugin):
+    title = 'Sharepoint Datasource Plugin'
     description = 'A Portal datasource plugin with example report'
     version = '0.1'
     author = 'Riverbed Technology'
 
-    enabled = False        # turn this off by default
+    enabled = True
     can_disable = True
 
     devices = ['devices']
