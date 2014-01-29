@@ -14,6 +14,9 @@ SDIST_DIR = os.path.join(PLUGINS_DIR, 'sdist')
 LOCAL_SETTINGS = os.path.join(BASE_DIR, 'project', 'settings_local.py')
 
 LOCAL_SETTINGS_CONTENT = """
+# Optionally add additional applications specific to this webserver
+LOCAL_APPS = None
+
 # LDAP Authentication setup
 import ldap
 from django_auth_ldap.config import LDAPSearch
