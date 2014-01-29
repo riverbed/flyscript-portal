@@ -26,8 +26,8 @@ urlpatterns = patterns(
         name='report-view'),
 
     url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/criteria/$',
-        views.ReportCriteriaChanged.as_view(),
-        name='report-criteria-changed'),
+        views.ReportCriteria.as_view(),
+        name='report-criteria'),
 
     url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/tables/$',
         views.ReportTableList.as_view(),
@@ -44,7 +44,11 @@ urlpatterns = patterns(
     url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/$',
         views.WidgetJobsList.as_view(),
         name='widget-job-list'),
-    
+
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/criteria/$',
+        views.ReportCriteria.as_view(),
+        name='widget-criteria'),
+
     url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/(?P<job_id>[0-9]+)/$',
         views.WidgetJobDetail.as_view(),
         name='report-job-detail'),

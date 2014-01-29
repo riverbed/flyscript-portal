@@ -98,14 +98,3 @@ ul#messages li a {
     color: #693;
 }
 
-/* ANNOUNCEMENTS */
-
-.announcements {
-    padding: 10px;
-}
-.announcement {
-    background: yellow;
-    padding: 0;
-    margin: 0;
-    text-align: center;
-}

@@ -224,26 +224,6 @@
           </div>
           <div class="collapse in" id="criteria">
             <div class="widget-content">
-{% if formstyle == "inline" %}
-                <form class="form-inline" action="{% url 'report-view' report.namespace report.slug %}" method="post" id="criteriaform"
-                        {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
-                    {% csrf_token %}
-                    {% for field in form.visible_fields %}
-                        {{ field.label_tag }}: {{ field }}
-                        {% if field.help_text %} 
-                           <span class="icon-info-sign" title="info">Foo</span>
-                        {% endif %}
-                        {% if field.errors %}
-                            {% for err in field.errors %}
-                                <p class="text-error">{{ err }}</p>
-                            {% endfor %}
-                        {% endif %}
-                    {% endfor %}
-                    {% for hidden in form.hidden_fields %}
-                        {{ hidden }}
-                    {% endfor %}
-                </form>
-{% elif formstyle == "horizontal" %}
                 <form class="form-horizontal" action="{% url 'report-view' report.namespace report.slug %}" method="post" id="criteriaform"
                         {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}>
                     {% csrf_token %}
@@ -288,7 +268,6 @@
                         {% endfor %}
                     </fieldset>
               </form>
-{% endif %}
               <p></p>
               <div class="btn-group dropup">
                   <button class="btn btn-primary" onclick="run()">Run</button>
