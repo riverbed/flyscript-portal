@@ -15,8 +15,14 @@ LOCAL_SETTINGS = os.path.join(BASE_DIR, 'project', 'settings_local.py')
 
 LOCAL_SETTINGS_CONTENT = """
 # LDAP Authentication setup
-import ldap
-from django_auth_ldap.config import LDAPSearch
+# To use LDAP, pip install the following two packages:
+# python-ldap==2.4.13
+# django-auth-ldap==1.1.7
+
+# Now uncomment the next two import lines, and configure
+# using AUTH_LDAP settings below
+#import ldap
+#from django_auth_ldap.config import LDAPSearch
 
 AUTHENTICATION_BACKENDS = (
     # Uncomment the following and settings below to enable LDAP Auth
