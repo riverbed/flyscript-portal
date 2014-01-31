@@ -67,16 +67,18 @@ class DeviceDetailForm(DeviceForm):
 
         self.fields['module'] = forms.ChoiceField(choices=choices)
 
+
 def fields_add_device_selection(obj, keyword='device',
                                 label='Device',
                                 module=None, enabled=None):
     field = TableField(keyword=keyword, label=label,
-                       field_cls = forms.ChoiceField,
-                       pre_process_func = Function(device_selection_preprocess,
-                                                  {'module': module,
-                                                   'enabled': enabled}))
+                       field_cls=forms.ChoiceField,
+                       pre_process_func=Function(device_selection_preprocess,
+                                                 {'module': module,
+                                                  'enabled': enabled}))
     field.save()
     obj.fields.add(field)
+
 
 def device_selection_preprocess(form, field, field_kwargs, params):
     filter_ = {}

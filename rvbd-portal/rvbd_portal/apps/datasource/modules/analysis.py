@@ -12,19 +12,22 @@ from rvbd_portal.apps.datasource.models import Column, Job, Table, BatchJobRunne
 
 logger = logging.getLogger(__name__)
 
-class TableOptions(JsonDict):
-    _default = { 'tables': None,
-                 'func' : None,
-                 'params': None }
 
-    _required = [ 'tables', 'func' ]
-    
+class TableOptions(JsonDict):
+    _default = {'tables': None,
+                'func': None,
+                'params': None}
+
+    _required = ['tables', 'func']
+
+
 class AnalysisException(Exception):
     def _init__(self, message, *args, **kwargs):
         self.message = message
         super(AnalysisException, self).__init__(*args, **kwargs)
 
-class AnalysisTable:
+
+class AnalysisTable(object):
     """
     An AnalysisTable builds on other tables, running them first to collect
     data, then extracting the data as pandas.DataFrame objects.  The
@@ -40,7 +43,7 @@ class AnalysisTable:
     `params` is an optional dictionary of parameters to pass to `func`
     
     For example, consider an input of two tables A and B, and an
-    AnalysisTable that simply concatetanates A and B:
+    AnalysisTable that simply concatenates A and B:
 
         A = Table.create('A')
         Column.create(A, 'host')
@@ -75,16 +78,13 @@ class AnalysisTable:
     """
 
     @classmethod
-    def create(cls, name, tables, func,
-               columns=[], params=None,
-               copy_fields=True,
-               **kwargs):
-        """ Class method to create an AnalysisTable.
-        """
+    def create(cls, name, tables, func, columns=None, params=None,
+               copy_fields=True, **kwargs):
+        """ Class method to create an AnalysisTable. """
         options = TableOptions(tables=tables, func=func,
                                params=params)
-        table = Table (name=name, module=__name__, 
-                       options=options, **kwargs)
+        table = Table(name=name, module=__name__,
+                      options=options, **kwargs)
         table.save()
         
         if columns:
@@ -100,16 +100,17 @@ class AnalysisTable:
                         keywords.append(f.keyword)
         return table
 
-class TableQuery:
+
+class TableQuery(object):
     def __init__(self, table, job):
         self.table = table
         self.job = job
 
     def __unicode__(self):
-        return "<AnalysisTable %s>" % (self.job)
+        return "<AnalysisTable %s>" % self.job
 
     def __str__(self):
-        return "<AnalysisTable %s>" % (self.job)
+        return "<AnalysisTable %s>" % self.job
 
     def mark_progress(self, progress):
         # Called by the analysis function
@@ -118,50 +119,59 @@ class TableQuery:
     def run(self):
         # Collect all dependent tables
         options = self.table.options
-        logger.debug("%s: dependent tables: %s"  % (self, options.tables))
+        logger.debug("%s: dependent tables: %s" % (self, options.tables))
         deptables = options.tables
         depjobids = {}
         batch = BatchJobRunner(self.job, max_progress=70)
-        for (name, id) in deptables.items():
+        for name, id in deptables.items():
             id = int(id)
             deptable = Table.objects.get(id=id)
-            job = Job.create(table=deptable, criteria=self.job.criteria.build_for_table(deptable))
+            job = Job.create(
+                table=deptable,
+                criteria=self.job.criteria.build_for_table(deptable)
+            )
             batch.add_job(job)
             logger.debug("%s: starting dependent job %s" % (self, job))
-            depjobids[name] = (job.id)
+            depjobids[name] = job.id
                     
         batch.run()
 
-        logger.debug("%s: All dependent jobs complete, collecting data" % str(self))
+        logger.debug("%s: All dependent jobs complete, collecting data"
+                     % str(self))
         # Create dataframes for all tables
         dfs = {}
         
         failed = False
-        for (name, id) in depjobids.items():
+        for name, id in depjobids.items():
             job = Job.objects.get(id=id)
                 
             if job.status == job.ERROR:
-                self.job.mark_error("Dependent Job failed: %s" % (job.message))
+                self.job.mark_error("Dependent Job failed: %s" % job.message)
                 failed = True
                 break
             
             f = job.data()
             dfs[name] = f
-            logger.debug("%s: Table[%s] - %d rows" % (self, name, len(f) if f is not None else 0))
+            logger.debug("%s: Table[%s] - %d rows" %
+                         (self, name, len(f) if f is not None else 0))
 
         if failed:
             return False
 
-        logger.debug ("%s: Calling analysis function %s" % (self, str(options.func)))
+        logger.debug("%s: Calling analysis function %s"
+                     % (self, str(options.func)))
 
         try:
-            df = options.func(self, dfs, self.job.criteria, params=options.params)
+            df = options.func(self, dfs, self.job.criteria,
+                              params=options.params)
         except AnalysisException as e:
-            self.job.mark_error("Analysis function %s failed: %s" % (options.func, e.message))
-            logger.exception("%s raised an exception" % (self))
+            self.job.mark_error("Analysis function %s failed: %s" %
+                                (options.func, e.message))
+            logger.exception("%s raised an exception" % self)
             return False
         except Exception as e:
-            self.job.mark_error("Analysis function %s failed: %s" % (options.func, str(e)))
+            self.job.mark_error("Analysis function %s failed: %s" %
+                                (options.func, str(e)))
             logger.exception("%s: Analysis function %s raised an exception" %
                              (self, options.func))
             return False
@@ -182,5 +192,5 @@ class TableQuery:
         else:
             self.data = None
         
-        logger.debug("%s: completed successfully"  % (self))
+        logger.debug("%s: completed successfully" % (self))
         return True

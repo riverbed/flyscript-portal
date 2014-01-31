@@ -102,8 +102,8 @@ class Command(BaseCommand):
             self.stdout.flush()
 
     def get_form(self, table, data=None):
-        # First see if there's a single report associated with this table, and if so
-        # use it to get the field set
+        # First see if there's a single report associated with this table,
+        # and if so, use it to get the field set
         widgets = Widget.objects.filter(tables__in=[table])
         sections = set()
         for w in widgets:
@@ -112,11 +112,9 @@ class Command(BaseCommand):
         if len(sections) == 1:
             all_fields = widgets[0].collect_fields()
         else:
-            for f in table.fields.all():
-                all_fields[f.keyword]=f
+            all_fields = {f.keyword: f for f in table.fields.all()}
 
         return TableFieldForm(all_fields, use_widgets=False, data=data)
-
 
     def handle(self, *args, **options):
         """ Main command handler
@@ -145,7 +143,8 @@ class Command(BaseCommand):
             elif 'table_name' in options:
                 table = Table.objects.get(name=options['table_name'])
             else:
-                raise ValueError("Must specify either --table-id or --table-name to run a table")
+                raise ValueError("Must specify either --table-id or "
+                                 "--table-name to run a table")
 
             form = self.get_form(table)
 
@@ -157,16 +156,17 @@ class Command(BaseCommand):
             elif 'table_name' in options:
                 table = Table.objects.get(name=options['table_name'])
             else:
-                raise ValueError("Must specify either --table-id or --table-name to run a table")
+                raise ValueError("Must specify either --table-id or "
+                                 "--table-name to run a table")
                 
             # Django gives us a nice error if we can't find the table
             self.console('Table %s found.' % table)
 
-            # Parse critiria options
+            # Parse criteria options
             criteria_options = {}
             if 'criteria' in options and options['criteria'] is not None:
                 for s in options['criteria']:
-                    (k,v) = s.split(':', 1)
+                    (k, v) = s.split(':', 1)
                     criteria_options[k] = v
 
             form = self.get_form(table, data=criteria_options)
@@ -174,9 +174,10 @@ class Command(BaseCommand):
             if not form.is_valid(check_unknown=True):
                 self.console('Invalid criteria:')
                 logger.error('Invalid criteria: %s' %
-                             ','.join('%s:%s' % (k,v) for k,v in form.errors.iteritems()))
-                for k,v in form.errors.iteritems():
-                    self.console('  %s: %s' % (k,','.join(v)))
+                             ','.join('%s:%s' % (k, v)
+                                      for k, v in form.errors.iteritems()))
+                for k, v in form.errors.iteritems():
+                    self.console('  %s: %s' % (k, ','.join(v)))
                 
                 sys.exit(1)
 

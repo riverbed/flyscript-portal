@@ -4,8 +4,6 @@ import os
 import sys
 import subprocess
 
-import pip
-
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PLUGINS_DIR = os.path.join(BASE_DIR, 'plugins')
@@ -14,66 +12,15 @@ SDIST_DIR = os.path.join(PLUGINS_DIR, 'sdist')
 LOCAL_SETTINGS = os.path.join(BASE_DIR, 'project', 'settings_local.py')
 
 LOCAL_SETTINGS_CONTENT = """
-# LDAP Authentication setup
-# To use LDAP, pip install the following two packages:
-# python-ldap==2.4.13
-# django-auth-ldap==1.1.7
+# Optionally add additional applications specific to this webserver
+LOCAL_APPS = None
 
-# Now uncomment the next two import lines, and configure
-# using AUTH_LDAP settings below
-#import ldap
-#from django_auth_ldap.config import LDAPSearch
+# Add other settings customizations below, which will be local to this
+# machine only, and not recorded by git. This could include database or
+# other authentications, LDAP settings, or any other overrides.
 
-AUTHENTICATION_BACKENDS = (
-    # Uncomment the following and settings below to enable LDAP Auth
-    #'django_auth_ldap.backend.LDAPBackend',
-    'django.contrib.auth.backends.ModelBackend',
-)
-
-#
-# Configure the LDAP Authentication Server
-#
-
-# The LDAP server to authenticate with, for example:
-#   ldap://localhost:389
-AUTH_LDAP_SERVER_URI = 'ldap://localhost:389'
-
-# Any additional connection options
-AUTH_LDAP_CONNECTION_OPTIONS = {
-    ldap.OPT_REFERRALS: 0
-}
-
-# LDAP Search Base for queries, replace with valid parameters
-search_base = "ou=users,dc=example,dc=com"
-
-# Uncomment one of the following groups of options
-# See here for more information:
-#    http://pythonhosted.org/django-auth-ldap/authentication.html
-
-## Direct Bind Authentication
-#AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = True
-#AUTH_LDAP_USER_DN_TEMPLATE = '%(user)s'
-#AUTH_LDAP_USER_SEARCH = LDAPSearch(search_base,
-#                                   ldap.SCOPE_SUBTREE,
-#                                   "(mailNickname=%(user)s)")
-
-## Anonymous Search/Bind
-#AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = False
-#AUTH_LDAP_USER_DN_TEMPLATE = '%(user)s'
-#AUTH_LDAP_BIND_DN = ""
-#AUTH_LDAP_BIND_PASSWORD = ""
-#AUTH_LDAP_USER_SEARCH = LDAPSearch(search_base,
-#                                   ldap.SCOPE_SUBTREE,
-#                                   "(uid=%(user)s)")
-
-## Fixed Account Search/Bind
-#AUTH_LDAP_BIND_AS_AUTHENTICATING_USER = False
-#AUTH_LDAP_USER_DN_TEMPLATE = '%(user)s'
-#AUTH_LDAP_BIND_DN = "<username>"
-#AUTH_LDAP_BIND_PASSWORD = "<password>"
-#AUTH_LDAP_USER_SEARCH = LDAPSearch(search_base,
-#                                   ldap.SCOPE_SUBTREE,
-#                                   "(uid=%(user)s)")
+# For example LDAP configurations, see the file
+# `project/ldap_example.py`.
 """
 
 
@@ -165,16 +112,14 @@ if __name__ == '__main__':
     if command == 'install':
         create_sdists()
         install_plugins()
-        #create_local_settings()
+        create_local_settings()
 
     elif command == 'develop':
         install_plugins(develop=True)
-        #create_local_settings()
+        create_local_settings()
 
     elif command == 'uninstall':
         uninstall_plugins()
 
     else:
         show_help()
-
-

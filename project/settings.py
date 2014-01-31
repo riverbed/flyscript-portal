@@ -43,7 +43,6 @@ DATABASES = {
 # although not all choices may be available on all operating systems.
 # In a Windows environment this must be set to your system time zone.
 TIME_ZONE = 'UTC'
-#TIME_ZONE = 'US/Eastern'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -284,7 +283,10 @@ APPS_DATASOURCE = {
 
 TESTING = 'test' in sys.argv
 
+LOCAL_APPS = None
 try:
     from project.settings_local import *
+    if LOCAL_APPS:
+        INSTALLED_APPS += LOCAL_APPS
 except ImportError:
     pass

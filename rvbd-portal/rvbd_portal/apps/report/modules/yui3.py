@@ -29,11 +29,9 @@ class TableWidget(object):
 
     @classmethod
     def process(cls, widget, job, data):
-        qcols = []
         columns = []
 
         for wc in widget.table().get_columns():
-            qcols.append(wc.name)
             column = {'key': wc.name, 'label': wc.label, "sortable": True}
             if wc.datatype == 'bytes':
                 column['formatter'] = 'formatBytes'
@@ -51,8 +49,10 @@ class TableWidget(object):
 
         for rawrow in data:
             row = {}
-            for i in range(0, len(qcols)):
-                if qcols[i] == 'time':
+
+            for i, col in enumerate(columns):
+                if (col['key'] == 'time' or
+                        'formatter' in col and col['formatter'] == 'formatTime'):
                     t = rawrow[i]
                     try:
                         val = timeutils.datetime_to_microseconds(t) / 1000
@@ -60,9 +60,8 @@ class TableWidget(object):
                         val = t * 1000
                 else:
                     val = rawrow[i]
-                    
-                row[qcols[i]] = val
-                i = i + 1
+
+                row[col['key']] = val
 
             rows.append(row)
 
