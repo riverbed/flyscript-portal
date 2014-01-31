@@ -23,7 +23,8 @@ from rvbd.common.timeutils import (parse_timedelta, datetime_to_seconds,
 from rvbd_portal.apps.devices.devicemanager import DeviceManager
 from rvbd_portal.apps.devices.forms import fields_add_device_selection
 from rvbd_portal.apps.datasource.models import Column, Table, TableField
-from rvbd_portal.apps.datasource.forms import fields_add_time_selection, fields_add_resolution
+from rvbd_portal.apps.datasource.forms import (fields_add_time_selection,
+                                               fields_add_resolution)
 
 from rvbd_portal.libs.fields import Function
 
@@ -41,17 +42,15 @@ class ColumnOptions(JsonDict):
                 'default_value': None}
 
 
-def fields_add_filterexpr(obj,
-                          keyword = 'shark_filterexpr',
-                          initial=None):
-    field = ( TableField
-              (keyword = keyword,
-               label = 'Shark Filter Expression',
-               help_text = 'Traffic expression using Shark filter syntax',
-               initial = initial,
-               required = False))
+def fields_add_filterexpr(obj, keyword='shark_filterexpr', initial=None):
+    field = TableField(keyword=keyword,
+                       label='Shark Filter Expression',
+                       help_text='Traffic expression using Shark filter syntax',
+                       initial=initial,
+                       required=False)
     field.save()
     obj.fields.add(field)
+
 
 class SharkTable:
     @classmethod
@@ -87,20 +86,15 @@ class SharkTable:
                                     module='shark',
                                     enabled=True)
 
-        #TableField.create(keyword='shark_source_type', label='Source Type', obj=t,
-        #                  field_cls = forms.ChoiceField,
-        #                  field_kwargs = {'choices': [('job', 'Capture Job'),
-        #                                              ('clip', 'Trace Clip')]})
-        
         TableField.create(keyword='shark_source_name', label='Source', obj=t,
-                          field_cls = forms.ChoiceField,
-                          parent_keywords = ['shark_device'],
-                          #parent_keywords = ['shark_device', 'shark_source_type'],
+                          field_cls=forms.ChoiceField,
+                          parent_keywords=['shark_device'],
                           dynamic=True,
-                          pre_process_func = Function(shark_source_name_choices))
+                          pre_process_func=Function(shark_source_name_choices))
         
-        fields_add_time_selection(t, initial_duration = duration, durations = durations)
-        fields_add_resolution(t, initial = resolution, resolutions = resolutions)
+        fields_add_time_selection(t, initial_duration=duration,
+                                  durations=durations)
+        fields_add_resolution(t, initial=resolution, resolutions=resolutions)
         fields_add_filterexpr(t)
 
         return t
@@ -131,9 +125,11 @@ def shark_source_name_choices(form, id, field_kwargs, params):
         
     field_kwargs['label'] = label
     field_kwargs['choices'] = choices
-            
-def create_shark_column(table, name, label=None, datatype='', units='', iskey=False,
-                        issortcol=False, extractor=None, operation=None, default_value=None):
+
+
+def create_shark_column(table, name, label=None, datatype='', units='',
+                        iskey=False, issortcol=False, extractor=None,
+                        operation=None, default_value=None):
     options = ColumnOptions(extractor=extractor,
                             operation=operation,
                             default_value=default_value)
@@ -171,7 +167,6 @@ class TableQuery:
         default_delta = 1000000000                      # one second
         self.delta = int(default_delta * resolution)    # sample size interval
 
-
     def fake_run(self):
         import fake_data
         self.data = fake_data.make_data(self.table, self.job)
@@ -182,7 +177,7 @@ class TableQuery:
         criteria = self.job.criteria
 
         if criteria.shark_device == '':
-            logger.debug('%s: No shark device selected' % (self.table))
+            logger.debug('%s: No shark device selected' % self.table)
             self.job.mark_error("No Shark Device Selected")
             return False
             
@@ -197,8 +192,9 @@ class TableQuery:
         columns = []
         for tc in self.table.get_columns(synthetic=False):
             tc_options = tc.options
-            if tc.iskey and tc.name == 'time' and tc_options.extractor == 'sample_time':
-                # don't create column for view, we will use the sample time for timeseries
+            if ( tc.iskey and tc.name == 'time' and
+                 tc_options.extractor == 'sample_time'):
+                # don't create column, use the sample time for timeseries
                 self.timeseries = True
                 self.column_names.append('time')
                 continue
@@ -213,7 +209,8 @@ class TableQuery:
                     except AttributeError:
                         operation = Operation.sum
                         print ('ERROR: Unknown operation attribute '
-                               '%s for column %s.' % (tc_options.operation, tc.name))
+                               '%s for column %s.' %
+                               (tc_options.operation, tc.name))
                 else:
                     operation = Operation.none
 
@@ -238,22 +235,24 @@ class TableQuery:
         criteria = self.job.criteria
 
         filters = []
-        filterexpr = self.job.combine_filterexprs(exprs=criteria.shark_filterexpr, joinstr="&")
+        filterexpr = self.job.combine_filterexprs(
+            exprs=criteria.shark_filterexpr,
+            joinstr="&"
+        )
         if filterexpr:
             filters.append(SharkFilter(filterexpr))
 
         tf = TimeFilter(start=criteria.starttime, end=criteria.endtime)
         filters.append(tf)
 
-        logger.info("Setting shark table %d timeframe to %s" % (self.table.id, str(tf)))
-
-        # process Report/Table Criteria
-        self.table.apply_table_criteria(criteria)
+        logger.info("Setting shark table %d timeframe to %s" % (self.table.id,
+                                                                str(tf)))
 
         # Get source type from options
         try:
             with lock:
-                source = path_to_class(shark, self.job.criteria.shark_source_name)
+                source = path_to_class(shark,
+                                       self.job.criteria.shark_source_name)
 
         except RvbdHTTPException, e:
             source = None
@@ -265,14 +264,17 @@ class TableQuery:
         elif resolution.microseconds == 1000:
             sampling_time_msec = 1
             if criteria.duration > parse_timedelta('1s'):
-                raise ValueError("Cannot run a millisecond report with a duration longer than 1 second")
+                msg = ("Cannot run a millisecond report with a duration "
+                       "longer than 1 second")
+                raise ValueError(msg)
         else:
             sampling_time_msec = 1000
  
         # Setup the view
         if source is not None:
             with lock:
-                view = shark.create_view(source, columns, filters=filters, sync=False,
+                view = shark.create_view(source, columns, filters=filters,
+                                         sync=False,
                                          sampling_time_msec=sampling_time_msec)
         else:
             # XXX raise other exception
@@ -291,8 +293,10 @@ class TableQuery:
         # Retrieve the data
         with lock:
             if self.table.options.aggregated:
-                self.data = view.get_data(aggregated=self.table.options.aggregated, 
-                                          sortby=sortidx)
+                self.data = view.get_data(
+                    aggregated=self.table.options.aggregated,
+                    sortby=sortidx
+                )
             else:
                 self.data = view.get_data(delta=self.delta, sortby=sortidx)
             view.close()
@@ -302,7 +306,8 @@ class TableQuery:
 
         self.parse_data()
 
-        logger.info("Shark Report %s returned %s rows" % (self.job, len(self.data)))
+        logger.info("Shark Report %s returned %s rows" %
+                    (self.job, len(self.data)))
 
         return True
 

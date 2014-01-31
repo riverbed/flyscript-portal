@@ -17,7 +17,8 @@ from rvbd.common.jsondict import JsonDict
 from django.forms.widgets import FileInput
 
 from rvbd_portal.apps.datasource.models import Table, TableField
-from rvbd_portal.apps.datasource.forms import FileSelectField, fields_add_resolution
+from rvbd_portal.apps.datasource.forms import (FileSelectField,
+                                               fields_add_resolution)
 
 
 logger = logging.getLogger(__name__)
@@ -31,10 +32,7 @@ class ColumnOptions(JsonDict):
     _required = ['field']
 
 
-def fields_add_pcapfile(obj,
-                        keyword = 'pcapfile',
-                        initial=None
-                        ):
+def fields_add_pcapfile(obj, keyword = 'pcapfile', initial=None):
     field = TableField(keyword='pcapfile',
                        label='PCAP File',
                        field_cls=FileSelectField,
@@ -89,10 +87,6 @@ class TableQuery:
 
         trafficexpr = self.job.combine_filterexprs()
 
-        # process Report/Table Criteria
-        #from IPython import embed; embed()
-        table.apply_table_criteria(self.job.criteria)
-
         pcapfile = self.job.criteria.pcapfile
 
         if not pcapfile:
@@ -100,11 +94,13 @@ class TableQuery:
         elif not os.path.exists(pcapfile):
             raise ValueError("No such file: %s" % pcapfile)
         
-        command = "tshark -r %s -T fields -E occurrence=f -E separator=," % pcapfile
+        command = ("tshark -r %s -T fields -E occurrence=f -E separator=," %
+                   pcapfile)
 
         keys = []
         basecolnames = []  # list of colummns
-        fields = {}  # dict by field name of the base (or first) column to use this field
+        # dict by field name of the base (or first) column to use this field
+        fields = {}
         ops = {}
         groupbytime = None
         for tc in columns:

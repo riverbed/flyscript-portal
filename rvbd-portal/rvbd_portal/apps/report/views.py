@@ -159,7 +159,7 @@ class ReportView(views.APIView):
             show = False
             for v in fields_by_section[s.id].values():
                 if v.keyword not in (report.hidden_fields or []):
-                    show=True
+                    show = True
                     break
                 
             if show:
@@ -214,7 +214,6 @@ class ReportView(views.APIView):
 
             logger.debug("Report %s validated form: %s" %
                          (report_slug, formdata))
-
 
             # setup definitions for each Widget
             definition = []

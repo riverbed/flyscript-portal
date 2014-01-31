@@ -32,7 +32,8 @@ from rvbd.common.utils import DictObject
 from rvbd.common import timedelta_total_seconds
 
 from rvbd_portal.apps.datasource.exceptions import *
-from rvbd_portal.libs.fields import PickledObjectField, FunctionField, SeparatedValuesField
+from rvbd_portal.libs.fields import (PickledObjectField, FunctionField,
+                                     SeparatedValuesField)
 from project import settings
 
 
@@ -49,6 +50,7 @@ else:
 
 age_jobs_last_run = 0
 
+
 class LocalLock(object):
     def __enter__(self):
         if lock is not None:
@@ -58,6 +60,7 @@ class LocalLock(object):
         if lock is not None:
             lock.release()
         return False
+
 
 class TableField(models.Model):
     """
@@ -176,7 +179,7 @@ class TableField(models.Model):
         elif len(params) > 1:
             raise KeyError("Multiple TableField matches found for %s"
                            % key)
-        param = param[0]
+        param = params[0]
         return param
 
 
@@ -270,40 +273,14 @@ class Table(models.Model):
                 self.sortcol = c
                 self.save()
 
-    def apply_table_criteria(self, criteria):
-        """ Merge updates from dict of passed criteria values
-
-            Changes are only applied to instance, not saved to database
-        """
-        # XXXCJ - I think this function is now obsolete...
-        return
-    
-        for k, v in criteria.iteritems():
-            if k.startswith('criteria_') and (self in v.table_set.all() or
-                                              v.is_report_criteria(self)):
-                replacement = v.template.format(v.value)
-
-                if hasattr(self, v.keyword):
-                    msg = 'In table %s, replacing %s with %s'
-                    logger.debug(msg % (self, v.keyword, replacement))
-                    setattr(self, v.keyword, replacement)
-
-                elif hasattr(self.options, v.keyword):
-                    msg = 'In table %s options, replacing %s with %s'
-                    logger.debug(msg % (self, v.keyword, replacement))
-                    setattr(self.options, v.keyword, replacement)
-
-                else:
-                    msg = 'WARNING: keyword %s not found in table %s or its options'
-                    logger.debug(msg % (v.keyword, self))
-
     def compute_synthetic(self, job, df):
         """ Compute the synthetic columns from DF a two-dimensional array
             of the non-synthetic columns.
 
             Synthesis occurs as follows:
 
-            1. Compute all synthetic columns where compute_post_resample is False
+            1. Compute all synthetic columns where compute_post_resample
+               is False
 
             2. If the table is a time-based table with a defined resolution, the
                result is resampled.
@@ -327,7 +304,8 @@ class Table(models.Model):
                 for ttype, tvalue, _, _, _ in g:
                     if getvalue:
                         if ttype != tokenize.NAME:
-                            raise ValueError("Invalid token, expected {name}: %s" % tvalue)
+                            msg = "Invalid syntax, expected {name}: %s" % tvalue
+                            raise ValueError(msg)
                         elif tvalue not in all_col_names:
                             raise ValueError("Invalid column name: %s" % tvalue)
                         newexpr += "df['%s']" % tvalue
@@ -335,7 +313,8 @@ class Table(models.Model):
                         getvalue = False
                     elif getclose:
                         if ttype != tokenize.OP and tvalue != "}":
-                            raise ValueError("Invalid syntax, expected {name}: %s" % tvalue)
+                            msg = "Invalid syntax, expected {name}: %s" % tvalue
+                            raise ValueError(msg)
                         getclose = False
                     elif ttype == tokenize.OP and tvalue == "{":
                         getvalue = True
@@ -348,7 +327,6 @@ class Table(models.Model):
         compute(df, [col for col in all_columns if (col.synthetic and
                                                     col.compute_post_resample is False)])
 
-
         # 2. Resample
         colmap = {}
         timecol = None
@@ -358,7 +336,7 @@ class Table(models.Model):
                 timecol = col.name
 
         if self.resample:
-            if (timecol is None):
+            if timecol is None:
                 raise (TableComputeSyntheticError
                        ("Table %s 'resample' is set but no 'time' column'" %
                         self))
@@ -376,7 +354,7 @@ class Table(models.Model):
                 how[k] = colmap[k].resample_operation
 
             indexed = df.set_index(timecol)
-            if ('resample_resolution' in job.criteria):
+            if 'resample_resolution' in job.criteria:
                 resolution = job.criteria.resample_resolution
             else:
                 resolution = job.criteria.resolution
@@ -388,7 +366,8 @@ class Table(models.Model):
                          "less than 1 second") % self))
 
             indexed.save('/tmp/indexed.pd')
-            resampled = indexed.resample('%ss' % int(resolution), how, convention='end').reset_index()
+            resampled = indexed.resample('%ss' % int(resolution), how,
+                                         convention='end').reset_index()
             df = resampled
 
         # 3. Compute remaining synthetic columns (post_resample is True)
@@ -418,7 +397,8 @@ class Column(models.Model):
     compute_expression = models.CharField(max_length=300)
     resample_operation = models.CharField(max_length=300, default='sum')
     
-    # datatype should be an enumeration: metric, bytes, time  XXXCJ make enumeration
+    # datatype should be an enumeration: 
+    # metric, bytes, time  XXXCJ make enumeration
     datatype = models.CharField(max_length=50, default='')
 
     units = models.CharField(max_length=50, default='') 
@@ -436,10 +416,11 @@ class Column(models.Model):
                iskey=False, issortcol=False, options=None, **kwargs):
 
         if len(Column.objects.filter(table=table, name=name)) > 0:
-            raise ValueError("Column %s already in use for table %s" % (name, str(table)))
+            raise ValueError("Column %s already in use for table %s" %
+                             (name, str(table)))
             
-        c = Column(table=table, name=name, label=label, datatype=datatype, units=units,
-                   iskey=iskey, options=options, **kwargs)
+        c = Column(table=table, name=name, label=label, datatype=datatype,
+                   units=units, iskey=iskey, options=options, **kwargs)
         posmax = Column.objects.filter(table=table).aggregate(Max('position'))
         c.position = (posmax['position__max'] or 0) + 1
         c.save()
@@ -485,7 +466,7 @@ class Criteria(DictObject):
     def print_details(self):
         """ Return instance variables as nicely formatted string
         """
-        return ', '.join([("%s: %s" % (k,v)) for k,v in self.iteritems()])
+        return ', '.join([("%s: %s" % (k, v)) for k, v in self.iteritems()])
 
     def build_for_table(self, table):
         """ Build a criteria object for a table.
@@ -496,12 +477,11 @@ class Criteria(DictObject):
 
         """
         crit = Criteria(starttime=self._orig_starttime,
-                         endtime=self._orig_endtime,
-                         duration=self._orig_duration)
+                        endtime=self._orig_endtime,
+                        duration=self._orig_duration)
 
-        for k,v in self.iteritems():
-            if (  (k in ['starttime', 'endtime', 'duration']) or
-                  k.startswith('_')):
+        for k, v in self.iteritems():
+            if k in ['starttime', 'endtime', 'duration'] or k.startswith('_'):
                 continue
             
             crit[k] = v
@@ -523,7 +503,9 @@ class Criteria(DictObject):
             elif duration is not None:
                 endtime = starttime + duration
             else:
-                raise ValueError("Cannot compute times, have starttime but not endtime or duration")
+                msg = ("Cannot compute times, have starttime but not "
+                       "endtime or duration")
+                raise ValueError(msg)
             
         elif endtime is None:
             endtime = datetime.datetime.now()
@@ -531,12 +513,15 @@ class Criteria(DictObject):
         if duration is not None:
             starttime = endtime - duration
         else:
-            raise ValueError("Cannot compute times, have endtime but not starttime or duration")
+            msg = ("Cannot compute times, have endtime but not "
+                   "starttime or duration")
+            raise ValueError(msg)
 
         self.duration = duration
         self.starttime = starttime
         self.endtime = endtime
-        
+
+
 class Job(models.Model):
 
     # Timestamp when the job was created
@@ -589,11 +574,8 @@ class Job(models.Model):
     remaining = models.IntegerField(default=None, null=True)
 
     def __unicode__(self):
-        if self.handle == '':
-            return "<Job %s t=%s>" % (self.id, self.table.id)
-        else:
-            return "<Job %s t=%s %8.8s>" % (self.id, self.table.id, self.handle)
-    
+        return "<Job %s (%8.8s) - t%s>" % (self.id, self.handle, self.table.id)
+
     def refresh(self):
         """ Refresh dynamic job parameters from the database. """
         job = Job.objects.get(pk=self.pk)
@@ -625,13 +607,13 @@ class Job(models.Model):
             if not self.ischild:
                 # Push changes to children of this job
                 child_kwargs = {}
-                for k,v in kwargs.iteritems():
+                for k, v in kwargs.iteritems():
                     if k in ['status', 'message', 'progress', 'remaining',
                              'actual_criteria']:
                         child_kwargs[k] = v
-                # There should be no recursion, so a direct update to the database
-                # is possible.  (If recursion, would need to call self_update()
-                # on each child.)
+                # There should be no recursion, so a direct update to the
+                # database is possible.  (If recursion, would need to call
+                # self_update() on each child.)
                 Job.objects.filter(parent=self).update(**child_kwargs)
             
     @classmethod
@@ -646,14 +628,18 @@ class Job(models.Model):
                     # Ignore errors, this table may not have start/end times
                     pass
                 
-                # Compute the handle -- this will take into account cacheability
+                # Compute the handle -- this will take into account
+                # cacheability
                 handle = Job._compute_handle(table, criteria)
 
-                # Look for another job by the same handle in any state except ERROR
+                # Look for another job by the same handle in any state 
+                # except ERROR
                 if not criteria.ignore_cache:
                     parents = (Job.objects
                                .select_for_update()
-                               .filter(status__in=[Job.NEW, Job.COMPLETE, Job.RUNNING],
+                               .filter(status__in=[Job.NEW,
+                                                   Job.COMPLETE,
+                                                   Job.RUNNING],
                                        handle=handle,
                                        ischild=False)
                                .order_by('created'))
@@ -666,33 +652,33 @@ class Job(models.Model):
                 if parents is not None and len(parents) > 0:
                     parent = parents[0]
 
-                    job = Job(table = table,
-                              criteria = criteria,
-                              actual_criteria = parent.actual_criteria,
-                              status = parent.status,
-                              handle = handle,
-                              parent = parent,
-                              ischild = True,
-                              progress = parent.progress,
-                              remaining = parent.remaining,
-                              message = '')
+                    job = Job(table=table,
+                              criteria=criteria,
+                              actual_criteria=parent.actual_criteria,
+                              status=parent.status,
+                              handle=handle,
+                              parent=parent,
+                              ischild=True,
+                              progress=parent.progress,
+                              remaining=parent.remaining,
+                              message='')
                     job.save()
 
-                    parent.reference("Link from job %s" % (job))
-                    parent.safe_update(touched = datetime.datetime.utcnow())
+                    parent.reference("Link from job %s" % job)
+                    parent.safe_update(touched=datetime.datetime.utcnow())
 
-                    logger.info("%s: New job for table %s, linked to parent %s" %
-                                (job, table.name, parent))
+                    logger.info("%s: New job for table %s, linked to parent %s"
+                                % (job, table.name, parent))
                 else:
-                    job = Job(table = table,
-                              criteria = criteria,
-                              status = Job.NEW,
-                              handle = handle,
-                              parent = None,
-                              ischild = False,
-                              progress = 0,
-                              remaining = -1,
-                              message = '')
+                    job = Job(table=table,
+                              criteria=criteria,
+                              status=Job.NEW,
+                              handle=handle,
+                              parent=None,
+                              ischild=False,
+                              progress=0,
+                              remaining=-1,
+                              message='')
                     job.save()
                     logger.info("%s: New job for table %s" % (job, table.name))
 
@@ -703,35 +689,34 @@ class Job(models.Model):
 
         return job
     
-    def __unicode__(self):
-        return "<Job %s (%8.8s) - t%s>" % (self.id, self.handle, self.table.id)
-    
     @classmethod
     def _compute_handle(cls, table, criteria):
         h = hashlib.md5()
         h.update(str(table.id))
 
         if table.cacheable and not criteria.ignore_cache:
-            # XXXCJ - Drop ephemeral columns when computing the cache handle, since
-            # the list of columns is modifed at run time.   Typical use case
-            # is an analysis table which creates a time-series graph of the
-            # top 10 hosts -- one column per host.  The host columns will change
-            # based on the run of the dependent table.
+            # XXXCJ - Drop ephemeral columns when computing the cache handle,
+            # since the list of columns is modifed at run time.   Typical use
+            # case is an analysis table which creates a time-series graph of
+            # the top 10 hosts -- one column per host.  The host columns will
+            # change based on the run of the dependent table.
             #
-            # Including epheremal columns causes some problems because the handle is computed
-            # before the query is actually run, so it never matches.
+            # Including epheremal columns causes some problems because the
+            # handle is computed before the query is actually run, so it never
+            # matches.
             #
-            # May want to dig in to this further and make sure this doesn't pick up cache
-            # files when we don't want it to
-            h.update('.'.join([c.name for c in table.get_columns(ephemeral=False)]))
+            # May want to dig in to this further and make sure this doesn't
+            # pick up cache files when we don't want it to
+            h.update('.'.join([c.name for c in
+                               table.get_columns(ephemeral=False)]))
             for k, v in criteria.iteritems():
                 #logger.debug("Updating hash from %s -> %s" % (k,v))
                 h.update('%s:%s' % (k, v))
         else:
-            # Table is not cacheable, instead use current time plus a random value
-            # just to get a unique hash
+            # Table is not cacheable, instead use current time plus a random
+            # value just to get a unique hash
             h.update(str(datetime.datetime.now()))
-            h.update(str(random.randint(0,10000000)))
+            h.update(str(random.randint(0, 10000000)))
 
         return h.hexdigest()
 
@@ -748,7 +733,7 @@ class Job(models.Model):
         #             (self, message, Job.objects.get(pk=pk).refcount))
         
     def json(self, data=None):
-        """ Return a simple JSON structure representing the status of this Job """
+        """ Return a simple JSON structure representing the Job status """
         self.refresh()
         return {'id': self.id,
                 'handle': self.handle,
@@ -805,29 +790,28 @@ class Job(models.Model):
 
     def mark_error(self, message):
         logger.warning("%s failed: %s" % (self, message))
-        self.safe_update(status = Job.ERROR,
-                         progress = 100,
-                         message = message)
+        self.safe_update(status=Job.ERROR,
+                         progress=100,
+                         message=message)
 
     def mark_complete(self):
-        logger.info("%s complete" % (self))
-        self.safe_update(status = Job.COMPLETE,
-                         progress = 100,
-                         message = '')
+        logger.info("%s complete" % self)
+        self.safe_update(status=Job.COMPLETE,
+                         progress=100,
+                         message='')
 
     def mark_progress(self, progress, remaining=None):
         logger.debug("%s progress %s" % (self, progress))
-        self.safe_update(status = Job.RUNNING,
-                         progress = progress,
-                         remaining = remaining)
-
+        self.safe_update(status=Job.RUNNING,
+                         progress=progress,
+                         remaining=remaining)
 
     def datafile(self):
         """ Return the data file for this job. """
         return os.path.join(settings.DATA_CACHE, "job-%s.data" % self.handle)
     
     def data(self):
-        """ Returns a pandas.DataFrame of the data, or None if not available. """
+        """ Returns a pandas.DataFrame of data, or None if not available. """
 
         with transaction.commit_on_success():
             self.refresh()
@@ -838,12 +822,15 @@ class Job(models.Model):
 
             e = None
             try:
-                logger.debug("%s looking for data file: %s" % (str(self), self.datafile()))
+                logger.debug("%s looking for data file: %s" %
+                             (str(self), self.datafile()))
                 if os.path.exists(self.datafile()):
                     df = pandas.load(self.datafile())
-                    logger.debug("%s data loaded %d rows from file: %s" % (str(self), len(df), self.datafile()))
+                    logger.debug("%s data loaded %d rows from file: %s" %
+                                 (str(self), len(df), self.datafile()))
                 else:
-                    logger.debug("%s no data, missing data file: %s" % (str(self), self.datafile()))
+                    logger.debug("%s no data, missing data file: %s" %
+                                 (str(self), self.datafile()))
                     df = None
             except Exception as e:
                 pass
@@ -894,12 +881,16 @@ class Job(models.Model):
             return
         
         if old is None:
-            old = datetime.timedelta(seconds=settings.APPS_DATASOURCE['job_age_old_seconds'])
+            old = datetime.timedelta(
+                seconds=settings.APPS_DATASOURCE['job_age_old_seconds']
+            )
         elif type(old) in [int, float]:
             old = datetime.timedelta(seconds=old)
             
         if ancient is None:
-            ancient = datetime.timedelta(seconds=settings.APPS_DATASOURCE['job_age_ancient_seconds'])
+            ancient = datetime.timedelta(
+                seconds=settings.APPS_DATASOURCE['job_age_ancient_seconds']
+            )
         elif type(ancient) in [int, float]:
             ancient = datetime.timedelta(seconds=ancient)
 
@@ -920,8 +911,11 @@ class Job(models.Model):
 
     def done(self):
         self.refresh()
-        logger.debug("%s status: %s - %s%%" % (str(self), self.status, self.progress))
+        logger.debug("%s status: %s - %s%%" % (str(self),
+                                               self.status,
+                                               self.progress))
         return self.status == Job.COMPLETE or self.status == Job.ERROR
+
 
 @receiver(pre_delete, sender=Job)
 def _my_job_delete(sender, instance, **kwargs):
@@ -951,7 +945,8 @@ class AsyncWorker(threading.Thread):
     def run(self):
         self.do_run()
         sys.exit(0)
-        
+
+
 class SyncWorker(object):
     def __init__(self, job, queryclass):
         self.job = job
@@ -970,6 +965,7 @@ if settings.APPS_DATASOURCE['threading'] and not settings.TESTING:
     base_worker_class = AsyncWorker
 else:
     base_worker_class = SyncWorker
+
 
 class Worker(base_worker_class):
 
@@ -1002,26 +998,29 @@ class Worker(base_worker_class):
                                 pass
 
                 elif ((query.data is None) or
-                      (isinstance (query.data, list) and len(query.data) == 0)):
+                      (isinstance(query.data, list) and len(query.data) == 0)):
                     df = None
                 elif isinstance(query.data, pandas.DataFrame):
                     df = query.data
                 else:
-                    raise ValueError("Unrecognized query result type: %s" % type(query.data))
+                    raise ValueError("Unrecognized query result type: %s" %
+                                     type(query.data))
 
                 if df is not None:
                     df = job.table.compute_synthetic(job, df)
 
                 if df is not None:
                     df.save(job.datafile())
-                    logger.debug("%s data saved to file: %s" % (str(self), job.datafile()))
+                    logger.debug("%s data saved to file: %s" % (str(self),
+                                                                job.datafile()))
                 else:
-                    logger.debug("%s no data saved, data is empty" % (str(self)))
+                    logger.debug("%s no data saved, data is empty" %
+                                 (str(self)))
 
                 logger.info("%s finished as COMPLETE" % self)
                 job.refresh()
                 if job.actual_criteria is None:
-                    job.safe_update(actual_criteria = job.criteria)
+                    job.safe_update(actual_criteria=job.criteria)
 
                 job.mark_complete()
             else:
@@ -1035,13 +1034,17 @@ class Worker(base_worker_class):
                     vals['message'] = "Query returned an unknown error"
                 vals['progress'] = 100
                 job.safe_update(**vals)
-                logger.error("%s finished with an error: %s" % (self, job.message))
+                logger.error("%s finished with an error: %s" % (self,
+                                                                job.message))
                 
         except:
-            logger.exception("%s raised an exception" % (self))
-            job.safe_update(status = job.ERROR,
-                            progress = 100,
-                            message = traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+            logger.exception("%s raised an exception" % self)
+            job.safe_update(
+                status=job.ERROR,
+                progress=100,
+                message=traceback.format_exception_only(sys.exc_info()[0],
+                                                        sys.exc_info()[1])
+            )
 
         finally:
             job.dereference("Worker exiting")
@@ -1083,7 +1086,8 @@ class BatchJobRunner(object):
                             batch_status[job.id] = True
                         else:
                             batch_done = False
-                            batch_progress += (float(job.progress) / float(self.batchsize))
+                            batch_progress += (float(job.progress) /
+                                               float(self.batchsize))
                     else:
                         batch_progress += (100.0 / float(self.batchsize))
 
@@ -1091,12 +1095,11 @@ class BatchJobRunner(object):
                 job_progress = (self.min_progress +
                                 (total_progress * (self.max_progress -
                                                    self.min_progress)) / 100)
-                logger.debug("BatchJobRunner: batch[%d:%d] %d%% / total %d%% / job %d%%",
+                logger.debug("BatchJobRunner: "
+                             "batch[%d:%d] %d%% / total %d%% / job %d%%",
                              i, i+self.batchsize, int(batch_progress),
                              int(total_progress), int(job_progress))
                 self.basejob.mark_progress(job_progress)
                 if not batch_done:
                     time.sleep(interval)
                     interval = (interval * 2) if interval < max_interval else max_interval
-
-                
