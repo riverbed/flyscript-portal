@@ -165,11 +165,11 @@ if __name__ == '__main__':
     if command == 'install':
         create_sdists()
         install_plugins()
-        create_local_settings()
+        #create_local_settings()
 
     elif command == 'develop':
         install_plugins(develop=True)
-        create_local_settings()
+        #create_local_settings()
 
     elif command == 'uninstall':
         uninstall_plugins()
