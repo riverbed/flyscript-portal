@@ -22,12 +22,12 @@ from rvbd_portal_shark.datasources.shark import SharkTable, create_shark_column
 #
 
 report = Report(title="Overall", position=1,
-                field_order = ['endtime', 'profiler_filterexpr', 'shark_filterexpr'],
-                hidden_fields = ['resolution', 'duration'])
+                field_order=['endtime', 'profiler_filterexpr', 'shark_filterexpr'],
+                hidden_fields=['resolution', 'duration'])
 report.save()
 
-section = Section.create(report, title = 'Locations',
-                         section_keywords = ['resolution', 'duration'])
+section = Section.create(report, title='Locations',
+                         section_keywords=['resolution', 'duration'])
                          
 # Define a map and table, group by location
 table = GroupByTable.create('maploc', 'host_group', duration=60, resolution='auto')
@@ -41,8 +41,8 @@ maps.MapWidget.create(section, table, "Response Time", width=6, height=300)
 yui3.TableWidget.create(section, table, "Locations by Avg Bytes", width=6)
 
 # Define a Overall TimeSeries showing Avg Bytes/s
-section = Section.create(report, title = 'Profiler Overall',
-                         section_keywords = ['resolution', 'duration'])
+section = Section.create(report, title='Profiler Overall',
+                         section_keywords=['resolution', 'duration'])
 
 table = TimeSeriesTable.create('ts1', duration=1440, resolution='15min')
 
@@ -52,15 +52,20 @@ Column.create(table, 'avg_bytes', label='Avg Bytes/s', datatype='bytes', units='
 yui3.TimeSeriesWidget.create(section, table, "Profiler Overall Traffic", width=6)
 
 ### Shark Time Series
-section = Section.create(report, title = 'Shark Traffic',
-                         section_keywords = ['resolution', 'duration', ])
+section = Section.create(report, title='Shark Traffic',
+                         section_keywords=['resolution', 'duration', ])
 
 t = SharkTable.create(name='Total Traffic Bytes',
                       duration=15, resolution='1sec', aggregated=False)
 
-create_shark_column(t, 'time', extractor='sample_time', iskey=True, label='Time', datatype='time')
+create_shark_column(t, 'time', extractor='sample_time', iskey=True,
+                    label='Time', datatype='time')
 create_shark_column(t, 'generic_bytes', label='Avg Bytes/s', iskey=False,
                     extractor='generic.bytes', operation='sum', datatype='bytes')
 
-yui3.TimeSeriesWidget.create(section, t, 'Overall Bandwidth (Bytes) at (1-second resolution)',
-                             width=6)
+yui3.TimeSeriesWidget.create(
+    section,
+    t,
+    'Overall Bandwidth (Bytes) at (1-second resolution)',
+    width=6
+)

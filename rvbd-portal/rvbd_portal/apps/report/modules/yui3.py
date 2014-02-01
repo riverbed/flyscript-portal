@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 class TableWidget(object):
     @classmethod
     def create(cls, section, table, title, width=6, rows=1000, height=300):
-        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
-                   module=__name__, uiwidget=cls.__name__)
+        w = Widget(section=section, title=title, rows=rows, width=width,
+                   height=height, module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         w.save()
         w.tables.add(table)
@@ -51,8 +51,8 @@ class TableWidget(object):
             row = {}
 
             for i, col in enumerate(columns):
-                if (col['key'] == 'time' or
-                        'formatter' in col and col['formatter'] == 'formatTime'):
+                if col['key'] == 'time' or ('formatter' in col and
+                                            col['formatter'] == 'formatTime'):
                     t = rawrow[i]
                     try:
                         val = timeutils.datetime_to_microseconds(t) / 1000
@@ -77,15 +77,17 @@ class TableWidget(object):
 class PieWidget(object):
     @classmethod
     def create(cls, section, table, title, width=6, rows=10, height=300):
-        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
-                   module=__name__, uiwidget=cls.__name__)
+        w = Widget(section=section, title=title, rows=rows, width=width,
+                   height=height, module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         keycols = [col.name for col in table.get_columns() if col.iskey is True]
         if len(keycols) == 0:
-            raise ValueError("Table %s does not have any key columns defined" % str(table))
+            raise ValueError("Table %s does not have any key columns defined" %
+                             str(table))
 
         if table.sortcol is None:
-            raise ValueError("Table %s does not have a sort column defined" % str(table))
+            raise ValueError("Table %s does not have a sort column defined" %
+                             str(table))
 
         w.options = JsonDict(key=keycols[0],
                              value=table.sortcol.name)
@@ -143,11 +145,13 @@ class TimeSeriesWidget(object):
         w = Widget(section=section, title=title, width=width, height=height,
                    module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
-        timecols = [col.name for col in table.get_columns() if col.datatype == 'time']
+        timecols = [col.name for col in table.get_columns()
+                    if col.datatype == 'time']
         if len(timecols) == 0:
-            raise ValueError("Table %s must have a datatype 'time' column for a timeseries widget" %
-                             str(table))
-        cols = cols or [col.name for col in table.get_columns() if col.datatype != 'time']
+            raise ValueError("Table %s must have a datatype 'time' column for "
+                             "a timeseries widget" % str(table))
+        cols = cols or [col.name for col in table.get_columns()
+                        if col.datatype != 'time']
         if altaxis:
             axes = {'0': {'position': 'left',
                           'columns': [col for col in cols if col not in altaxis]},
@@ -177,16 +181,20 @@ class TimeSeriesWidget(object):
         colinfo = {}
 
         if widget.options.columns == '*':
-            valuecolnames = [col.name for col in t_cols if col.datatype != 'time']
+            valuecolnames = [col.name for col in t_cols
+                             if col.datatype != 'time']
         else:
             valuecolnames = widget.options.columns
         # Retrieve the desired value columns
-        # ...and the indices for the value values (as the 'data' has *all* columns)
+        # ...and the indices for the value values
+        # (as the 'data' has *all* columns)
         for i, c in enumerate(t_cols):
             if c.datatype == 'time':
-                colinfo['time'] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
+                colinfo['time'] = ColInfo(c, i, -1,
+                                          istime=(c.datatype == 'time'))
             elif c.name in valuecolnames:
-                colinfo[c.name] = ColInfo(c, i, -1, istime=(c.datatype == 'time'))
+                colinfo[c.name] = ColInfo(c, i, -1,
+                                          istime=(c.datatype == 'time'))
 
         series = []
         w_axes = Axes(widget.options.axes)
@@ -195,12 +203,12 @@ class TimeSeriesWidget(object):
         axes = {"time": {"keys": ["time"],
                          "position": "bottom",
                          "type": "time",
-                         "styles": {"label": {"fontSize": "8pt", "rotation": "-45"}}}}
+                         "styles": {"label": {"fontSize": "8pt",
+                                              "rotation": "-45"}}}}
 
         # Create a better time format depending on t0/t1
         t_dataindex = colinfo['time'].dataindex
 
-        #print ("t_dataindex: %d, data[0]: %s, data[1]: %s" % (t_dataindex, str(data[0]), str(data[1])))
         t0 = data[0][t_dataindex]
         t1 = data[-1][t_dataindex]
         if not hasattr(t0, 'utcfromtimestamp'):
@@ -267,12 +275,16 @@ class TimeSeriesWidget(object):
                     rowmin[a] = val if val != '' else 0
                     rowmax[a] = val if val != '' else 0
                 else:
-                    rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a], val)
-                    rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a], val)
+                    rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a],
+                                                                      val)
+                    rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a],
+                                                                      val)
 
             for a in rowmin.keys():
-                minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
-                maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a], rowmax[a])
+                minval[a] = rowmin[a] if (a not in minval) else min(minval[a],
+                                                                    rowmin[a])
+                maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a],
+                                                                    rowmax[a])
 
             rows.append(row)
 
@@ -321,17 +333,21 @@ class TimeSeriesWidget(object):
 
 class BarWidget(object):
     @classmethod
-    def create(cls, section, table, title, width=6, rows=10, height=300, keycols=None, valuecols=None):
-        w = Widget(section=section, title=title, rows=rows, width=width, height=height,
-                   module=__name__, uiwidget=cls.__name__)
+    def create(cls, section, table, title, width=6, rows=10, height=300,
+               keycols=None, valuecols=None):
+        w = Widget(section=section, title=title, rows=rows, width=width,
+                   height=height, module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
         if keycols is None:
-            keycols = [col.name for col in table.get_columns() if col.iskey is True]
+            keycols = [col.name for col in table.get_columns()
+                       if col.iskey is True]
         if len(keycols) == 0:
-            raise ValueError("Table %s does not have any key columns defined" % str(table))
+            raise ValueError("Table %s does not have any key columns defined" %
+                             str(table))
 
         if valuecols is None:
-            valuecols = [col.name for col in table.get_columns() if col.iskey is False]
+            valuecols = [col.name for col in table.get_columns()
+                         if col.iskey is False]
         w.options = JsonDict(dict={'keycols': keycols,
                                    'columns': valuecols,
                                    'axes': None})
@@ -348,7 +364,8 @@ class BarWidget(object):
 
         all_cols = widget.table().get_columns()
 
-        # The category "key" column -- this is the column shown along the bottom of the bar widget
+        # The category "key" column -- this is the column shown along the
+        # bottom of the bar widget
         keycols = [c for c in all_cols if c.name in widget.options.keycols]
 
         # The value columns - one set of bars for each
@@ -370,14 +387,14 @@ class BarWidget(object):
 
         # Add keycols to the colmap
         for i, c in enumerate(all_cols):
-            if (c not in keycols):
+            if c not in keycols:
                 continue
             ci = ColInfo(c, i, w_axes.getaxis(c.name))
             colmap[c.name] = ci
 
         for i, c in enumerate(all_cols):
             # Rest of this is for data cols only
-            if (c not in cols):
+            if c not in cols:
                 continue
 
             ci = ColInfo(c, i, w_axes.getaxis(c.name))
@@ -399,7 +416,8 @@ class BarWidget(object):
             axis_name = 'axis' + str(ci.axis)
             if axis_name not in axes:
                 axes[axis_name] = {"type": "numeric",
-                                   "position": "left" if (ci.axis == 0) else "right",
+                                   "position": ("left" if (ci.axis == 0)
+                                                else "right"),
                                    "keys": []}
 
             axes[axis_name]['keys'].append(c.name)
@@ -442,12 +460,16 @@ class BarWidget(object):
                     rowmin[a] = val
                     rowmax[a] = val
                 else:
-                    rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a], val)
-                    rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a], val)
+                    rowmin[a] = (rowmin[a] + val) if stacked else min(rowmin[a],
+                                                                      val)
+                    rowmax[a] = (rowmax[a] + val) if stacked else max(rowmax[a],
+                                                                      val)
 
             for a in rowmin.keys():
-                minval[a] = rowmin[a] if (a not in minval) else min(minval[a], rowmin[a])
-                maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a], rowmax[a])
+                minval[a] = rowmin[a] if (a not in minval) else min(minval[a],
+                                                                    rowmin[a])
+                maxval[a] = rowmax[a] if (a not in maxval) else max(maxval[a],
+                                                                    rowmax[a])
             rows.append(row)
 
         # Build up axes
