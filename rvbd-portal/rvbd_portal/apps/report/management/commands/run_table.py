@@ -112,7 +112,9 @@ class Command(BaseCommand):
         if len(sections) == 1:
             all_fields = widgets[0].collect_fields()
         else:
-            all_fields = {f.keyword: f for f in table.fields.all()}
+            all_fields = {}
+            for f in table.fields.all():
+                all_fields[f.keyword] = f
 
         return TableFieldForm(all_fields, use_widgets=False, data=data)
 
