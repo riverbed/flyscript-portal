@@ -61,6 +61,11 @@ class Report(models.Model):
                                                 'duration', 'filterexpr'])
     hidden_fields = SeparatedValuesField(null=True)
 
+    # create an 'auto-load'-type report which uses default criteria
+    # values only, and optionally set a refresh timer
+    hide_criteria = models.BooleanField(default=False)
+    reload_minutes = models.IntegerField(default=0)  # 0 means no reloads
+
     def __init__(self, *args, **kwargs):
         if 'sourcefile' not in kwargs:
             kwargs['sourcefile'] = get_caller_name(self)
@@ -86,7 +91,8 @@ class Report(models.Model):
         return self.title
 
     def collect_fields_by_section(self):
-        """ Return a dict of all fields related to this report by section id. """
+        """ Return a dict of all fields related to this report by section id.
+        """
 
         # map of section id to field dict
         fields_by_section = {}
@@ -111,7 +117,7 @@ class Report(models.Model):
 
         # Reorder fields in each section according to the field_order list
         new_fields_by_section = {}
-        for i,fields in fields_by_section.iteritems():
+        for i, fields in fields_by_section.iteritems():
             # fields_by_section will have the format:
             #   { 's17_duration' : TableField(keyword='duration'),
             #     's18_duration' : TableField(keyword='duration'), ...}
@@ -139,7 +145,8 @@ class Report(models.Model):
 
     def widgets(self):
         return Widget.objects.filter(section__in=Section.objects.filter(report=self))
-        
+
+
 class Section(models.Model):
     """ Define a section of a report.
 
@@ -176,9 +183,9 @@ class Section(models.Model):
 
     @classmethod
     def create(cls, report, title='', position=0,
-               section_keywords = None,
-               default_field_mode = None,
-               keyword_field_modes = None):
+               section_keywords=None,
+               default_field_mode=None,
+               keyword_field_modes=None):
         """ Create a Section of a report and define field modes.
 
         :param report: the report this section applies to
@@ -229,7 +236,6 @@ class Section(models.Model):
         return section
 
     def collect_fields_by_section(self):
-
         # Gather up all fields
         fields = []
 
@@ -285,6 +291,7 @@ class SectionFieldMode(models.Model):
     mode = models.IntegerField(default=INHERIT,
                                choices=((INHERIT, "Inherit"),
                                         (SECTION, "Section")))
+
 
 class Widget(models.Model):
     """ Defines a UI widget and the source datatables
@@ -345,10 +352,10 @@ class Widget(models.Model):
         # If a field is in section_fields, the id has the prefix, just use
         # the original keyword in the returned fields
         fields = {}
-        for k,v in form.as_text().iteritems():
-            if (k in common_fields):
+        for k, v in form.as_text().iteritems():
+            if k in common_fields:
                 fields[common_fields[k].keyword] = v
-            elif (k in section_fields):
+            elif k in section_fields:
                 fields[section_fields[k].keyword] = v
 
         return fields
@@ -372,6 +379,7 @@ class Widget(models.Model):
 
         return fields
 
+
 class WidgetJob(models.Model):
     """ Query point for status of Jobs for each Widget.
     """
@@ -388,10 +396,12 @@ class WidgetJob(models.Model):
             self.job.reference(str(self))
             super(WidgetJob, self).save(*args, **kwargs)
 
+
 @receiver(pre_delete, sender=WidgetJob)
 def _widgetjob_delete(sender, instance, **kwargs):
     instance.job.dereference(str(instance))
-        
+
+
 class Axes:
     def __init__(self, definition):
         self.definition = definition
@@ -409,4 +419,3 @@ class Axes:
             (axis in self.definition) and ('position' in self.definition[axis])):
             return self.definition[axis]['position']
         return 'left'
-

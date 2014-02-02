@@ -24,6 +24,7 @@ from django.core.servers.basehttp import FileWrapper
 from django.core import management
 from django.utils.datastructures import SortedDict
 from rest_framework import generics, views
+from rest_framework.compat import View
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
@@ -323,6 +324,64 @@ class ReportCriteria(views.APIView):
             response.append({'id': field.auto_id,
                              'html': str(field)})
         return HttpResponse(json.dumps(response))
+
+
+class ReportWidgets(View):
+    """ Return default criteria values for all widgets, with latest time,
+        if applicable.
+
+        Used in auto-run reports when specifying detailed criteria isn't
+        necessary.
+    """
+
+    def get(self, request, namespace=None, report_slug=None):
+        try:
+            report = Report.objects.get(namespace=namespace,
+                                        slug=report_slug)
+        except:
+            raise Http404
+
+        # parse time and localize to user profile timezone
+        now = datetime.datetime.now()
+        profile = request.user.userprofile
+        utc = pytz.timezone('UTC')
+        timezone = pytz.timezone(profile.timezone)
+        now = now.replace(tzinfo=utc).astimezone(timezone)
+
+        widget_defs = []
+
+        widget_defs.append({'datetime': str(date(now, 'jS F Y H:i:s')),
+                            'timezone': str(timezone),
+                            })
+        for w in report.widgets().all():
+            # get default criteria values for widget
+            # and set endtime to now, if applicable
+            criteria = ReportCriteria.as_view()(request,
+                                                w.section.report.namespace,
+                                                w.section.report.slug,
+                                                w.id)
+            widget_criteria = json.loads(criteria.content)
+            if 'endtime' in widget_criteria:
+                widget_criteria['endtime'] = now.isoformat()
+
+            # setup json definition object
+            widget_def = {
+                "widgettype": w.widgettype().split("."),
+                "posturl": reverse('widget-job-list',
+                                   args=(w.section.report.namespace,
+                                         w.section.report.slug,
+                                         w.id)),
+                "options": w.uioptions,
+                "widgetid": w.id,
+                "row": w.row,
+                "width": w.width,
+                "height": w.height,
+                "criteria": widget_criteria
+            }
+
+            widget_defs.append(widget_def)
+
+        return HttpResponse(json.dumps(widget_defs))
 
 
 class ReportTableList(generics.ListAPIView):

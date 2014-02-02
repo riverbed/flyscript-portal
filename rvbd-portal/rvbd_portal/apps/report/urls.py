@@ -41,6 +41,10 @@ urlpatterns = patterns(
         'reload_config',
         name='reload-report'),
 
+    url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widgets$',
+        views.ReportWidgets.as_view(),
+        name='report-widgets'),
+
     url(r'^(?P<namespace>[0-9_a-zA-Z]+)/(?P<report_slug>[0-9_a-zA-Z]+)/widget/(?P<widget_id>[0-9]+)/jobs/$',
         views.WidgetJobsList.as_view(),
         name='widget-job-list'),

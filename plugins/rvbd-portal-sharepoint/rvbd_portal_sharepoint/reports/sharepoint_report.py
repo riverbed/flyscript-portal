@@ -24,7 +24,7 @@ report.save()
 section = Section.create(report)
 
 
-# Define a Overall TimeSeries showing Avg Bytes/s
+# Define a Sharepoint Table
 table = SharepointTable.create('sp-documents', '/', 'Shared Documents')
 
 create_sharepoint_column(table, 'BaseName', issortcol=True)

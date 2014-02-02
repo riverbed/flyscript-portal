@@ -46,18 +46,26 @@
       var runRequested = false;
       var debugFlag = false;
       $(document).ready( function() {
-          //run();
-          $("#criteria").on('hidden', function() { dorun(); });
           $.ajaxSetup({
               beforeSend: function(xhr) {
                   xhr.setRequestHeader('X-CSRFToken', '{{ csrf_token }}');
               }
           });
-          
+
+          {% if report.hide_criteria %}
+
+          renderPage();
+          {% if report.reload_minutes > 0 %}setInterval(renderPage, {{ report.reload_minutes }} * 60 * 1000);{% endif %}
+
+          {% else %}
+
+          $("#criteria").on('hidden', function() { dorun(); });
           $('form#criteriaform').submit(function() {
               run();
               return false;
           });
+
+          {% endif %}
 
         });
 
@@ -67,6 +75,28 @@
       var global = this;
       var rvbd_status = {};
       var rvbd_debug = false;
+
+      // used for auto-run
+      function renderPage() {
+          $.ajax({
+              dataType:"json",
+              type: "get",
+              url: "{% url 'report-widgets' report.namespace report.slug %}",
+              success: function(data, textStatus, jqXHR) {
+                  renderReport(data);
+              },
+              error: function(jqXHR, textStatus, errorThrown) {
+                  // we receive a 400 error on form validation problems
+                  if (jqXHR.status == 400) {
+                      alert("an error occurred: " + textStatus + " : " + errorThrown);
+                  }
+                  if (jqXHR.status == 500) {
+                      alert("an error occurred: " + textStatus + " : " + errorThrown);
+                  }
+              }
+          });
+      }
+
       function renderReport(widgets) {
           // reset the status
           global.rvbd_status = {};
@@ -214,6 +244,7 @@
 {% block header_row %}<h3>{{ report.title }}</h3>{% endblock %}
 
 {% block content %}
+    {% if not report.hide_criteria %}
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span12 widget-box">
@@ -288,6 +319,7 @@
         </div> 
       </div> 
     </div>
+    {% endif %}
   
     <div class="container-fluid">
       <div class="row-fluid">
