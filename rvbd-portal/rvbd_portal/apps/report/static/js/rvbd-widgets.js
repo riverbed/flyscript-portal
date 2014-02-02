@@ -178,19 +178,10 @@ rvbd_raw.TableWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<table id="' + contentid + '-table" border=1></table>')
+        append('<table id="' + contentid + '-table"></table>')
 
     var div= $('#' + this.divid)
     
-    $('#' + contentid + '-title')
-        .height(20)
-        .css({"text-align" : "center"});
-
-    $('#' + contentid).
-        css({"margin": 10}).
-        width(div.width()-22).
-        height(div.height()-42)
-
     var table = $('#' + contentid + '-table')
 
     $.each(data, function(i,row) {

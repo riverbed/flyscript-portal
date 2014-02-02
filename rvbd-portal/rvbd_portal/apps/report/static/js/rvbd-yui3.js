@@ -21,7 +21,7 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
+        append('<div id="' + contentid + '-title" class="widget-title">' + data['chartTitle'] + '</div>').
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
@@ -86,7 +86,7 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
+        append('<div id="' + contentid + '-title" class="widget-title">' + data['chartTitle'] + '</div>').
         append('<div class="yui3-skin-sam" id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
@@ -132,7 +132,7 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
+        append('<div id="' + contentid + '-title" class="widget-title">' + data['chartTitle'] + '</div>').
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
@@ -195,7 +195,7 @@ rvbd_yui3.PieWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
+        append('<div id="' + contentid + '-title" class="widget-title">' + data['chartTitle'] + '</div>').
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)

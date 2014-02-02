@@ -20,7 +20,7 @@ rvbd_maps.MapWidget.prototype.render = function(data)
     var contentid = this.divid + "_content";
     $('#' + this.divid).
         html('').
-        append('<div id="' + contentid + '-title">' + data['chartTitle'] + '</div>').
+        append('<div id="' + contentid + '-title" class="widget-title">' + data['chartTitle'] + '</div>').
         append('<div id="' + contentid + '" class="mapcanvas"></div>')
 
     var div= $('#' + this.divid)
