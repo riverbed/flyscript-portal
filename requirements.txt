@@ -1,4 +1,4 @@
-rvbd_portal>=0.1
+#rvbd_portal>=0.1
 
 Django>=1.5.1,<1.6
 django-model-utils==1.2.0
