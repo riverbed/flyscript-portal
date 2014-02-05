@@ -10,9 +10,9 @@ import time
 import subprocess
 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
-
 from django.template import RequestContext
 from django.shortcuts import render_to_response
+from django.conf import settings
 
 try:
     from django.http import StreamingHttpResponse
@@ -25,7 +25,6 @@ from rvbd_portal.apps.console.models import Utility, Results, Parameter
 from rvbd_portal.apps.console.forms import ( UtilityDetailForm, ParameterStringForm,
                                              get_utility_formset)
 
-from project.settings import PROJECT_ROOT, LOGGING, DEBUG
 
 # monkeypatch to address Python Bug #14308: http://bugs.python.org/issue14308
 # affects subprocess function in execute method
@@ -33,7 +32,7 @@ from project.settings import PROJECT_ROOT, LOGGING, DEBUG
 import threading
 threading._DummyThread._Thread__stop = lambda x: 42
 
-SCRIPT_DIR = os.path.join(PROJECT_ROOT,'apps', 'console', 'scripts')
+SCRIPT_DIR = os.path.join(settings.PROJECT_ROOT,'apps', 'console', 'scripts')
 
 
 def main(request):
@@ -75,8 +74,8 @@ def refresh(request):
             Utility(name=f, path=SCRIPT_DIR).save()
 
     # get logfiles - but only if debug is turned on
-    if DEBUG:
-        for handler, values in LOGGING['handlers'].iteritems():
+    if settings.DEBUG:
+        for handler, values in settings.LOGGING['handlers'].iteritems():
             try:
                 path, f = os.path.split(values['filename'])
                 if f not in utilities:

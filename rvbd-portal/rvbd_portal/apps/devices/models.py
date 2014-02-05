@@ -12,8 +12,8 @@ from cStringIO import StringIO
 
 from django.db import models
 from django.core import management
+from django.conf import settings
 
-from project.settings import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def create_device_fixture(strip_passwords=True):
             del d['fields']['password']
         devices.append(d)
 
-    fname = os.path.join(PROJECT_ROOT, 'initial_data', 'initial_devices.json')
+    fname = os.path.join(settings.PROJECT_ROOT, 'initial_data', 'initial_devices.json')
     with open(fname, 'w') as f:
         f.write(json.dumps(devices, indent=2))
 

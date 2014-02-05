@@ -12,8 +12,38 @@ SDIST_DIR = os.path.join(PLUGINS_DIR, 'sdist')
 LOCAL_SETTINGS = os.path.join(BASE_DIR, 'project', 'settings_local.py')
 
 LOCAL_SETTINGS_CONTENT = """
+from settings import *
+
+# This file adds site specific options to the server settings
+# To activate this file for use, include the following option as part of
+# "manage.py" commands:
+#   --settings=project.settings_local
+#
+# For example:
+#   $ ./clean --reset --force --settings=project.settings_local
+
 # Optionally add additional applications specific to this webserver
 LOCAL_APPS = None
+LOCAL_APPS = (
+    # additional apps can be listed here
+)
+INSTALLED_APPS += LOCAL_APPS
+
+# The following settings allow for alternate locations for development
+# database and log file output to be stored.  This means only the
+# DEV_FOLDER requires permissions for read/write by the web server,
+# and the project folder can have any readable permissions
+
+#DEV_FOLDER = os.path.join(os.path.dirname(PROJECT_ROOT),
+#                                          'portal_devsite')
+
+#DATABASES['default']['NAME'] = os.path.join(DEV_FOLDER, 'project_devserver.db')
+
+#LOGGING['handlers']['logfile']['filename'] = os.path.join(DEV_FOLDER,
+#                                                          'log.txt')
+#LOGGING['handlers']['backend-log']['filename'] = os.path.join(DEV_FOLDER,
+#                                                              'log-db.txt')
+
 
 # Add other settings customizations below, which will be local to this
 # machine only, and not recorded by git. This could include database or

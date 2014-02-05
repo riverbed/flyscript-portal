@@ -6,7 +6,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import logging
 
 from django.templatetags.static import static
@@ -16,8 +15,6 @@ from rvbd_portal.apps.datasource.modules.html import StaticHTMLTable
 from rvbd_portal.apps.report.models import Report, Section
 import rvbd_portal.apps.report.modules.raw as raw
 
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 logger = logging.getLogger(__name__)
 

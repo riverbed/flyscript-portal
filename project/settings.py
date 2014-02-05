@@ -285,9 +285,3 @@ APPS_DATASOURCE = {
 TESTING = 'test' in sys.argv
 
 LOCAL_APPS = None
-try:
-    from project.settings_local import *
-    if LOCAL_APPS:
-        INSTALLED_APPS += LOCAL_APPS
-except ImportError:
-    pass

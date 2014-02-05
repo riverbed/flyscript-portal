@@ -14,9 +14,9 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.core import management
 from django.contrib.auth.models import User
+from django.conf import settings
 import pytz
 
-from project.settings import PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def create_preference_fixture(initial_admin_only=True):
     preferences = list()
 
     if initial_admin_only:
-        admin_file = os.path.join(PROJECT_ROOT,
+        admin_file = os.path.join(settings.PROJECT_ROOT,
                                   'initial_data',
                                   'initial_admin_user.json')
         with open(admin_file) as f:
@@ -69,7 +69,7 @@ def create_preference_fixture(initial_admin_only=True):
             pref['fields']['profile_seen'] = False
             preferences.append(pref)
 
-    fname = os.path.join(PROJECT_ROOT,
+    fname = os.path.join(settings.PROJECT_ROOT,
                          'initial_data',
                          'initial_preferences.json')
 

@@ -6,9 +6,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ('License').  
 # This software is distributed 'AS IS' as set forth in the License.
 
-import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'project.settings')
-
 from rvbd_portal.apps.report.models import Report, Section
 import rvbd_portal.apps.report.modules.yui3 as yui3
 

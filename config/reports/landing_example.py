@@ -6,7 +6,6 @@
 #   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
-import os
 import logging
 
 from django.templatetags.static import static
@@ -22,8 +21,6 @@ from rvbd_portal_profiler.datasources.profiler import GroupByTable
 from rvbd_portal_sharepoint.datasources.sharepoint import (SharepointTable,
                                                            create_sharepoint_column)
 
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
 logger = logging.getLogger(__name__)
 
