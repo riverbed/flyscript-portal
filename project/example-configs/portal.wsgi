@@ -20,13 +20,13 @@ import sys
 import site
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
-os.environ['HOME'] = '/var/www'   # set home directory for wsgi process
+os.environ['HOME'] = '/flyscript/wsgi'   # set home directory for wsgi process
 
 
 # If running under a virtualenv, update these paths, otherwise change to empty
 # strings or None
-VIRTUALENV_BIN = '/home/vagrant/flyscript/bin'
-VIRTUALENV_SITE_PACKAGES = '/home/vagrant/flyscript/lib/python2.6/site-packages'
+VIRTUALENV_BIN = '/flyscript/virtualenv/bin'
+VIRTUALENV_SITE_PACKAGES = '/flyscript/virtualenv/lib/python2.6/site-packages'
 
 if VIRTUALENV_BIN:
     site.addsitedir(VIRTUALENV_SITE_PACKAGES)
@@ -34,8 +34,7 @@ if VIRTUALENV_BIN:
     activate_env = os.path.join(VIRTUALENV_BIN, 'activate_this.py')
     execfile(activate_env, dict(__file__=activate_env))
 
-PORTAL_ROOT = os.path.abspath(os.path.dirname(__file__))
-PROJECT_ROOT = os.path.dirname(PORTAL_ROOT)
+PROJECT_ROOT = '/flyscript/flyscript_portal'
 sys.path.append(PROJECT_ROOT)
 
 # Run the WSGI Server
