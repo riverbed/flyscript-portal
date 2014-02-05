@@ -20,6 +20,8 @@ import sys
 import site
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
+os.environ['HOME'] = '/var/www'   # set home directory for wsgi process
+
 
 # If running under a virtualenv, update these paths, otherwise change to empty
 # strings or None
