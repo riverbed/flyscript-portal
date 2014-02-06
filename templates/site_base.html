@@ -31,7 +31,7 @@
       <div class="navbar-inner">
         <div class="container">
           {% block brand_logo %}
-          <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/flyscript.png' style="max-width:None;"> FlyScript&nbsp;Portal </a>
+          <a class="brand" style="vertical-align: bottom;padding-top: 8px;" href="/" alt="Riverbed"><img width="18" height="18" src='{{ STATIC_URL }}images/riverbed_r_small.png' style="max-width:None;"> FlyScript&nbsp;Portal </a>
           {% endblock %}
           <div class="nav-collapse collapse">
             <ul class="nav">
@@ -85,6 +85,12 @@
     {% endif %}
 
     {% block content %}{% endblock %}
+    <div class="container">
+        <div class="row" style="text-align: center">
+
+            <small>Powered by </small><a style="vertical-align: bottom;padding-top: 8px;" href="http://www.riverbed.com" alt="Riverbed"><img src='{{ STATIC_URL }}images/riverbed-logo.png' style="max-width:None;"></a>
+        </div>
+    </div>
   </body>
 </html>
 
