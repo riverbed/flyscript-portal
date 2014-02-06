@@ -144,7 +144,7 @@ class Report(models.Model):
         return new_fields_by_section
 
     def widgets(self):
-        return Widget.objects.filter(section__in=Section.objects.filter(report=self))
+        return Widget.objects.filter(section__in=Section.objects.filter(report=self)).order_by('id')
 
 
 class Section(models.Model):

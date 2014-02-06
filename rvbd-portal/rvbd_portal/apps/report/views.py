@@ -353,7 +353,7 @@ class ReportWidgets(View):
         widget_defs.append({'datetime': str(date(now, 'jS F Y H:i:s')),
                             'timezone': str(timezone),
                             })
-        for w in report.widgets().all():
+        for w in report.widgets().order_by('row', 'col'):
             # get default criteria values for widget
             # and set endtime to now, if applicable
             criteria = ReportCriteria.as_view()(request,
