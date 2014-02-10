@@ -89,17 +89,16 @@ class ProfilerTable(object):
                                realm=realm,
                                centricity='int' if interface else 'hos')
 
-
         t = Table(name=name, module=__name__, 
                   filterexpr=filterexpr, options=options, **kwargs)
         t.save()
 
         if resolution != 'auto':
             if isinstance(resolution, int):
-                rsecs = resolution
+                res = resolution
             else:
-                rsecs = int(timedelta_total_seconds(parse_timedelta(resolution)))
-            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[rsecs]
+                res = int(timedelta_total_seconds(parse_timedelta(resolution)))
+            resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[res]
 
         if isinstance(duration, int):
             duration = "%d min" % duration
@@ -245,7 +244,7 @@ class TableQuery:
             with lock:
                 s = report.status()
 
-            self.job.safe_update(progress = int(s['percent']))
+            self.job.safe_update(progress=int(s['percent']))
             done = (s['status'] == 'completed')
 
         # Retrieve the data
@@ -262,7 +261,7 @@ class TableQuery:
                                 .utcfromtimestamp(query.actual_t1)
                                 .replace(tzinfo=tz))
 
-        self.job.safe_update(actual_criteria = criteria)
+        self.job.safe_update(actual_criteria=criteria)
 
         if self.table.rows > 0:
             self.data = self.data[:self.table.rows]

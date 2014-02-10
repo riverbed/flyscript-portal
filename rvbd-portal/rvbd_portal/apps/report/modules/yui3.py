@@ -98,11 +98,9 @@ class PieWidget(object):
     def process(cls, widget, job, data):
         columns = widget.table().get_columns()
 
+        col_names = [c.name for c in columns]
         catcol = [c for c in columns if c.name == widget.options.key][0]
         col = [c for c in columns if c.name == widget.options.value][0]
-
-        qcols = [catcol.name]
-        qcols.append(col.name)
 
         series = []
         series.append({"categoryKey": catcol.name,
@@ -115,16 +113,14 @@ class PieWidget(object):
 
         if len(data) > 0:
             for rawrow in data:
-                row = {}
-                for i in range(0, len(qcols)):
-                    val = rawrow[i]
-                    row[qcols[i]] = val
-                    i = i + 1
-                rows.append(row)
+                row = dict(zip(col_names, rawrow))
+                r = {catcol.name: row[catcol.name],
+                     col.name: row[col.name]}
+                rows.append(r)
         else:
             # create a "full" pie to show something
-            rows = [{qcols[0]: 1,
-                     qcols[1]: 1}]
+            rows = [{catcol.name: 1,
+                     col.name: 1}]
 
         data = {
             "chartTitle": widget.title.format(**job.actual_criteria),

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class DevicesTable:
     @classmethod
     def create(cls, name, **kwargs):
-        logger.debug('Creating Profiler DevivceTable table %s' % name)
+        logger.debug('Creating Profiler DeviceTable table %s' % name)
 
         t = Table(name=name, module=__name__, **kwargs)
         t.save()
