@@ -89,16 +89,16 @@ class Command(BaseCommand):
             # remove Report and its Widgets, Jobs, WidgetJobs, Tables and Columns
             rid = options['report_id']
 
-            def del_table(table):
-                Column.objects.filter(table=table.id).delete()
-                Job.objects.filter(table=table.id).delete()
+            def del_table(tbl):
+                Column.objects.filter(table=tbl.id).delete()
+                Job.objects.filter(table=tbl.id).delete()
 
-                if (table.options is not None) and ('tables' in table.options):
-                    for (name, tid) in table.options.tables.items():
+                if (tbl.options is not None) and ('tables' in tbl.options):
+                    for (name, tid) in tbl.options.tables.items():
                         for deptable in Table.objects.filter(id=int(tid)):
                             del_table(deptable)
 
-                table.delete()
+                tbl.delete()
 
             for section in Report.objects.get(id=rid).section_set.all():
                 for widget in section.widget_set.all():
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                             wjob.delete()
                     widget.delete()
 
-            # Delete all TableFields that are no longer referenced by any Tables or Sections
+            # Delete TableFields no longer referenced by any Tables or Sections
             (TableField.objects
              .annotate(sections=Count('section'),
                        tables=Count('table'))

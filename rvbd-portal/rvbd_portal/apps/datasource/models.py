@@ -539,7 +539,7 @@ class Job(models.Model):
     # If ischild, this points to the parent job
     parent = models.ForeignKey('self', null=True)
 
-    # Table assocaited with this job
+    # Table associated with this job
     table = models.ForeignKey(Table)
 
     # Criteria used to start this job - an instance of the Criteria class

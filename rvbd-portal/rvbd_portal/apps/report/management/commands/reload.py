@@ -78,7 +78,7 @@ class Command(BaseCommand):
             management.call_command('clean',
                                     applications=False,
                                     report_id=report_id,
-                                    clear_cache=True,
+                                    clear_cache=False,
                                     clear_logs=False)
 
             DeviceManager.clear()
@@ -93,7 +93,7 @@ class Command(BaseCommand):
                 management.call_command('clean',
                                         applications=False,
                                         report_id=report_id,
-                                        clear_cache=True,
+                                        clear_cache=False,
                                         clear_logs=False)
                 self.import_module(report.sourcefile)
             except ObjectDoesNotExist:
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                 management.call_command('clean',
                                         applications=False,
                                         report_id=report.id,
-                                        clear_cache=True,
+                                        clear_cache=False,
                                         clear_logs=False)
                 self.import_module(report.sourcefile)
 
