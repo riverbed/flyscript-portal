@@ -665,7 +665,8 @@ class Job(models.Model):
                     job.save()
 
                     parent.reference("Link from job %s" % job)
-                    parent.safe_update(touched=datetime.datetime.utcnow())
+                    now = datetime.datetime.now(tz=pytz.utc)
+                    parent.safe_update(touched=now)
 
                     logger.info("%s: New job for table %s, linked to parent %s"
                                 % (job, table.name, parent))
@@ -897,13 +898,13 @@ class Job(models.Model):
         # Ancient jobs are deleted regardless of refcount
         now = datetime.datetime.now(tz=pytz.utc)
         try:
-            (Job.objects.filter(touched__lte = now - ancient)).delete()
+            (Job.objects.filter(touched__lte=now - ancient)).delete()
         except:
             logger.exception("Failed to delete ancient jobs")
 
         # Old jobs are deleted only if they have a refcount of 0
         try:
-            (Job.objects.filter(touched__lte = now - old, refcount=0)).delete()
+            (Job.objects.filter(touched__lte=now - old, refcount=0)).delete()
         except:
             logger.exception("Failed to delete old jobs")
 
@@ -921,6 +922,13 @@ class Job(models.Model):
 def _my_job_delete(sender, instance, **kwargs):
     if instance.parent is not None:
         instance.parent.dereference(str(instance))
+    if instance.datafile() and os.path.exists(instance.datafile()):
+        try:
+            os.unlink(instance.datafile())
+        except OSError:
+            # permissions issues, perhaps
+            logger.error('OSError occurred when attempting to delete '
+                         'job datafile: %s' % instance.datafile())
 
 
 class AsyncWorker(threading.Thread):

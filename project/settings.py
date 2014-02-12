@@ -274,11 +274,14 @@ LOGGING = {
     }
 }
 
+
+# Job aging parameters
+# Used as a form of datasource caching, jobs older than the 'ancient'
+# threshold will be deleted regardless, while 'old' jobs will
+# only be deleted if no other jobs are referencing their data.
 APPS_DATASOURCE = {
-    #'job_age_old_seconds' : 60*60*24
-    #'job_age_ancient_seconds' : 7*60*60*24
-    'job_age_old_seconds': 60 * 1,
-    'job_age_ancient_seconds': 60 * 10,
+    'job_age_old_seconds': 60*60*24,            # one day
+    'job_age_ancient_seconds': 7*60*60*24,      # one week
     'threading': True
 }
 

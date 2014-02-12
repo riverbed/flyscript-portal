@@ -399,7 +399,10 @@ class WidgetJob(models.Model):
 
 @receiver(pre_delete, sender=WidgetJob)
 def _widgetjob_delete(sender, instance, **kwargs):
-    instance.job.dereference(str(instance))
+    try:
+        instance.job.dereference(str(instance))
+    except ObjectDoesNotExist:
+        logger.info('Job not found for instance %s, ignoring.' % instance)
 
 
 class Axes:

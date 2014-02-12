@@ -22,6 +22,7 @@ from rvbd_portal.apps.datasource.models import Job
 import warnings
 warnings.filterwarnings("ignore")
 
+
 class Command(BaseCommand):
     args = None
     help = 'Work with already run jobs'
@@ -62,20 +63,19 @@ class Command(BaseCommand):
         self.stdout.flush()
 
     def handle(self, *args, **options):
-        """ Main command handler
-        """
-        self.options = options
+        """ Main command handler. """
 
         if options['job_list']:
             # print out the id's instead of processing anything
-            columns = ['ID', 'Table', 'Created', 'Touched', 'Sts', 'Refs', 'Progress', 'Data file']
+            columns = ['ID', 'Table', 'Created', 'Touched', 'Sts', 'Refs',
+                       'Progress', 'Data file']
             data = []
             for j in Job.objects.all():
                 datafile = j.datafile()
                 if not os.path.exists(datafile):
                     datafile += " (missing)"
-                data.append ([j.id, j.table.name, j.created, j.touched,
-                              j.status, j.refcount, j.progress, datafile])
+                data.append([j.id, j.table.name, j.created, j.touched,
+                             j.status, j.refcount, j.progress, datafile])
 
             Formatter.print_table(data, columns)
 
@@ -92,4 +92,3 @@ class Command(BaseCommand):
                 
         elif options['job_flush']:
             Job.objects.all().delete()
-                
