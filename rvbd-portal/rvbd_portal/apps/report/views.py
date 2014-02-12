@@ -29,6 +29,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
 
+from rvbd.common.timeutils import round_time
+
 from rvbd_portal.apps.datasource.models import Job, Table
 from rvbd_portal.apps.datasource.serializers import TableSerializer
 from rvbd_portal.apps.datasource.forms import TableFieldForm
@@ -347,6 +349,11 @@ class ReportWidgets(View):
         utc = pytz.timezone('UTC')
         timezone = pytz.timezone(profile.timezone)
         now = now.replace(tzinfo=utc).astimezone(timezone)
+
+        # pin the endtime to a round interval if we are set to
+        # reload periodically
+        if report.reload_minutes:
+            now = round_time(dt=now, round_to=60*report.reload_minutes)
 
         widget_defs = []
 
