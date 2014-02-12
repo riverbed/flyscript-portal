@@ -32,7 +32,8 @@ section = Section.create(report)
 # Table: Process Internal.pcap
 #
 
-table = WireSharkTable.create('pcap', resolution=60, resample=True)
+table = WireSharkTable.create('pcap', resample=True,
+                              resolution='1s', resolutions=['1s','1m'])
 
 Column.create(table, 'pkttime', datatype='time', iskey=True,
               options=WireSharkColumnOptions(field='frame.time_epoch'))

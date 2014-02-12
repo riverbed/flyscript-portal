@@ -40,19 +40,35 @@ def fields_add_pcapfile(obj, keyword = 'pcapfile', initial=None):
     field.save()
     obj.fields.add(field)
 
+def fields_add_filterexpr(obj,
+                          keyword = 'wireshark_filterexpr',
+                          initial=None
+                          ):
+    field = ( TableField
+              (keyword = keyword,
+               label = 'WireShark Filter Expression',
+               help_text = ('Traffic expression using WireShark Display '
+                            'Filter syntax'),
+               initial = initial,
+               required = False))
+    field.save()
+    obj.fields.add(field)
+
 
 class WireSharkTable(object):
     @classmethod
-    def create(cls, name, resolution=1, **kwargs):
+    def create(cls, name, resolution='1s', resolutions=None, **kwargs):
+
+        if resolutions is None:
+            resolutions = ['1s', '1m']
 
         if resolution and isinstance(resolution, int):
             resolution = "%dsec" % resolution
 
-        criteria = {'resolution': resolution}
-
-        table = Table.create(name, module=__name__, criteria=criteria, **kwargs)
-        fields_add_resolution(table)
+        table = Table.create(name, module=__name__, **kwargs)
+        fields_add_resolution(table, initial= resolution, resolutions=resolutions)
         fields_add_pcapfile(table)
+        fields_add_filterexpr(table)
         return table
     
 
@@ -85,17 +101,19 @@ class TableQuery:
         table = self.table
         columns = table.get_columns(synthetic=False)
 
-        trafficexpr = self.job.combine_filterexprs()
 
         pcapfile = self.job.criteria.pcapfile
-
+        
         if not pcapfile:
             raise ValueError("No pcap file specified")
         elif not os.path.exists(pcapfile):
             raise ValueError("No such file: %s" % pcapfile)
-        
+
         command = ("tshark -r %s -T fields -E occurrence=f -E separator=," %
                    pcapfile)
+        filterexpr = self.job.criteria.wireshark_filterexpr
+        if filterexpr not in ('', None):
+            command = command + (" -R '%s'" % filterexpr)
 
         keys = []
         basecolnames = []  # list of colummns
@@ -120,9 +138,6 @@ class TableQuery:
             else:
                 ops[tc.name] = tc_options.operation
 
-        if trafficexpr:
-            command = command + (" -R '%s'" % trafficexpr)
-
         msg = "tshark command: %s" % command
         #print msg
         logger.debug(msg)
@@ -146,7 +161,7 @@ class TableQuery:
         if table.rows > 0:
             df = df[:table.rows]
 
-        logger.info("Data returned:\n%s", df[:3])
+        logger.info("Data returned (first 3 rows...):\n%s", df[:3])
 
         # Convert the data into the right format
         for tc in columns:
@@ -162,4 +177,5 @@ class TableQuery:
 
         colnames = [col.name for col in columns]
         self.data = df.ix[:,colnames].values.tolist()
+
         return True

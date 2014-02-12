@@ -29,9 +29,20 @@ class TableWidget(object):
 
     @classmethod
     def process(cls, widget, job, data):
+        class ColInfo:
+            def __init__(self, col, dataindex, istime=False):
+                self.col = col
+                self.dataindex = dataindex
+                self.istime = istime
+
+        colinfo = {}
+        colnames = []
+
         columns = []
 
-        for wc in widget.table().get_columns():
+        for i,wc in enumerate(widget.table().get_columns()):
+            colnames.append(wc.name)
+            colinfo[wc.name] = ColInfo(wc, i, wc.datatype == 'time')
             column = {'key': wc.name, 'label': wc.label, "sortable": True}
             if wc.datatype == 'bytes':
                 column['formatter'] = 'formatBytes'
@@ -50,9 +61,8 @@ class TableWidget(object):
         for rawrow in data:
             row = {}
 
-            for i, col in enumerate(columns):
-                if col['key'] == 'time' or ('formatter' in col and
-                                            col['formatter'] == 'formatTime'):
+            for i, name in enumerate(colnames):
+                if colinfo[name].istime:
                     t = rawrow[i]
                     try:
                         val = timeutils.datetime_to_microseconds(t) / 1000
@@ -60,8 +70,8 @@ class TableWidget(object):
                         val = t * 1000
                 else:
                     val = rawrow[i]
-
-                row[col['key']] = val
+                    
+                row[name] = val
 
             rows.append(row)
 
