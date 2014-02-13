@@ -328,7 +328,7 @@ class ReportCriteria(views.APIView):
         return HttpResponse(json.dumps(response))
 
 
-class ReportWidgets(View):
+class ReportWidgets(views.APIView):
     """ Return default criteria values for all widgets, with latest time,
         if applicable.
 
