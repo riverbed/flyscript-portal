@@ -326,7 +326,11 @@
         <div class="span12 widget-box">
           <div class="widget-title">
             <a data-toggle="collapse" data-target="#report-container" href="#">
-              Report
+              {% if report.hide_criteria %}
+                {{ report.title }}
+              {% else %}
+                Report
+              {% endif %}
             </a>
           </div>
           <div class="collapse in" id="report-container">

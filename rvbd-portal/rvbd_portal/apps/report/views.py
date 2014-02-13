@@ -344,11 +344,9 @@ class ReportWidgets(views.APIView):
             raise Http404
 
         # parse time and localize to user profile timezone
-        now = datetime.datetime.now()
         profile = request.user.userprofile
-        utc = pytz.timezone('UTC')
         timezone = pytz.timezone(profile.timezone)
-        now = now.replace(tzinfo=utc).astimezone(timezone)
+        now = datetime.datetime.now(timezone)
 
         # pin the endtime to a round interval if we are set to
         # reload periodically
