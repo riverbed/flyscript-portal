@@ -38,40 +38,11 @@
 {% block extra_nav_right %}
 {% endblock %}
 
-{% block navbar_right %}
-                <li class="active">
-                    <div class="btn-group pull-right">
-                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                            <i class="icon-edit icon-white"></i> Configure <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a href="{% url 'preferences' %}"><i class="icon-list"></i> Preferences</a></li>
-                            {% if user.is_superuser %}
-                                <li class="divider"></li>
-                                <li><a href="{% url 'device-list' %}"><i class="icon-pencil"></i> Edit Devices</a></li>
-                                <li><a href="{% url 'plugins-list' %}"><i class="icon-resize-small"></i> Edit Plugins</a></li>
-                                <li><a href="/admin"><i class="icon-wrench"></i> Enter Admin Panel</a></li>
-                            {% endif %}
-                            <li class="divider"></li>
-                            {% if reports and 'report' in request.path %}
-                                <li><a href="#" onClick="reloadingModal('reload', false)"><i class="icon-repeat"></i> Reload This Report</a></li>
-                            {% endif %}
-                            <li><a href="#" onClick="reloadingModal('{% url 'reload-all' %}', true)"><i class="icon-retweet"></i> Reload All Reports</a></li>
-                        </ul>
-                    </div>
-                </li>
-{% endblock %}
-
 {% block header_row %}{% endblock %}
 
         {% block login %}
-                {% if user.is_authenticated %}
-                    <small class="text-info pull-right">Welcome, <a href="{% url 'preferences' %}">{{ user.username }}</a> <a href='/accounts/logout/'> [logout] </a></small>
-                {% else %}
-                    <small class="text-info pull-right"><a href='/accounts/login?next={{ request.path }}'> [login] </a></small>
-                {% endif %}
-                <br><small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small>
-                <br><small class="text-info pull-right"><span id="report_timezone">{{ TIME_ZONE }}</span>&nbsp;<span class="text-info"><a href='/preferences/?next={{ request.path }}'>(update)</a></span></small>
+                <small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small><br>
+                <small class="text-info pull-right"><span id="report_timezone">{{ TIME_ZONE }}</span>&nbsp;<span class="text-info"><a href='/preferences/?next={{ request.path }}'>(update)</a></span></small>
         {% endblock %}
 
 {% block content %}{% endblock %}

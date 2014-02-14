@@ -55,6 +55,31 @@
               {% endblock %}
 
               {% block navbar_right %}
+                  {% if user.is_authenticated %}
+                  <li class="active">
+                      <div class="btn-group pull-right">
+                          <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                              <i class="icon-edit icon-white"></i> {{ user.username }} <span class="caret"></span>
+                          </a>
+                          <ul class="dropdown-menu">
+                              <li><a href="{% url 'preferences' %}"><i class="icon-list"></i> Preferences</a></li>
+                              {% if user.is_superuser %}
+                                  <li class="divider"></li>
+                                  <li><a href="{% url 'device-list' %}"><i class="icon-pencil"></i> Edit Devices</a></li>
+                                  <li><a href="{% url 'plugins-list' %}"><i class="icon-resize-small"></i> Edit Plugins</a></li>
+                                  <li><a href="/admin"><i class="icon-wrench"></i> Enter Admin Panel</a></li>
+                                  <li class="divider"></li>
+                                  {% if reports and 'report' in request.path %}
+                                      <li><a href="#" onClick="reloadingModal('reload', false)"><i class="icon-repeat"></i> Reload This Report</a></li>
+                                  {% endif %}
+                                  <li><a href="#" onClick="reloadingModal('{% url 'reload-all' %}', true)"><i class="icon-retweet"></i> Reload All Reports</a></li>
+                              {% endif %}
+                              <li class="divider"></li>
+                              <li><a href="/accounts/logout/"><i class="icon-off"></i> Logout</a></li>
+                          </ul>
+                      </div>
+                  </li>
+                  {% endif %}
               {% endblock %}
             </ul>
           </div><!--/.nav-collapse -->
@@ -76,7 +101,7 @@
           {% block header_row %}{% endblock %}
         </div>
         <div class="span6">
-            <div class="pull-right">
+            <div class="pull-right" style="margin: 10px 0">
                 {% block login %}
                 {% endblock %}
             </div>
