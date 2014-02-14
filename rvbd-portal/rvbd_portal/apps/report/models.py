@@ -55,11 +55,12 @@ class Report(models.Model):
     namespace = models.CharField(max_length=100, default='default')
     sourcefile = models.CharField(max_length=200)
 
-    fields = models.ManyToManyField(TableField, null=True)
+    fields = models.ManyToManyField(TableField, null=True, blank=True)
     field_order = SeparatedValuesField(null=True,
                                        default=['starttime', 'endtime',
-                                                'duration', 'filterexpr'])
-    hidden_fields = SeparatedValuesField(null=True)
+                                                'duration', 'filterexpr'],
+                                       blank=True)
+    hidden_fields = SeparatedValuesField(null=True, blank=True)
 
     # create an 'auto-load'-type report which uses default criteria
     # values only, and optionally set a refresh timer
