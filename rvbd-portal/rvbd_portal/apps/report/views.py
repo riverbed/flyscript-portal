@@ -89,35 +89,35 @@ class ReportView(views.APIView):
 
     def get(self, request, namespace=None, report_slug=None):
         # handle REST calls
+
+        queryset = Report.objects.filter(enabled=True)
+
         if request.accepted_renderer.format != 'html':
             if namespace and report_slug:
-                queryset = Report.objects.get(namespace=namespace,
-                                              slug=report_slug)
+                queryset = queryset.get(namespace=namespace,
+                                        slug=report_slug)
             elif report_slug:
-                queryset = Report.objects.get(namespace='default',
-                                              slug=report_slug)
+                queryset = queryset.get(namespace='default',
+                                        slug=report_slug)
             elif namespace:
-                queryset = Report.objects.filter(namespace='default')
-            else:
-                queryset = Report.objects.all()
+                queryset = queryset.filter(namespace='default')
+
             serializer = ReportSerializer(instance=queryset)
             return Response(serializer.data)
 
         # handle HTML calls
         try:
             if namespace is None:
-                namespace = 'default'
+                namespace = queryset[0].namespace
 
             if report_slug is None:
-                reports = (Report.objects.filter(namespace=namespace)
-                                         .order_by('position'))
-                kwargs = {'report_slug': reports[0].slug,
+                qs = queryset.filter(namespace=namespace).order_by('position')
+                kwargs = {'report_slug': qs[0].slug,
                           'namespace': namespace}
                 return HttpResponseRedirect(reverse('report-view',
                                                     kwargs=kwargs))
             else:
-                report = Report.objects.get(namespace=namespace,
-                                            slug=report_slug)
+                report = queryset.get(namespace=namespace, slug=report_slug)
         except:
             raise Http404
 
