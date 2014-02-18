@@ -31,11 +31,11 @@ class ReportAdmin(admin.ModelAdmin):
 
     def mark_disabled(self, request, queryset):
         queryset.update(enabled=False)
-    mark_disabled.short_description = 'Mark selected reports enabled'
+    mark_disabled.short_description = 'Mark selected reports disabled'
 
     def mark_enabled(self, request, queryset):
         queryset.update(enabled=True)
-    mark_enabled.short_description = 'Mark selected reports disabled'
+    mark_enabled.short_description = 'Mark selected reports enabled'
 
 admin.site.register(Report, ReportAdmin)
 
