@@ -46,6 +46,7 @@ class CustomIndexDashboard(Dashboard):
                 'announcements.*',
                 'rvbd_portal.apps.devices.*',
                 'rvbd_portal.apps.geolocation.*',
+                'rvbd_portal.apps.report.*',
             ),
         ))
 
@@ -54,7 +55,8 @@ class CustomIndexDashboard(Dashboard):
             _('System Models'),
             models=('rvbd_portal.apps.*',),
             exclude=('rvbd_portal.apps.devices.*',
-                     'rvbd_portal.apps.geolocation.*',)
+                     'rvbd_portal.apps.geolocation.*',
+                     'rvbd_portal.apps.report.*',)
         ))
 
         # append a recent actions module
