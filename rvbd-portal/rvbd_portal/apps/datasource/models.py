@@ -996,25 +996,28 @@ class Worker(base_worker_class):
                     for col in job.table.get_columns(synthetic=False):
                         s = df[col.name]
                         if col.datatype == 'time':
-                            # The column is supposed to be time, make sure all values
-                            # are datetime objects
+                            # The column is supposed to be time,
+                            # make sure all values are datetime objects
                             if str(s.dtype).startswith(str(pandas.np.dtype('datetime64'))):
                                 # Already a datetime
                                 pass
                             elif str(s.dtype).startswith('int'):
                                 # This is a numeric epoch, convert to datetime
-                                df[col.name] = s.astype('datetime64[s]')
+                                s = s.values.astype('datetime64[s]')
                             elif str(s.dtype).startswith('float'):
-                                # This is a numeric epoch as a float, possibly has
-                                # subsecond resolution, convert to datetime but preserve
-                                # up to millisecond
-                                df[col.name] = (1000 * s).astype('datetime64[ms]')
+                                # This is a numeric epoch as a float, possibly
+                                # has subsecond resolution, convert to
+                                # datetime but preserve up to millisecond
+                                s = (1000 * s).values.astype('datetime64[ms]')
                             else:
-                                # Possibly a datetime object or a datetime string,
+                                # Possibly datetime object or a datetime string,
                                 # hopefully astype() can figure it out
-                                df[col.name] = s.astype('datetime64[ms]')
+                                s = s.values.astype('datetime64[ms]')
+
+                            df[col.name] = pandas.Series(s)
                                 
-                        elif col.isnumeric and s.dtype == pandas.np.dtype('object'):
+                        elif (col.isnumeric and
+                              s.dtype == pandas.np.dtype('object')):
                             # The column is supposed to be numeric but must have
                             # some strings.  Try replacing empty strings with NaN
                             # and see if it converts to float64
@@ -1024,9 +1027,7 @@ class Worker(base_worker_class):
                             except ValueError:
                                 # This may incorrectly be tagged as numeric
                                 pass
-                            #except:
-                            #    __import__('IPython').core.debugger.Pdb().set_trace()
-                                
+
                 elif ((query.data is None) or
                       (isinstance(query.data, list) and len(query.data) == 0)):
                     df = None
