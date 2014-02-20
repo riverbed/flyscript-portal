@@ -24,7 +24,8 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from django.forms.widgets import FileInput, TextInput
 from django.forms import widgets
-from rvbd.common.timeutils import parse_timedelta, timedelta_total_seconds, timedelta_str
+from rvbd.common.timeutils import (parse_timedelta, timedelta_total_seconds,
+                                   timedelta_str)
 
 from rvbd_portal.apps.datasource.models import Criteria, TableField
 
@@ -34,12 +35,15 @@ DURATIONS = ('1 min', '15 min', '1 hour',
              '2 hours', '4 hours', '12 hours',
              '1 day', '1 week', '4 weeks')
 
+
 class CriteriaError(Exception):
     """ Exception raised when a problem resolving criteria occurs. """
     pass
 
+
 class CriteriaTemplateError(CriteriaError):
     pass
+
 
 class CriteriaPostProcessError(CriteriaError):
     pass
@@ -49,12 +53,13 @@ ALL_TIMEZONES_MAP = None
 def all_timezones_map():
     global ALL_TIMEZONES_MAP
     if ALL_TIMEZONES_MAP is None:
-        ALL_TIMEZONES_MAP = dict((n,pytz.timezone(n)) for n in pytz.all_timezones)
+        ALL_TIMEZONES_MAP = dict((n, pytz.timezone(n))
+                                 for n in pytz.all_timezones)
     return ALL_TIMEZONES_MAP
 
+
 class DateWidget(forms.DateInput):
-    """ Custom DateWidget
-    """
+    """ Custom DateWidget """
 
     def __init__(self, attrs=None, format=None):
         final_attrs = {'class': 'date'}
@@ -75,7 +80,10 @@ class DateWidget(forms.DateInput):
               $("#datenow").click(function() {{ $("#id_{name}").datepicker("setDate", new Date()); }});
           </script>
           '''
-        return msg.format(super(DateWidget, self).render(name, value, *args, **kwargs), name=name)
+        return msg.format(
+            super(DateWidget, self).render(name, value, *args, **kwargs),
+            name=name
+        )
 
 
 class TimeWidget(forms.TimeInput):
@@ -103,7 +111,11 @@ class TimeWidget(forms.TimeInput):
               $("#id_{name}").timepicker("setTime", new Date());
         </script>
         '''
-        return msg.format(super(TimeWidget, self).render(name, value, *args, **kwargs), name=name)
+        return msg.format(
+            super(TimeWidget, self).render(name, value, *args, **kwargs),
+            name=name
+        )
+
 
 class ReportSplitDateTimeWidget(forms.SplitDateTimeWidget):
     """ A SplitDateTime Widget that uses overridden Report widgets
@@ -113,6 +125,7 @@ class ReportSplitDateTimeWidget(forms.SplitDateTimeWidget):
         # Note that we're calling MultiWidget, not SplitDateTimeWidget, because
         # we want to define widgets.
         forms.MultiWidget.__init__(self, split_widgets, attrs)
+
 
 class FileSelectField(forms.Field):
     def to_python(self, data):
@@ -145,12 +158,13 @@ class FileSelectField(forms.Field):
             newtemp.close()
             return newtemp.name
         else:
-            raise ValidationError('Unsupported widget source: %s' % str(self.widget))
+            raise ValidationError('Unsupported widget source: %s' %
+                                  str(self.widget))
 
         
 class DateTimeField(forms.DateTimeField):
-    
-    """ Field that takes a date/time string and parses it to a datetime object. """
+    """ Field that takes a date/time string and parses it to a datetime object.
+    """
     
     def to_python(self, value):
         if value in validators.EMPTY_VALUES:
@@ -175,15 +189,17 @@ class DateTimeField(forms.DateTimeField):
             result = datetime.datetime(value.year, value.month, value.day)
             return from_current_timezone(result)
 
-        raise ValidationError('Unknown data/time field value type: %s' % type(value))
-            
+        raise ValidationError('Unknown data/time field value type: %s' %
+                              type(value))
+
+
 class DurationWidget(forms.MultiWidget):
 
     def __init__(self, 
-                 choices=[(60, '1 minute'),
+                 choices=((60, '1 minute'),
                           (60*15, '15 minutes'),
                           (60*60, 'Hour'),
-                          (60*60*6, '6 Hour')],
+                          (60*60*6, '6 Hour')),
                  **kwargs):
         self.choices = choices
         split_widgets = [widgets.Select(choices=choices),
@@ -203,14 +219,16 @@ class DurationWidget(forms.MultiWidget):
 
         return [None, None]
 
+
 class DurationField(forms.ChoiceField):
-    """ Field that takes a duration string and parses it to a timedelta object. """
+    """ Field that takes duration string and parses it to timedelta object. """
 
     def __init__(self, **kwargs):
         self._special_values = kwargs.pop('special_values', None)
         initial = kwargs.pop('initial', None)
-        if (initial is not None) and \
-               (self._special_values is None or (initial not in self._special_values)):
+        if (initial is not None and
+                self._special_values is None or
+                initial not in self._special_values):
             initial_td = parse_timedelta(initial)
             initial_valid = False
         else:
@@ -218,11 +236,13 @@ class DurationField(forms.ChoiceField):
             initial_valid = True
         choices = []
 
-        # Rebuild the choices list to ensure that the value is normalized using timedelta_str
+        # Rebuild the choices list to ensure that
+        # the value is normalized using timedelta_str
         for choice in kwargs.pop('choices'):
             td = None
             if not (isinstance(choice, list) or isinstance(choice, tuple)):
-                if (self._special_values is None or choice not in self._special_values):
+                if (self._special_values is None or
+                        choice not in self._special_values):
                     td = parse_timedelta(choice)
                     td_str = timedelta_str(td)
                     value = td_str
@@ -233,7 +253,8 @@ class DurationField(forms.ChoiceField):
 
             else:
                 (value, label) = choice
-                if (self._special_values is None or value not in self._special_values):
+                if (self._special_values is None or
+                        value not in self._special_values):
                     td = parse_timedelta(value)
                     value = timedelta_str(td)
 
@@ -271,48 +292,37 @@ class DurationField(forms.ChoiceField):
 
 
 def fields_add_time_selection(obj, initial_duration=None, durations=None):
-    #starttime = TableField(keyword = 'starttime',
-    #                            label = 'Start Time',
-    #                            field_cls = DateTimeField,
-    #                            field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
-    #                            required=False)
-    #starttime.save()
-    #obj.criteria.add(starttime)
 
     if durations is None:
         durations = DURATIONS
         
-    endtime = TableField(keyword = 'endtime',
-                         label = 'End Time',
-                         field_cls = DateTimeField,
-                         field_kwargs = { 'widget' : ReportSplitDateTimeWidget },
+    endtime = TableField(keyword='endtime',
+                         label='End Time',
+                         field_cls=DateTimeField,
+                         field_kwargs={'widget': ReportSplitDateTimeWidget},
                          required=False)
     endtime.save()
     obj.fields.add(endtime)
 
-    duration = (
-        TableField
-        (keyword = 'duration',
-         label = 'Duration',
-         initial = initial_duration,
-         field_cls = DurationField,
-         #field_kwargs = { 'widget': DurationWidget },
-         field_kwargs = { 'choices': durations },
-         required=False))
+    duration = TableField(keyword='duration',
+                          label='Duration',
+                          initial=initial_duration,
+                          field_cls=DurationField,
+                          field_kwargs={'choices': durations},
+                          required=False)
     duration.save()
     obj.fields.add(duration)
 
 
 def fields_add_resolution(obj, initial=None,
-                          resolutions= ['1m', '15m', '1h', '6h'],
-                          special_values=None
-                          ):
+                          resolutions=('1m', '15m', '1h', '6h'),
+                          special_values=None):
 
-    field = TableField(keyword = 'resolution',
-                       label = 'Data Resolution',
-                       field_cls = DurationField,
-                       field_kwargs = { 'choices' : resolutions,
-                                        'special_values': special_values },
+    field = TableField(keyword='resolution',
+                       label='Data Resolution',
+                       field_cls=DurationField,
+                       field_kwargs={'choices': resolutions,
+                                     'special_values': special_values},
                        initial=initial)
     field.save()
     obj.fields.add(field)
@@ -328,7 +338,8 @@ class TableFieldForm(forms.Form):
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
     
-    def __init__(self, tablefields, use_widgets=True, hidden_fields=None, include_hidden=False, **kwargs):
+    def __init__(self, tablefields, use_widgets=True, hidden_fields=None,
+                 include_hidden=False, **kwargs):
         """ Initialize a TableFieldForm for the given set of table.
 
         :param tablefields: dict of id to TableField
@@ -341,7 +352,7 @@ class TableFieldForm(forms.Form):
             
         """
 
-        if ('data' in kwargs and kwargs['data'] is not None):
+        if 'data' in kwargs and kwargs['data'] is not None:
             # Make a copy of data as we may change it below
             kwargs['data'] = copy.copy(kwargs['data'])
 
@@ -394,9 +405,8 @@ class TableFieldForm(forms.Form):
         field = field_cls(**fkwargs)
         self.fields[field_id] = field
         
-        if (  (self.data is not None) and
-              (field_id not in self.data)):
-            if (tablefield.initial is not None):
+        if self.data is not None and field_id not in self.data:
+            if tablefield.initial is not None:
                 self.data[field_id] = tablefield.initial
             elif ('choices' in fkwargs) and len(fkwargs['choices']) > 0:
                 self.data[field_id] = fkwargs['choices'][0][0]  
@@ -446,8 +456,10 @@ class TableFieldForm(forms.Form):
                         check_keyword = parent_keyword
 
                     if check_keyword not in ids:
-                        raise CriteriaError('Field %s references unknown parent keyword: %s' %
-                                            (tablefield.keyword, parent_keyword))
+                        msg = ('Field %s references unknown parent '
+                               'keyword: %s' %
+                               (tablefield.keyword, parent_keyword))
+                        raise CriteriaError(msg)
 
                     if check_keyword not in ordered_ids:
                         ready = False
@@ -458,7 +470,7 @@ class TableFieldForm(forms.Form):
                     unprocessed_ids.append(id_)
                     raise CriteriaError(('Failed to resolve all field, ' 
                                          'may have circular dependencies: %s') %
-                                        ([str(i) for i in  unprocessed_ids]))
+                                        ([str(i) for i in unprocessed_ids]))
                 elif last_not_ready_id is None:
                     last_not_ready_id = id_
                         
@@ -519,14 +531,16 @@ class TableFieldForm(forms.Form):
             tablefield = self._tablefields[id_]
 
             if tablefield.post_process_template:
-                # Resolve the fields criteria value by the <string>.format() function
-                # using a template.
+                # Resolve the fields criteria value by the <string>.format()
+                # function using a template.
                 try:
-                    criteria[tablefield.keyword] = tablefield.post_process_template.format(**criteria)
+                    criteria[tablefield.keyword] = \
+                        tablefield.post_process_template.format(**criteria)
                 except:
-                    raise (CriteriaTemplateError
-                           ("Failed to resolve field %s template: %s" %
-                            (tablefield.keyword, tablefield.post_process_template)))
+                    msg = ("Failed to resolve field %s template: %s" %
+                           (tablefield.keyword,
+                            tablefield.post_process_template))
+                    raise CriteriaTemplateError(msg)
 
             elif tablefield.post_process_func is not None:
                 # Call the post process function
@@ -534,14 +548,15 @@ class TableFieldForm(forms.Form):
                 try:
                     f.function(self, tablefield.keyword, criteria, f.params)
                 except Exception as e:
-                    raise (CriteriaPostProcessError
-                           ('Field %s function %s raised an exception: %s %s' %
-                            (tablefield, f.function, type(e), e)))
+                    msg = ('Field %s function %s raised an exception: %s %s' %
+                           (tablefield, f.function, type(e), e))
+                    raise CriteriaPostProcessError(msg)
 
                 if tablefield.keyword not in criteria:
-                    raise (CriteriaPostProcessError
-                           ('Field %s function %s failed to set criteria.%s value' %
-                            (tablefield, f.function, tablefield.keyword)))
+                    msg = ('Field %s function %s failed to set '
+                           'criteria.%s value' %
+                           (tablefield, f.function, tablefield.keyword))
+                    raise CriteriaPostProcessError(msg)
             elif tablefield.keyword not in criteria:
                 raise CriteriaError('Field %s has no value and no post-process '
                                     'function or template' %
@@ -566,7 +581,7 @@ class TableFieldForm(forms.Form):
 
         for k,v in self.cleaned_data.iteritems():
             if isinstance(v, datetime.datetime) and v.tzinfo is None:
-                self.cleaned_data[k] = v.replace(tzinfo = tzinfo)
+                self.cleaned_data[k] = v.replace(tzinfo=tzinfo)
 
     def get_tablefield(self, id):
         return self._tablefields[id]
