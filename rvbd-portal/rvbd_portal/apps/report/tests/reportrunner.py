@@ -8,12 +8,11 @@ from django.test import TestCase, Client
 from django.core import management
 from django.utils.datastructures import SortedDict
 
-from project import settings
-
 from rvbd_portal.apps.datasource.models import Job
 from rvbd_portal.apps.report.models import Report, Widget
 
 logger = logging.getLogger(__name__)
+
 
 class ReportRunnerTestCase(TestCase):
 

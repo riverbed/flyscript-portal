@@ -34,7 +34,7 @@ from rvbd.common import timedelta_total_seconds
 from rvbd_portal.apps.datasource.exceptions import *
 from rvbd_portal.libs.fields import (PickledObjectField, FunctionField,
                                      SeparatedValuesField)
-from project import settings
+from django.conf import settings
 
 
 logger = logging.getLogger(__name__)

@@ -20,7 +20,7 @@ from django.contrib.auth.models import User
 
 from rvbd.common.timeutils import datetime_to_seconds
 
-from project import settings
+from django.conf import settings
 
 import logging
 logger = logging.getLogger(__name__)

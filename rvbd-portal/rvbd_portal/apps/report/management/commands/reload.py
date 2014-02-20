@@ -15,7 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rvbd_portal.apps.report.models import Report
 from rvbd_portal.apps.devices.devicemanager import DeviceManager
 
-from project import settings
+from django.conf import settings
 from project.utils import Importer
 from rvbd_portal.apps.plugins import plugins
 

@@ -13,7 +13,8 @@ import sys
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-PORTAL_ROOT = os.path.abspath(os.path.dirname(__file__))
+SETTINGS_ROOT = os.path.abspath(os.path.dirname(__file__))
+PORTAL_ROOT = os.path.dirname(SETTINGS_ROOT)
 PROJECT_ROOT = os.path.dirname(PORTAL_ROOT)
 DATA_CACHE = os.path.join(PROJECT_ROOT, 'datacache')
 

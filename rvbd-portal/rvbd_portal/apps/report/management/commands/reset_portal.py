@@ -13,7 +13,7 @@ import optparse
 from django.core.management.base import BaseCommand
 from django.core import management
 
-from project import settings
+from django.conf import settings
 
 # list of files/directories to ignore
 IGNORE_FILES = ['helpers']

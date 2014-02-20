@@ -60,6 +60,7 @@ class JobListSerializer(serializers.ModelSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     criteria = PickledObjectField()
+    actual_criteria = PickledObjectField()
 
     class Meta:
         model = Job

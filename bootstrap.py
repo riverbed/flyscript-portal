@@ -9,10 +9,24 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PLUGINS_DIR = os.path.join(BASE_DIR, 'plugins')
 SDIST_DIR = os.path.join(PLUGINS_DIR, 'sdist')
 
-LOCAL_SETTINGS = os.path.join(BASE_DIR, 'project', 'settings_local.py')
+SETTINGS_DIR = os.path.join(BASE_DIR, 'project', 'settings')
+ACTIVE_SETTINGS = os.path.join(SETTINGS_DIR, 'active.py')
+DEV_SETTINGS = os.path.join(SETTINGS_DIR, 'development.py')
+PROD_SETTINGS = os.path.join(SETTINGS_DIR, 'production.py')
+
+ACTIVE_CONTENT = """
+# This file indicates the default configuration to use.
+# Initially, this pulls settings from the 'development.py' file,
+# but that can be changed below.
+#
+# Alternate configurations may still be called with a '--settings'
+# argument passed to the manage.py command.
+
+from project.settings.development import *
+"""
 
 LOCAL_SETTINGS_CONTENT = """
-from settings import *
+from project.settings import *
 
 # This file adds site specific options to the server settings
 # To activate this file for use, include the following option as part of
@@ -23,27 +37,26 @@ from settings import *
 #   $ ./clean --reset --force --settings=project.settings_local
 
 # Optionally add additional applications specific to this webserver
-LOCAL_APPS = None
+
 LOCAL_APPS = (
     # additional apps can be listed here
 )
 INSTALLED_APPS += LOCAL_APPS
 
-# The following settings allow for alternate locations for development
-# database and log file output to be stored.  This means only the
-# DEV_FOLDER requires permissions for read/write by the web server,
-# and the project folder can have any readable permissions
+# Configure alternate databases for development or production.  Leaving this
+# section commented will default to the development sqlite database.
 
-#DEV_FOLDER = os.path.join(os.path.dirname(PROJECT_ROOT),
-#                                          'portal_devsite')
-
-#DATABASES['default']['NAME'] = os.path.join(DEV_FOLDER, 'project_devserver.db')
-
-#LOGGING['handlers']['logfile']['filename'] = os.path.join(DEV_FOLDER,
-#                                                          'log.txt')
-#LOGGING['handlers']['backend-log']['filename'] = os.path.join(DEV_FOLDER,
-#                                                              'log-db.txt')
-
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',      # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+#        'NAME': os.path.join(PROJECT_ROOT, 'project.db'),  # Or path to database file if using sqlite3.
+#        #'TEST_NAME': os.path.join(PROJECT_ROOT, 'test_project.db'),  # Or path to database file if using sqlite3.
+#        'USER': '',                      # Not used with sqlite3.
+#        'PASSWORD': '',                  # Not used with sqlite3.
+#        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
+#        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+#    }
+#}
 
 # Add other settings customizations below, which will be local to this
 # machine only, and not recorded by git. This could include database or
@@ -53,11 +66,22 @@ INSTALLED_APPS += LOCAL_APPS
 # `project/ldap_example.py`.
 """
 
+SETTINGS = ((ACTIVE_SETTINGS, ACTIVE_CONTENT),
+            (DEV_SETTINGS, LOCAL_SETTINGS_CONTENT),
+            (PROD_SETTINGS, LOCAL_SETTINGS_CONTENT))
+
 
 def show_help():
-    print "%s [install|uninstall|develop]" % sys.argv[0]
+    print "%s [install|uninstall|develop|settings]" % sys.argv[0]
     print 
-    print "Install or remove all of the included Portal plugins."
+    print "Perform initial configuration and setup for server."
+    print "Valid options:"
+    print "`install` - install all packages to site-packages directory"
+    print "`uninstall` - remove all portal packages from site-packages"
+    print "`develop` - install packages in develop mode without dependencies"
+    print "`settings` - just setup the default settings files"
+    print "             optionally pass '--force' to overwrite existing files"
+    sys.exit()
 
 
 def which_pip():
@@ -66,16 +90,21 @@ def which_pip():
     #from IPython import embed; embed()
 
 
-def create_local_settings():
-    """ Creates local settings file if none exists.
+def create_local_settings(force=False):
+    """ Creates local settings configuration if none exists.
     """
+    msg = []
 
-    if not os.path.exists(LOCAL_SETTINGS):
-        with open(LOCAL_SETTINGS, 'w') as f:
-            f.write(LOCAL_SETTINGS_CONTENT)
+    for fname, content in SETTINGS:
+        if force or not os.path.exists(fname):
+            with open(fname, 'w') as f:
+                f.write(content)
+            m = 'Local configuration file created: %s' % fname
+            msg.append(m)
 
+    if msg:
         print '*****'
-        print 'Local configuration file created: %s' % LOCAL_SETTINGS
+        print '\n'.join(msg)
         print '*****'
 
 
@@ -137,7 +166,10 @@ def uninstall_plugins():
 
 
 if __name__ == '__main__':
-    command = sys.argv[1]
+    try:
+        command = sys.argv[1]
+    except IndexError:
+        show_help()
 
     if command == 'install':
         create_sdists()
@@ -150,6 +182,9 @@ if __name__ == '__main__':
 
     elif command == 'uninstall':
         uninstall_plugins()
+
+    elif command == 'settings':
+        create_local_settings(force=('--force' in sys.argv))
 
     else:
         show_help()
