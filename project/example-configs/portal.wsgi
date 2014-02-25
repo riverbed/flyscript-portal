@@ -19,7 +19,7 @@ import os
 import sys
 import site
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings.active")
 os.environ['HOME'] = '/flyscript/wsgi'   # set home directory for wsgi process
 
 
