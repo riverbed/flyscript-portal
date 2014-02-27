@@ -26,7 +26,7 @@ from project.settings.development import *
 """
 
 LOCAL_SETTINGS_CONTENT = """
-from project.settings import *
+from project.settings.base import *
 
 # This file adds site specific options to the server settings
 # To activate this file for use, include the following option as part of
