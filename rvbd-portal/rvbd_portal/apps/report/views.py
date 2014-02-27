@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 import os
@@ -164,7 +164,7 @@ class ReportView(views.APIView):
                 if v.keyword not in (report.hidden_fields or []):
                     show = True
                     break
-                
+
             if show:
                 section_map.append({'title': s.title,
                                     'parameters': fields_by_section[s.id]})
@@ -426,11 +426,11 @@ class WidgetJobsList(views.APIView):
                               hidden_fields=report.hidden_fields,
                               include_hidden=True,
                               data=req_json, files=request.FILES)
-        
+
         if not form.is_valid():
             raise ValueError("Widget internal criteria form is invalid:\n%s" %
                              (form.errors.as_text()))
-            
+
         if form.is_valid():
             logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data
@@ -441,11 +441,14 @@ class WidgetJobsList(views.APIView):
             timezone = pytz.timezone(profile.timezone)
             form.apply_timezone(timezone)
 
+            form_criteria = form.criteria()
+            logger.debug('Form_criteria: %s' % form_criteria)
+
             try:
                 job = Job.create(table=widget.table(),
-                                 criteria=form.criteria())
+                                 criteria=form_criteria)
                 job.start()
-            
+
                 wjob = WidgetJob(widget=widget, job=job)
                 wjob.save()
 
@@ -491,14 +494,14 @@ class WidgetJobDetail(views.APIView):
                     tabledata = job.values()[:widget.rows]
                 else:
                     tabledata = job.values()
-                    
+
                 if tabledata is None or len(tabledata) == 0:
                     resp = job.json()
                     resp['status'] = Job.ERROR
                     resp['message'] = "No data returned"
                     logger.debug("%s marked Error: No data returned" %
                                  str(wjob))
-                elif (hasattr(i, 'authorized') and 
+                elif (hasattr(i, 'authorized') and
                       not i.authorized(request.user.userprofile)[0]):
                     _, msg = i.authorized(request.user.userprofile)
                     resp = job.json()
@@ -519,9 +522,9 @@ class WidgetJobDetail(views.APIView):
                 ei = sys.exc_info()
                 resp['message'] = str(traceback.format_exception_only(ei[0],
                                                                       ei[1]))
-            
+
             wjob.delete()
-            
+
         resp['message'] = cgi.escape(resp['message'])
 
         return HttpResponse(json.dumps(resp))

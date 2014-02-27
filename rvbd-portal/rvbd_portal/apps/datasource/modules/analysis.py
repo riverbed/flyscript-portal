@@ -1,11 +1,12 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 import logging
+import pandas
 
 from rvbd.common.jsondict import JsonDict
 from rvbd_portal.apps.datasource.models import Column, Job, Table, BatchJobRunner
@@ -41,7 +42,7 @@ class AnalysisTable(object):
     `func` is a pointer to the user defined analysis function
 
     `params` is an optional dictionary of parameters to pass to `func`
-    
+
     For example, consider an input of two tables A and B, and an
     AnalysisTable that simply concatenates A and B:
 
@@ -61,7 +62,7 @@ class AnalysisTable(object):
         Column.create(Combined, 'host')
         Column.create(Combined, 'bytes')
         Column.create(Combined, 'pkts')
-       
+
     Then in config/reports/helpers/analysis_func.py
 
         def combine_by_host(dst, srcs):
@@ -86,7 +87,7 @@ class AnalysisTable(object):
         table = Table(name=name, module=__name__,
                       options=options, **kwargs)
         table.save()
-        
+
         if columns:
             for c in columns:
                 Column.create(table, c)
@@ -115,7 +116,7 @@ class TableQuery(object):
     def mark_progress(self, progress):
         # Called by the analysis function
         self.job.mark_progress(70 + (progress * 30)/100)
-        
+
     def run(self):
         # Collect all dependent tables
         options = self.table.options
@@ -126,30 +127,33 @@ class TableQuery(object):
         for name, id in deptables.items():
             id = int(id)
             deptable = Table.objects.get(id=id)
+            depcriteria = self.job.criteria.build_for_table(deptable)
+            logger.debug("%s:\ncriteria: %s\ndepcrit:  %s\n" %
+                         (self, self.job.criteria, depcriteria))
             job = Job.create(
                 table=deptable,
-                criteria=self.job.criteria.build_for_table(deptable)
+                criteria=depcriteria
             )
             batch.add_job(job)
             logger.debug("%s: starting dependent job %s" % (self, job))
             depjobids[name] = job.id
-                    
+
         batch.run()
 
         logger.debug("%s: All dependent jobs complete, collecting data"
                      % str(self))
         # Create dataframes for all tables
         dfs = {}
-        
+
         failed = False
         for name, id in depjobids.items():
             job = Job.objects.get(id=id)
-                
+
             if job.status == job.ERROR:
                 self.job.mark_error("Dependent Job failed: %s" % job.message)
                 failed = True
                 break
-            
+
             f = job.data()
             dfs[name] = f
             logger.debug("%s: Table[%s] - %d rows" %
@@ -175,7 +179,7 @@ class TableQuery(object):
             logger.exception("%s: Analysis function %s raised an exception" %
                              (self, options.func))
             return False
-            
+
         # Sort according to the defined sort columns
         if df is not None:
             if self.table.sortcol:
@@ -191,6 +195,22 @@ class TableQuery(object):
                 self.data = df
         else:
             self.data = None
-        
+
         logger.debug("%s: completed successfully" % (self))
         return True
+
+def analysis_echo_criteria(query, tables, criteria, params):
+    values = [[str(k),str(v)]
+              for k,v in criteria.iteritems()]
+    values.append(['criteria.starttime', str(criteria.starttime)])
+    df = pandas.DataFrame(values,
+                          columns=['key', 'value'])
+    return df
+
+def create_criteria_table(name):
+    table = AnalysisTable.create('name', tables={},
+                                 func = analysis_echo_criteria)
+
+    Column.create(table, 'key', 'Criteria Key', iskey=True, isnumeric=False)
+    Column.create(table, 'value', 'Criteria Value', isnumeric=False)
+    return table

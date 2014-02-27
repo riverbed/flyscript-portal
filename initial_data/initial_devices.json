@@ -5,7 +5,7 @@
     "fields": {
       "username": "admin", 
       "name": "tm08-1", 
-      "enabled": true, 
+      "enabled": false, 
       "module": "profiler", 
       "host": "tm08-1.lab.nbttech.com", 
       "port": 443
@@ -17,7 +17,7 @@
     "fields": {
       "username": "admin", 
       "name": "shark1", 
-      "enabled": true, 
+      "enabled": false, 
       "module": "shark", 
       "host": "cam-shark12.lab.nbttech.com", 
       "port": 443
@@ -33,6 +33,18 @@
       "module": "profiler", 
       "host": "eng-profiler.lab.nbttech.com", 
       "port": 443
+    }
+  }, 
+  {
+    "pk": 4, 
+    "model": "devices.device", 
+    "fields": {
+      "username": "admin", 
+      "name": "Sample 1 Devices", 
+      "enabled": true, 
+      "module": "sample_device", 
+      "host": "sample-1.com", 
+      "port": 1234
     }
   }
 ]

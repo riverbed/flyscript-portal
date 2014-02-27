@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Max, Sum
 from django.template.defaultfilters import slugify
 from django.db import transaction
-from django.db.models.signals import pre_delete 
+from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils.datastructures import SortedDict
 from django.core.exceptions import ObjectDoesNotExist
@@ -82,7 +82,7 @@ class Report(models.Model):
                 kwargs['namespace'] = ns
 
         super(Report, self).__init__(*args, **kwargs)
-        
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.sourcefile.split('.')[-1])
@@ -104,7 +104,7 @@ class Report(models.Model):
             report_fields = {}
             for f in self.fields.all():
                 report_fields[f.keyword] = f
-                                           
+
             fields_by_section[0].update(report_fields)
 
         # Pull in fields from each section (which may add fields to
@@ -126,7 +126,7 @@ class Report(models.Model):
             keywords_to_field_names = SortedDict()
             for (field_name,field) in fields_by_section[i].iteritems():
                 keywords_to_field_names[field.keyword] = (field_name,field)
-                
+
             ordered_field_names = SortedDict()
             # Iterate over the defined order list, which may not address all fields
             if self.field_order:
@@ -153,7 +153,7 @@ class Section(models.Model):
 
     Sections provide a means to control how fields and criteria are
     handled.  The critieria is a Criteria object filled in with values
-    provided by the end user based on a set of TableFields.  
+    provided by the end user based on a set of TableFields.
 
     All tables (via Widgets) in the same section will all be passed
     the same run-time criteria.  The set of fields that a user may
@@ -208,7 +208,7 @@ class Section(models.Model):
         if position == 0:
             posmax = Section.objects.filter(report=report).aggregate(Max('position'))
             pos = (posmax['position__max'] or 0) + 1
-            
+
         section = Section(report=report, title=title, position=position)
         section.save()
 
@@ -220,20 +220,20 @@ class Section(models.Model):
         if section_keywords is not None:
             if not isinstance(section_keywords,list):
                 section_keywords = [section_keywords]
-                
+
             for keyword in section_keywords:
                 critmode = SectionFieldMode(section=section,
                                             keyword=keyword,
                                             mode=SectionFieldMode.SECTION)
                 critmode.save()
-                
+
         if keyword_field_modes:
             for keyword, mode in keyword_field_modes.iteritems():
                 critmode = SectionFieldMode(section=section,
                                             keyword=keyword,
                                             mode=mode)
                 critmode.save()
-                
+
         return section
 
     def collect_fields_by_section(self):
@@ -268,18 +268,18 @@ class Section(models.Model):
                     fields_by_section[0][id] = f
 
         return fields_by_section
-    
+
     def fields_mode(self, keyword):
         try:
             m = self.sectionfieldmode_set.get(keyword=keyword)
             return m.mode
         except ObjectDoesNotExist: pass
-        
+
         try:
             m = self.sectionfieldmode_set.get(keyword='')
             return m.mode
         except ObjectDoesNotExist: pass
-        
+
         return SectionFieldMode.INHERIT
 
 
@@ -310,12 +310,12 @@ class Widget(models.Model):
     module = models.CharField(max_length=100)
     uiwidget = models.CharField(max_length=100)
     uioptions = PickledObjectField()
-    
+
     objects = InheritanceManager()
-    
+
     def __repr__(self):
         return '<Widget %s (%s)>' % (self.title, self.id)
-    
+
     def __unicode__(self):
         return '<Widget %s (%s)>' % (self.title, self.id)
 
@@ -358,9 +358,10 @@ class Widget(models.Model):
                 fields[common_fields[k].keyword] = v
             elif k in section_fields:
                 fields[section_fields[k].keyword] = v
-
+            elif k in ['debug', 'ignore_cache']:
+                fields[k] = v
         return fields
-        
+
     def collect_fields(self):
         # Gather up all fields
         fields = SortedDict()
@@ -374,9 +375,10 @@ class Widget(models.Model):
             fields[f.keyword] = f
 
         # All fields attached to any Widget's Tables
-        for t in self.tables.all():
-            for f in t.fields.all().order_by('id'):
-                fields[f.keyword] = f
+        for w in self.section.widget_set.all().order_by('id'):
+            for t in w.tables.all():
+                for f in t.fields.all().order_by('id'):
+                    fields[f.keyword] = f
 
         return fields
 
@@ -388,7 +390,7 @@ class WidgetJob(models.Model):
     job = models.ForeignKey(Job)
 
     def __unicode__(self):
-        return "<WidgetJob %s: widget %s, job %s>" % (self.id, 
+        return "<WidgetJob %s: widget %s, job %s>" % (self.id,
                                                       self.widget.id,
                                                       self.job.id)
 
@@ -419,7 +421,7 @@ class Axes:
 
     def position(self, axis):
         axis = str(axis)
-        if ((self.definition is not None) and 
+        if ((self.definition is not None) and
             (axis in self.definition) and ('position' in self.definition[axis])):
             return self.definition[axis]['position']
         return 'left'
