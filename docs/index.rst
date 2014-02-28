@@ -17,11 +17,26 @@ Contents:
    :maxdepth: 2
 
    installation
+   administration
    license
 
+Presented by
+============
+
+| Riverbed Technology
+| 199 Fremont Street
+| San Francisco, CA 94105
+| Main 415.247.8800
+| Fax 415.247.8801
+| www.riverbed.com
+| 
+| Document Version 1.0
+| Updated February 20, 2014
+   
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
