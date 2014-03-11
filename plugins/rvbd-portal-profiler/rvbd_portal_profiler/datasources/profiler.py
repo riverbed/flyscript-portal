@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 import time
@@ -45,7 +45,7 @@ def fields_add_filterexprs_field(obj, keyword):
     parent_keywords.add(keyword)
     field.parent_keywords = list(parent_keywords)
     field.save()
-    
+
     return field
 
 
@@ -89,7 +89,7 @@ class ProfilerTable(object):
                                realm=realm,
                                centricity='int' if interface else 'hos')
 
-        t = Table(name=name, module=__name__, 
+        t = Table(name=name, module=__name__,
                   filterexpr=filterexpr, options=options, **kwargs)
         t.save()
 
@@ -107,7 +107,7 @@ class ProfilerTable(object):
                                     label='Profiler', module='profiler',
                                     enabled=True)
         fields_add_time_selection(t, initial_duration=duration)
-        
+
         fields_add_filterexpr(t)
         fields_add_resolution(t, initial=resolution,
                               resolutions=[('auto', 'Automatic'),
@@ -142,7 +142,7 @@ class TimeSeriesTable(ProfilerTable):
 
 class GroupByTable(ProfilerTable):
     @classmethod
-    def create(cls, name, groupby, duration, 
+    def create(cls, name, groupby, duration,
                resolution='auto',
                filterexpr=None,
                interface=False,
@@ -158,7 +158,7 @@ class GroupByTable(ProfilerTable):
         return super(GroupByTable,cls).create(name,
                                               groupby=groupby,
                                               realm='traffic_summary',
-                                              duration=duration, 
+                                              duration=duration,
                                               resolution=resolution,
                                               filterexpr=filterexpr,
                                               interface=interface,
@@ -174,7 +174,7 @@ class TableQuery:
     def fake_run(self):
         import fake_data
         self.data = fake_data.make_data(self.table, self.job)
-        
+
     def run(self):
         """ Main execution method
         """
@@ -184,7 +184,7 @@ class TableQuery:
             logger.debug('%s: No profiler device selected' % self.table)
             self.job.mark_error("No Profiler Device Selected")
             return False
-            
+
         #self.fake_run()
         #return True
 
@@ -220,7 +220,7 @@ class TableQuery:
             resolution = rvbd.profiler.report.Report.RESOLUTION_MAP[rsecs]
         else:
             resolution = 'auto'
-        
+
         logger.debug('Profiler report using resolution %s (%s)' %
                      (resolution, type(resolution)))
 
@@ -229,7 +229,7 @@ class TableQuery:
                        groupby=profiler.groupbys[self.table.options.groupby],
                        centricity=self.table.options.centricity,
                        columns=columns,
-                       timefilter=tf, 
+                       timefilter=tf,
                        trafficexpr=trafficexpr,
                        data_filter=datafilter,
                        resolution=resolution,

@@ -360,6 +360,7 @@ class Widget(models.Model):
                 fields[section_fields[k].keyword] = v
             elif k in ['debug', 'ignore_cache']:
                 fields[k] = v
+
         return fields
 
     def collect_fields(self):

@@ -73,7 +73,7 @@ class DateWidget(forms.DateInput):
         <script type="text/javascript">
               $("#id_{name}").datepicker({{
                  format: "mm/dd/YY",
-                 defaultDate: +2, 
+                 defaultDate: +2,
                  autoclose: true
               }});
               $("#id_{name}").datepicker("setDate", new Date());
@@ -98,15 +98,15 @@ class TimeWidget(forms.TimeInput):
 
     def render(self, name, value, *args, **kwargs):
         msg = '''
-        {0} <span id="timenow" class="icon-time" title="Set time/date to now"> </span> 
+        {0} <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
         <script type="text/javascript">
-              $("#id_{name}").timepicker({{ 
-                 step: 15, 
+              $("#id_{name}").timepicker({{
+                 step: 15,
                  scrollDefaultNow:true,
                  timeFormat:"g:i:s a"
               }});
-              $("#timenow").click(function() {{ 
-                 $("#id_{name}").timepicker("setTime", new Date()); 
+              $("#timenow").click(function() {{
+                 $("#id_{name}").timepicker("setTime", new Date());
               }});
               $("#id_{name}").timepicker("setTime", new Date());
         </script>
@@ -161,11 +161,10 @@ class FileSelectField(forms.Field):
             raise ValidationError('Unsupported widget source: %s' %
                                   str(self.widget))
 
-        
+
 class DateTimeField(forms.DateTimeField):
-    """ Field that takes a date/time string and parses it to a datetime object.
-    """
-    
+    """ Field that takes a date/time string and parses it to a datetime object. """
+
     def to_python(self, value):
         if value in validators.EMPTY_VALUES:
             return None
@@ -173,13 +172,13 @@ class DateTimeField(forms.DateTimeField):
         if isinstance(value, list):
             # This came from SplitDateTimeWidget so the value is two strings
             value = ' '.join(value)
-            
+
         if isinstance(value, str) or isinstance(value, unicode):
             try:
                 v = dateutil.parser.parse(value, tzinfos=all_timezones_map())
             except:
                 raise ValidationError('Invalid date/time string: %s' % value)
-            
+
             return from_current_timezone(v)
 
         if isinstance(value, datetime.datetime):
@@ -195,7 +194,7 @@ class DateTimeField(forms.DateTimeField):
 
 class DurationWidget(forms.MultiWidget):
 
-    def __init__(self, 
+    def __init__(self,
                  choices=((60, '1 minute'),
                           (60*15, '15 minutes'),
                           (60*60, 'Hour'),
@@ -209,7 +208,7 @@ class DurationWidget(forms.MultiWidget):
     def decompress(self, value):
         if isinstance(value, str) or isinstance(value, unicode):
             value = timedelta_total_seconds(parse_timedelta(value))
-            
+
         if value:
             m = [v for v in self.choices if v[0] == value]
             if len(m) == 1:
@@ -271,7 +270,7 @@ class DurationField(forms.ChoiceField):
             raise KeyError('Initial duration is invalid: %s' % initial)
 
         super(DurationField, self).__init__(initial=initial, **kwargs)
-              
+
     def to_python(self, value):
         if value in validators.EMPTY_VALUES:
             v = None
@@ -295,7 +294,7 @@ def fields_add_time_selection(obj, initial_duration=None, durations=None):
 
     if durations is None:
         durations = DURATIONS
-        
+
     endtime = TableField(keyword='endtime',
                          label='End Time',
                          field_cls=DateTimeField,
@@ -337,7 +336,7 @@ class TableFieldForm(forms.Form):
     # special hidden field definitions
     ignore_cache = forms.BooleanField(required=False, widget=forms.HiddenInput)
     debug = forms.BooleanField(required=False, widget=forms.HiddenInput)
-    
+
     def __init__(self, tablefields, use_widgets=True, hidden_fields=None,
                  include_hidden=False, **kwargs):
         """ Initialize a TableFieldForm for the given set of table.
@@ -349,7 +348,7 @@ class TableFieldForm(forms.Form):
 
         Standard Form arguments `data` and `files` should be used
         as kwargs instead of passing as positional args.
-            
+
         """
 
         if 'data' in kwargs and kwargs['data'] is not None:
@@ -373,7 +372,7 @@ class TableFieldForm(forms.Form):
         if self._errors is None:
             self._errors = ErrorDict()
         self._errors[field_id] = self.error_class([msg])
-        
+
     def add_field(self, field_id, tablefield):
         if field_id in self.fields:
             # Already added this field
@@ -401,16 +400,16 @@ class TableFieldForm(forms.Form):
                 msg = ("Pre-process function '%s' returned an exception: %s" %
                        (str(func.function.func_name), str(e)))
                 self.add_field_error(field_id, msg)
-                
+
         field = field_cls(**fkwargs)
         self.fields[field_id] = field
-        
+
         if self.data is not None and field_id not in self.data:
             if tablefield.initial is not None:
                 self.data[field_id] = tablefield.initial
             elif ('choices' in fkwargs) and len(fkwargs['choices']) > 0:
-                self.data[field_id] = fkwargs['choices'][0][0]  
-                
+                self.data[field_id] = fkwargs['choices'][0][0]
+
         f = field_cls(**fkwargs)
         self.fields[field_id] = f
         f.widget.attrs.update({'onchange': 'criteria_changed()'})
@@ -423,7 +422,7 @@ class TableFieldForm(forms.Form):
         ordered_ids = []
 
         last_not_ready_id = None
-        
+
         # ids is the *complete* list of fields that must be processed
         while unprocessed_ids:
             id_ = unprocessed_ids.popleft()
@@ -434,7 +433,7 @@ class TableFieldForm(forms.Form):
                 # ids take two forms:
                 #   - <keyword>
                 #   - __s<sectionid>_<keyword>
-                
+
                 m = re.match('^(__s[0-9]_)(.*)$', id_)
                 if m:
                     section = m.group(1)
@@ -448,7 +447,7 @@ class TableFieldForm(forms.Form):
                     # a section.  If the field in question has a section
                     # look first to see if a keyword in the same section exists
                     # at all, and if it does whether it's processed
-                    
+
 
                     if section and (section + parent_keyword) in ids:
                         check_keyword = section+parent_keyword
@@ -468,12 +467,12 @@ class TableFieldForm(forms.Form):
             if not ready:
                 if last_not_ready_id == id_:
                     unprocessed_ids.append(id_)
-                    raise CriteriaError(('Failed to resolve all field, ' 
+                    raise CriteriaError(('Failed to resolve all field, '
                                          'may have circular dependencies: %s') %
                                         ([str(i) for i in unprocessed_ids]))
                 elif last_not_ready_id is None:
                     last_not_ready_id = id_
-                        
+
                 # Add this back to the list
                 unprocessed_ids.append(id_)
             else:
@@ -481,18 +480,18 @@ class TableFieldForm(forms.Form):
                 last_not_ready_id = None
 
         return ordered_ids
-                
+
     def dynamic_fields(self):
         return [self[id] for id, tablefield in self._tablefields.iteritems()
                 if tablefield.dynamic]
-            
+
     def as_text(self):
         """ Return certain field values as a dict for simple json parsing
         """
         result = {}
 
         for k, v in self.cleaned_data.iteritems():
-            
+
             if isinstance(v, datetime.datetime):
                 result[k] = v.isoformat()
             elif isinstance(v, datetime.timedelta):
@@ -515,7 +514,7 @@ class TableFieldForm(forms.Form):
 
     def criteria(self):
         """ Return a Criteria object based on this form data. """
-        
+
         if not self.is_valid():
             raise ValidationError("Form data is not valid")
 
@@ -526,7 +525,7 @@ class TableFieldForm(forms.Form):
             else:
                 data[k] = v
         criteria = Criteria(**data)
-        
+
         for id_ in self.compute_field_precedence():
             tablefield = self._tablefields[id_]
 
@@ -561,7 +560,7 @@ class TableFieldForm(forms.Form):
                 raise CriteriaError('Field %s has no value and no post-process '
                                     'function or template' %
                                     tablefield)
-                
+
         return criteria
 
     def is_valid(self, check_unknown=False):
@@ -585,10 +584,10 @@ class TableFieldForm(forms.Form):
 
     def get_tablefield(self, id):
         return self._tablefields[id]
-    
+
     def get_field_value(self, keyword, fromfield_id):
         trykeywords = []
-        
+
         m = re.match('(__s[0-9]_)', fromfield_id)
         if m:
             s = m.group(1)

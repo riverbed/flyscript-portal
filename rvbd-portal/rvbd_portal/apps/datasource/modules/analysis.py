@@ -120,47 +120,47 @@ class TableQuery(object):
     def run(self):
         # Collect all dependent tables
         options = self.table.options
-        logger.debug("%s: dependent tables: %s" % (self, options.tables))
-        deptables = options.tables
-        depjobids = {}
-        batch = BatchJobRunner(self.job, max_progress=70)
-        for name, id in deptables.items():
-            id = int(id)
-            deptable = Table.objects.get(id=id)
-            depcriteria = self.job.criteria.build_for_table(deptable)
-            logger.debug("%s:\ncriteria: %s\ndepcrit:  %s\n" %
-                         (self, self.job.criteria, depcriteria))
-            job = Job.create(
-                table=deptable,
-                criteria=depcriteria
-            )
-            batch.add_job(job)
-            logger.debug("%s: starting dependent job %s" % (self, job))
-            depjobids[name] = job.id
 
-        batch.run()
-
-        logger.debug("%s: All dependent jobs complete, collecting data"
-                     % str(self))
         # Create dataframes for all tables
         dfs = {}
 
-        failed = False
-        for name, id in depjobids.items():
-            job = Job.objects.get(id=id)
+        deptables = options.tables
+        if (len(deptables) > 0):
+            logger.debug("%s: dependent tables: %s" % (self, deptables))
+            depjobids = {}
+            batch = BatchJobRunner(self.job, max_progress=70)
+            for (name, id) in deptables.items():
+                id = int(id)
+                deptable = Table.objects.get(id=id)
+                job = Job.create(
+                    table=deptable,
+                    criteria=self.job.criteria.build_for_table(deptable)
+                )
+                batch.add_job(job)
+                logger.debug("%s: starting dependent job %s" % (self, job))
+                depjobids[name] = job.id
 
-            if job.status == job.ERROR:
-                self.job.mark_error("Dependent Job failed: %s" % job.message)
-                failed = True
-                break
+            batch.run()
 
-            f = job.data()
-            dfs[name] = f
-            logger.debug("%s: Table[%s] - %d rows" %
-                         (self, name, len(f) if f is not None else 0))
+            logger.debug("%s: All dependent jobs complete, collecting data"
+                         % str(self))
 
-        if failed:
-            return False
+            failed = False
+            for (name, id) in depjobids.items():
+                job = Job.objects.get(id=id)
+
+                if job.status == job.ERROR:
+                    self.job.mark_error("Dependent Job failed: %s" % job.message)
+                    failed = True
+                    break
+
+                f = job.data()
+                dfs[name] = f
+                logger.debug("%s: Table[%s] - %d rows" %
+                             (self, name, len(f) if f is not None else 0))
+
+            if failed:
+                return False
 
         logger.debug("%s: Calling analysis function %s"
                      % (self, str(options.func)))

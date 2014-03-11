@@ -25,12 +25,16 @@ def explode_interface_dns(interface_dns):
     parts = interface_dns.split("|")
     ip = parts[0]
     ifindex = parts[2]
-    return ip, ifindex
+    ifdescr = parts[4]
+    return ip, ifindex, ifdescr
 
 
 def process_join_ip_device(target, tables, criteria, params):
     dev = tables['devices']
     traffic = tables['traffic']
+
+    dev.save("/tmp/devices.pd")
+    traffic.save("/tmp/traffic.pd")
 
     if traffic is None or len(traffic) == 0:
         return None
@@ -39,13 +43,21 @@ def process_join_ip_device(target, tables, criteria, params):
         return traffic
 
     dev = dev.copy()
-    traffic['interface_ip'], traffic['interface_index'] = zip(*traffic['interface_dns'].
-                                                              map(explode_interface_dns))
-
-    # Set the name to the ip addr wherever the name is empty
-    dev.ix[dev['name'] == '', 'name'] = dev.ix[dev['name'] == '', 'ipaddr']
+    traffic['interface_ip'], traffic['interface_index'], traffic['interface_ifdescr'] = zip(*traffic['interface_dns'].
+            map(explode_interface_dns))
 
     df = pandas.merge(traffic, dev, left_on='interface_ip', right_on='ipaddr', how='left')
-    df = df.rename(columns={'name': 'interface_name'})
+
+    # Set the name to the ip addr wherever the name is empty
+    nullset = ((df['name'].isnull()) | (df['name'] == ''))
+    df.ix[nullset, 'name'] = df.ix[nullset, 'interface_ip']
+
+    # Set ifdescr to the index if empty
+    df['ifdescr'] = df['interface_ifdescr']
+    nullset = ((df['ifdescr'].isnull()) | (df['ifdescr'] == ''))
+    df.ix[nullset, 'ifdescr'] = df.ix[nullset, 'interface_index']
+
+    # Compute the name from the name and ifdescr
+    df['interface_name'] = df['name'].astype(str) + ':' + df['ifdescr'].astype(str)
 
     return df

@@ -91,4 +91,6 @@ class Command(BaseCommand):
             Job.age_jobs(force=True)
 
         elif options['job_flush']:
-            Job.objects.all().delete()
+            while Job.objects.count():
+                ids = Job.objects.values_list('pk', flat=True)[:100]
+                Job.objects.filter(pk__in = ids).delete()
