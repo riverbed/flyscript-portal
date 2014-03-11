@@ -49,7 +49,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options['clear_cache']:
-            # clear cache files
+            # first delete all jobs
+            self.stdout.write('Clearing all jobs ... ', ending='')
+            Job.objects.all().delete()
+            self.stdout.write('done.')
+
+            # now clear any remaining cache files
             self.stdout.write('Removing cache files ... ', ending='')
             for f in os.listdir(settings.DATA_CACHE):
                 if f != '.gitignore':

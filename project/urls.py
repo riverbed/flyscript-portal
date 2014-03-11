@@ -47,10 +47,3 @@ urlpatterns = patterns('',
         {'post_change_redirect': '/preferences',
          'template_name': 'password_change_form.html'}),
 )
-
-# include landing page if we have an app by that name
-for app in settings.INSTALLED_APPS:
-    if 'landing' in app:
-        urlpatterns += patterns('', url(r'^landing/', include('%s.urls' % app)))
-        settings.LOGIN_REDIRECT_URL = '/landing'
-        break

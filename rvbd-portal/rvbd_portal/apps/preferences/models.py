@@ -69,6 +69,8 @@ def create_preference_fixture(initial_admin_only=True):
             pref['fields']['profile_seen'] = False
             preferences.append(pref)
 
+    buf.close()
+
     fname = os.path.join(settings.PROJECT_ROOT,
                          'initial_data',
                          'initial_preferences.json')

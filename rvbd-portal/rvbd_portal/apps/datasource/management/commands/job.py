@@ -89,6 +89,6 @@ class Command(BaseCommand):
 
         elif options['job_age']:
             Job.age_jobs(force=True)
-                
+
         elif options['job_flush']:
             Job.objects.all().delete()

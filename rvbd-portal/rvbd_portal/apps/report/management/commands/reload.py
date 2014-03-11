@@ -61,6 +61,23 @@ class Command(BaseCommand):
                                                         str(e))
             raise ImportError(msg)
 
+    def capture_enabled(self, reports=None):
+        if reports is None:
+            reports = Report.objects.all()
+
+        self.enabled_reports = dict()
+        for r in reports:
+            self.enabled_reports[(r.namespace, r.slug)] = r.enabled
+
+    def apply_enabled(self):
+        for (namespace, slug), enabled in self.enabled_reports.iteritems():
+            try:
+                report = Report.objects.get(namespace=namespace, slug=slug)
+                report.enabled = enabled
+                report.save()
+            except ObjectDoesNotExist:
+                pass
+
     def handle(self, *args, **options):
         self.stdout.write('Reloading report objects ... ')
 
@@ -104,6 +121,8 @@ class Command(BaseCommand):
         elif options['namespace']:
             reports = Report.objects.filter(namespace=options['namespace'])
 
+            self.capture_enabled(reports)
+
             for report in reports:
                 management.call_command('clean',
                                         applications=False,
@@ -112,7 +131,11 @@ class Command(BaseCommand):
                                         clear_logs=False)
                 self.import_module(report.sourcefile)
 
+            self.apply_enabled()
+
         else:
+            self.capture_enabled()
+
             # clear all data
             management.call_command('clean',
                                     applications=True,
@@ -132,3 +155,5 @@ class Command(BaseCommand):
                 if plugin.reports:
                     #from IPython import embed; embed()
                     plugin.load_reports()
+
+            self.apply_enabled()
