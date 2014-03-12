@@ -13,6 +13,7 @@ import optparse
 
 from django.core.management.base import BaseCommand
 from django.core import management
+from django.db import DatabaseError
 from django.db.models import get_app, get_models, Count
 
 from django.conf import settings
@@ -51,7 +52,11 @@ class Command(BaseCommand):
         if options['clear_cache']:
             # first delete all jobs
             self.stdout.write('Clearing all jobs ... ', ending='')
-            Job.objects.all().delete()
+            try:
+                Job.objects.all().delete()
+            except DatabaseError:
+                # on new db we don't have Job models yet
+                pass
             self.stdout.write('done.')
 
             # now clear any remaining cache files
