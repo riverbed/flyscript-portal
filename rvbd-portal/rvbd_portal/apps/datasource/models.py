@@ -157,7 +157,7 @@ class TableField(models.Model):
         return "<TableField %s (%s)>" % (self.keyword, self.id)
 
     def __unicode__(self):
-        return "<TableField %s (%s)>" % (self.keyword, self.id)
+        return unicode(self)
 
     def is_report_criteria(self, table):
         """ Runs through intersections of widgets to determine if this criteria
@@ -205,6 +205,10 @@ class Table(models.Model):
     # Default values for fields assocaited with this table, these
     # may be overridden by user criteria at run time
     criteria = PickledObjectField()
+
+    # Function to call to tweak criteria for computing a job handle.
+    # This must return a dictionary of key/value pairs of values
+    # to use for computing a determining when a job must be rerun.
     criteria_handle_func = FunctionField(null=True)
 
     # indicate if data can be cached
@@ -218,6 +222,9 @@ class Table(models.Model):
 
     def __unicode__(self):
         return "<Table %s (%s)>" % (str(self.id), self.name)
+
+    def __repr__(self):
+        return unicode(self)
 
     def get_columns(self, synthetic=None, ephemeral=None, iskey=None):
         """
@@ -409,6 +416,9 @@ class Column(models.Model):
     def __unicode__(self):
         return self.label
 
+    def __repr__(self):
+        return unicode(self)
+
     def save(self, *args, **kwargs):
         if self.label is None:
             self.label = self.name
@@ -568,7 +578,7 @@ class Job(models.Model):
                  (ERROR, "Error")))
 
     # Message if job complete or error
-    message = models.CharField(max_length=200, default="")
+    message = models.TextField(default="")
 
     # While RUNNING, this provides an indicator of progress 0-100
     progress = models.IntegerField(default=-1)
@@ -578,6 +588,9 @@ class Job(models.Model):
 
     def __unicode__(self):
         return "<Job %s (%8.8s) - t%s>" % (self.id, self.handle, self.table.id)
+
+    def __repr__(self):
+        return unicode(self)
 
     def refresh(self):
         """ Refresh dynamic job parameters from the database. """
@@ -741,7 +754,7 @@ class Job(models.Model):
         #             (self, message, Job.objects.get(pk=pk).refcount))
 
     def json(self, data=None):
-        """ Return a simple JSON structure representing the Job status """
+        """ Return a JSON represention of this Job. """
         self.refresh()
         return {'id': self.id,
                 'handle': self.handle,
@@ -964,6 +977,9 @@ class AsyncWorker(threading.Thread):
     def __str__(self):
         return "<AsyncWorker %s>" % (self.job)
 
+    def __repr__(self):
+        return unicode(self)
+
     def run(self):
         self.do_run()
         sys.exit(0)
@@ -979,6 +995,9 @@ class SyncWorker(object):
 
     def __str__(self):
         return "<SyncWorker %s>" % (self.job)
+
+    def __repr__(self):
+        return unicode(self)
 
     def start(self):
         self.do_run()
@@ -1166,7 +1185,7 @@ class BatchJobRunner(object):
             job_progress = (float(self.min_progress) +
                             ((total_progress / 100.0) *
                              (self.max_progress - self.min_progress)))
-            logger.debug("%s: progress %d%% (basjob %d%%) (%d/%d done, %d in batch)" %
+            logger.debug("%s: progress %d%% (basejob %d%%) (%d/%d done, %d in batch)" %
                          (self, int(total_progress), int(job_progress),
                           done_count, joblist.count, len(batch)))
             self.basejob.mark_progress(job_progress)
