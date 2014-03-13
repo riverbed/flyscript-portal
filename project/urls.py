@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 
@@ -15,6 +15,8 @@ admin.autodiscover()
 
 from django.conf import settings
 
+from rvbd_portal.apps.datasource.models import Job
+Job.flush_incomplete()
 
 urlpatterns = patterns('',
     (r'^favicon\.ico$', lambda x: HttpResponseRedirect('/static/images/favicon.ico')),
@@ -39,7 +41,7 @@ urlpatterns = patterns('',
     url(r'^admin_tools/', include('admin_tools.urls')),
 
     # Account login
-    url(r'^accounts/login/$', 'django.contrib.auth.views.login', 
+    url(r'^accounts/login/$', 'django.contrib.auth.views.login',
         {'template_name': 'login.html'}),
     url(r'^accounts/logout/$', 'django.contrib.auth.views.logout',
         {'next_page': '/accounts/login'}),

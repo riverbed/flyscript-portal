@@ -917,6 +917,13 @@ class Job(models.Model):
 
         age_jobs_last_run = time.time()
 
+    @classmethod
+    def flush_incomplete(cls):
+        jobs = Job.objects.filter(progress__lt=100)
+        logger.info("Flushing %d incomplete jobs: %s" %
+                    (len(jobs), [j.id for j in jobs]))
+        jobs.delete()
+
     def done(self):
         self.refresh()
         logger.debug("%s status: %s - %s%%" % (str(self),
