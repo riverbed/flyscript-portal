@@ -638,6 +638,9 @@ class Job(models.Model):
 
         with LocalLock():
             with transaction.commit_on_success():
+                # Grab a lock on the row associated with the table
+                table = Table.objects.select_for_update().get(id=table.id)
+
                 # Lockdown start/endtimes
                 try:
                     criteria.compute_times()
@@ -660,9 +663,6 @@ class Job(models.Model):
                                        handle=handle,
                                        ischild=False)
                                .order_by('created'))
-
-                    logger.debug("%s just finished parents query" % str(handle))
-                    time.sleep(0.2)
                 else:
                     parents = None
 
