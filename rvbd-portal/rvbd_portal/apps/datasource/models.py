@@ -211,7 +211,7 @@ class Table(models.Model):
     # to use for computing a determining when a job must be rerun.
     criteria_handle_func = FunctionField(null=True)
 
-    # indicate if data can be cached
+    # Indicates if data can be cached
     cacheable = models.BooleanField(default=True)
 
     @classmethod
@@ -234,9 +234,8 @@ class Table(models.Model):
             True means only synthetic columns, False means
             only non-synthetic columns
 
-        `ephemeral` is tri-state: None (default) is don't care,
-            True means only ephemeral columns, False means
-            only non-ephemeral columns
+        `ephemeral` is a job reference.  If specified, include
+            ephemeral columns related to this job
 
         `iskey` is tri-state: None (default) is don't care,
             True means only key columns, False means
@@ -248,7 +247,7 @@ class Table(models.Model):
         for c in Column.objects.filter(table=self).order_by('position'):
             if synthetic is not None and c.synthetic != synthetic:
                 continue
-            if ephemeral is not None and c.ephemeral != ephemeral:
+            if c.ephemeral is not None and c.ephemeral != ephemeral:
                 continue
             if iskey is not None and c.iskey != iskey:
                 continue
@@ -299,7 +298,7 @@ class Table(models.Model):
         if df is None:
             return None
 
-        all_columns = self.get_columns()
+        all_columns = job.get_columns()
         all_col_names = [c.name for c in all_columns]
 
         def compute(df, syncols):
@@ -401,7 +400,7 @@ class Column(models.Model):
     synthetic = models.BooleanField(default=False)
 
     # Ephemeral columns are columns added to a table at run-time
-    ephemeral = models.BooleanField(default=False)
+    ephemeral = models.ForeignKey('Job', null=True)
 
     compute_post_resample = models.BooleanField(default=False)
     compute_expression = models.CharField(max_length=300)
@@ -428,7 +427,9 @@ class Column(models.Model):
     def create(cls, table, name, label=None, datatype='', units='',
                iskey=False, issortcol=False, options=None, **kwargs):
 
-        if len(Column.objects.filter(table=table, name=name)) > 0:
+        ephemeral=kwargs.get('ephemeral', None)
+        if len(Column.objects.filter(table=table, name=name,
+                                     ephemeral=ephemeral)) > 0:
             raise ValueError("Column %s already in use for table %s" %
                              (name, str(table)))
 
@@ -725,7 +726,7 @@ class Job(models.Model):
             # May want to dig in to this further and make sure this doesn't
             # pick up cache files when we don't want it to
             h.update('.'.join([c.name for c in
-                               table.get_columns(ephemeral=False)]))
+                               table.get_columns()]))
 
             if table.criteria_handle_func:
                 criteria = table.criteria_handle_func.function(criteria)
@@ -752,6 +753,17 @@ class Job(models.Model):
         Job.objects.filter(pk=pk).update(refcount=F('refcount')-1)
         #logger.debug("%s: dereference(%s) @ %d" %
         #             (self, message, Job.objects.get(pk=pk).refcount))
+
+    def get_columns(self, ephemeral=None, **kwargs):
+        """ Return columns assocated with the table for the job.
+
+        The returned column set includes ephemeral columns associated
+        with this job unless ephemeral is set to False.
+
+        """
+        if ephemeral is None:
+            kwargs['ephemeral'] = self.parent or self
+        return self.table.get_columns(**kwargs)
 
     def json(self, data=None):
         """ Return a JSON represention of this Job. """
@@ -872,23 +884,21 @@ class Job(models.Model):
             df = df.where(pandas.notnull(df), None)
 
             # Extract tha values in the right order
-            all_columns = self.table.get_columns()
+            all_columns = self.get_columns()
             all_col_names = [c.name for c in all_columns]
-            vals = df.ix[:, all_col_names].values.tolist()
 
             # Straggling numpy data types may cause problems
             # downstream (json encoding, for example), so strip
             # things down to just native ints and floats
-            cleaned = []
-            for row in vals:
-                cleaned_row = []
-                for v in row:
+            vals = []
+            for row in df.ix[:, all_col_names].itertuples():
+                vals_row = []
+                for v in row[1:]:
                     if isinstance(v, numpy.number):
                         v = numpy.asscalar(v)
-                    cleaned_row.append(v)
-                cleaned.append(cleaned_row)
+                    vals_row.append(v)
+                vals.append(vals_row)
 
-            return cleaned
         else:
             vals = []
         return vals
@@ -1023,43 +1033,8 @@ class Worker(base_worker_class):
                 if isinstance(query.data, list) and len(query.data) > 0:
                     # Convert the result to a dataframe
                     columns = [col.name for col in
-                               job.table.get_columns(synthetic=False)]
+                               job.get_columns(synthetic=False)]
                     df = pandas.DataFrame(query.data, columns=columns)
-                    for col in job.table.get_columns(synthetic=False):
-                        s = df[col.name]
-                        if col.datatype == 'time':
-                            # The column is supposed to be time,
-                            # make sure all values are datetime objects
-                            if str(s.dtype).startswith(str(pandas.np.dtype('datetime64'))):
-                                # Already a datetime
-                                pass
-                            elif str(s.dtype).startswith('int'):
-                                # This is a numeric epoch, convert to datetime
-                                s = s.values.astype('datetime64[s]')
-                            elif str(s.dtype).startswith('float'):
-                                # This is a numeric epoch as a float, possibly
-                                # has subsecond resolution, convert to
-                                # datetime but preserve up to millisecond
-                                s = (1000 * s).values.astype('datetime64[ms]')
-                            else:
-                                # Possibly datetime object or a datetime string,
-                                # hopefully astype() can figure it out
-                                s = s.values.astype('datetime64[ms]')
-
-                            df[col.name] = pandas.Series(s)
-
-                        elif (col.isnumeric and
-                              s.dtype == pandas.np.dtype('object')):
-                            # The column is supposed to be numeric but must have
-                            # some strings.  Try replacing empty strings with NaN
-                            # and see if it converts to float64
-                            try:
-                                df[col.name] = (s.replace('', pandas.np.NaN)
-                                                .astype(pandas.np.float64))
-                            except ValueError:
-                                # This may incorrectly be tagged as numeric
-                                pass
-
                 elif ((query.data is None) or
                       (isinstance(query.data, list) and len(query.data) == 0)):
                     df = None
@@ -1070,6 +1045,7 @@ class Worker(base_worker_class):
                                      type(query.data))
 
                 if df is not None:
+                    self.fix_dataframe(df)
                     df = job.table.compute_synthetic(job, df)
 
                 if df is not None:
@@ -1111,6 +1087,44 @@ class Worker(base_worker_class):
 
         finally:
             job.dereference("Worker exiting")
+
+    def fix_dataframe(self, df):
+        job = self.job
+        for col in job.get_columns(synthetic=False):
+            s = df[col.name]
+            if col.datatype == 'time':
+                # The column is supposed to be time,
+                # make sure all values are datetime objects
+                if str(s.dtype).startswith(str(pandas.np.dtype('datetime64'))):
+                    # Already a datetime
+                    pass
+                elif str(s.dtype).startswith('int'):
+                    # This is a numeric epoch, convert to datetime
+                    s = s.values.astype('datetime64[s]')
+                elif str(s.dtype).startswith('float'):
+                    # This is a numeric epoch as a float, possibly
+                    # has subsecond resolution, convert to
+                    # datetime but preserve up to millisecond
+                    s = (1000 * s).values.astype('datetime64[ms]')
+                else:
+                    # Possibly datetime object or a datetime string,
+                    # hopefully astype() can figure it out
+                    s = s.values.astype('datetime64[ms]')
+
+                df[col.name] = pandas.Series(s)
+
+            elif (col.isnumeric and
+                  s.dtype == pandas.np.dtype('object')):
+                # The column is supposed to be numeric but must have
+                # some strings.  Try replacing empty strings with NaN
+                # and see if it converts to float64
+                try:
+                    df[col.name] = (s.replace('', pandas.np.NaN)
+                                    .astype(pandas.np.float64))
+                except ValueError:
+                    # This may incorrectly be tagged as numeric
+                    pass
+
 
 
 class BatchJobRunner(object):

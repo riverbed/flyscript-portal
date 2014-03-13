@@ -516,7 +516,7 @@ class WidgetJobDetail(views.APIView):
                     logger.debug("%s complete" % str(wjob))
             except:
                 logger.exception("Widget %s Job %s processing failed" %
-                                 (job.id, widget.id))
+                                 (widget.id, job.id))
                 resp = job.json()
                 resp['status'] = Job.ERROR
                 ei = sys.exc_info()

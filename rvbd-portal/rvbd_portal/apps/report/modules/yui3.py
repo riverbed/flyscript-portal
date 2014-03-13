@@ -1,10 +1,11 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
+import re
 import math
 import datetime
 import logging
@@ -16,6 +17,10 @@ from rvbd_portal.libs.nicescale import NiceScale
 from rvbd_portal.apps.report.models import Axes, Widget
 
 logger = logging.getLogger(__name__)
+
+
+def cleankey(s):
+    return re.sub('[:. ]', '_', s)
 
 
 class TableWidget(object):
@@ -32,37 +37,38 @@ class TableWidget(object):
         class ColInfo:
             def __init__(self, col, dataindex, istime=False):
                 self.col = col
+                self.key = cleankey(col.name)
                 self.dataindex = dataindex
                 self.istime = istime
 
-        colinfo = {}
-        colnames = []
+        w_keys = []      # Widget column keys in order that matches data
+        colinfo = {}     # Map of ColInfo by key
+        w_columns = []   # Widget column definitions
 
-        columns = []
-
-        for i,wc in enumerate(widget.table().get_columns()):
-            colnames.append(wc.name)
-            colinfo[wc.name] = ColInfo(wc, i, wc.datatype == 'time')
-            column = {'key': wc.name, 'label': wc.label, "sortable": True}
+        for i,wc in enumerate(job.get_columns()):
+            ci = ColInfo(wc, i, wc.datatype == 'time')
+            colinfo[ci.key] = ci
+            w_keys.append(ci.key)
+            w_column = {'key': ci.key, 'label': wc.label, "sortable": True}
             if wc.datatype == 'bytes':
-                column['formatter'] = 'formatBytes'
+                w_column['formatter'] = 'formatBytes'
             elif wc.datatype == 'metric':
-                column['formatter'] = 'formatMetric'
+                w_column['formatter'] = 'formatMetric'
             elif wc.datatype == 'time':
-                column['formatter'] = 'formatTime'
+                w_column['formatter'] = 'formatTime'
             elif wc.datatype == 'pct':
-                column['formatter'] = 'formatPct'
+                w_column['formatter'] = 'formatPct'
             elif wc.datatype == 'html':
-                column['allowHTML'] = True
-            columns.append(column)
+                w_column['allowHTML'] = True
+            w_columns.append(w_column)
 
         rows = []
 
         for rawrow in data:
             row = {}
 
-            for i, name in enumerate(colnames):
-                if colinfo[name].istime:
+            for i, key in enumerate(w_keys):
+                if colinfo[key].istime:
                     t = rawrow[i]
                     try:
                         val = timeutils.datetime_to_microseconds(t) / 1000
@@ -70,14 +76,14 @@ class TableWidget(object):
                         val = t * 1000
                 else:
                     val = rawrow[i]
-                    
-                row[name] = val
+
+                row[key] = val
 
             rows.append(row)
 
         data = {
             "chartTitle": widget.title.format(**job.actual_criteria),
-            "columns": columns,
+            "columns": w_columns,
             "data": rows
         }
 
@@ -106,7 +112,7 @@ class PieWidget(object):
 
     @classmethod
     def process(cls, widget, job, data):
-        columns = widget.table().get_columns()
+        columns = job.get_columns()
 
         col_names = [c.name for c in columns]
         catcol = [c for c in columns if c.name == widget.options.key][0]
@@ -179,38 +185,44 @@ class TimeSeriesWidget(object):
         class ColInfo:
             def __init__(self, col, dataindex, axis, istime=False):
                 self.col = col
+                self.key = cleankey(col.name)
                 self.dataindex = dataindex
                 self.axis = axis
                 self.istime = istime
 
-        t_cols = widget.table().get_columns()
-        colinfo = {}
+        t_cols = job.get_columns()
+        colinfo = {}   # map by widget key
 
+        # columns of '*' is a special case, just use all
+        # defined columns other than time
         if widget.options.columns == '*':
             valuecolnames = [col.name for col in t_cols
                              if col.datatype != 'time']
         else:
             valuecolnames = widget.options.columns
+
+        # Column keys are the 'cleaned' column names
+        w_keys = [cleankey(n) for n in valuecolnames]
+
         # Retrieve the desired value columns
         # ...and the indices for the value values
         # (as the 'data' has *all* columns)
         for i, c in enumerate(t_cols):
             if c.datatype == 'time':
-                colinfo['time'] = ColInfo(c, i, -1,
-                                          istime=(c.datatype == 'time'))
+                ci = ColInfo(c, i, -1, istime=True)
             elif c.name in valuecolnames:
-                colinfo[c.name] = ColInfo(c, i, -1,
-                                          istime=(c.datatype == 'time'))
+                ci = ColInfo(c, i, -1, istime=False)
+            colinfo[ci.key] = ci
 
-        series = []
-        w_axes = Axes(widget.options.axes)
+        w_series = []
+        axes = Axes(widget.options.axes)
 
         # Setup the time axis
-        axes = {"time": {"keys": ["time"],
-                         "position": "bottom",
-                         "type": "time",
-                         "styles": {"label": {"fontSize": "8pt",
-                                              "rotation": "-45"}}}}
+        w_axes = {"time": {"keys": ["time"],
+                           "position": "bottom",
+                           "type": "time",
+                           "styles": {"label": {"fontSize": "8pt",
+                                                "rotation": "-45"}}}}
 
         # Create a better time format depending on t0/t1
         t_dataindex = colinfo['time'].dataindex
@@ -222,34 +234,34 @@ class TimeSeriesWidget(object):
             t1 = datetime.datetime.fromtimestamp(t1)
 
         if (t1 - t0).seconds < 2:
-            axes['time']['formatter'] = 'formatTimeMs'
+            w_axes['time']['formatter'] = 'formatTimeMs'
         elif (t1 - t0).seconds < 120:
-            axes['time']['labelFormat'] = '%k:%M:%S'
+            w_axes['time']['labelFormat'] = '%k:%M:%S'
         else:
-            axes['time']['labelFormat'] = '%k:%M'
+            w_axes['time']['labelFormat'] = '%k:%M'
 
         # Setup the other axes, checking the axis for each column
-        for colname in valuecolnames:
+        for w_key in w_keys:
             # Need to interate the valuecolnames array to preserve order
-            ci = colinfo[colname]
+            ci = colinfo[w_key]
 
-            series.append({"xKey": "time",
-                           "xDisplayName": "Time",
-                           "yKey": ci.col.name,
-                           "yDisplayName": ci.col.label,
-                           "styles": {"line": {"weight": 1},
-                                      "marker": {"height": 3,
-                                                 "width": 3}}})
+            w_series.append({"xKey": "time",
+                             "xDisplayName": "Time",
+                             "yKey": ci.key,
+                             "yDisplayName": ci.col.label,
+                             "styles": {"line": {"weight": 1},
+                                        "marker": {"height": 3,
+                                                   "width": 3}}})
 
-            ci.axis = w_axes.getaxis(ci.col.name)
+            ci.axis = axes.getaxis(ci.col.name)
             axis_name = 'axis' + str(ci.axis)
-            if axis_name not in axes:
-                axes[axis_name] = {"type": "numeric",
-                                   "position": w_axes.position(ci.axis),
-                                   "keys": []
-                                   }
+            if axis_name not in w_axes:
+                w_axes[axis_name] = {"type": "numeric",
+                                     "position": axes.position(ci.axis),
+                                     "keys": []
+                                     }
 
-            axes[axis_name]['keys'].append(ci.col.name)
+            w_axes[axis_name]['keys'].append(ci.key)
 
         # Output row data
         rows = []
@@ -275,7 +287,7 @@ class TimeSeriesWidget(object):
                     continue
                 a = ci.axis
                 val = rawrow[ci.dataindex]
-                row[ci.col.name] = val if val != '' else None
+                row[ci.key] = val if val != '' else None
 
                 if a not in rowmin:
                     rowmin[a] = val if val != '' else 0
@@ -304,29 +316,29 @@ class TimeSeriesWidget(object):
             if minval and maxval:
                 n = NiceScale(minval[ci.axis], maxval[ci.axis])
 
-                axes[axis_name]['minimum'] = "%.10f" % n.niceMin
-                axes[axis_name]['maximum'] = "%.10f" % n.niceMax
-                axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
-                axes[axis_name]['styles'] = {'majorUnit': {'count': n.numTicks}}
+                w_axes[axis_name]['minimum'] = "%.10f" % n.niceMin
+                w_axes[axis_name]['maximum'] = "%.10f" % n.niceMax
+                w_axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
+                w_axes[axis_name]['styles'] = {'majorUnit': {'count': n.numTicks}}
             else:
                 # empty data which would result in keyError above
-                axes[axis_name]['minimum'] = "0"
-                axes[axis_name]['maximum'] = "1"
-                axes[axis_name]['tickExponent'] = 1
-                axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
+                w_axes[axis_name]['minimum'] = "0"
+                w_axes[axis_name]['maximum'] = "1"
+                w_axes[axis_name]['tickExponent'] = 1
+                w_axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
 
             if ci.col.datatype == 'bytes':
-                axes[axis_name]['formatter'] = 'formatBytes'
+                w_axes[axis_name]['formatter'] = 'formatBytes'
             elif ci.col.datatype == 'metric':
-                axes[axis_name]['formatter'] = 'formatMetric'
+                w_axes[axis_name]['formatter'] = 'formatMetric'
 
         data = {
             "chartTitle": widget.title.format(**job.actual_criteria),
             "type": "area" if stacked else "combo",
             "stacked": stacked,
             "dataProvider": rows,
-            "seriesCollection": series,
-            "axes": axes,
+            "seriesCollection": w_series,
+            "axes": w_axes,
             "legend": {"position": "bottom",
                        "fontSize": "8pt",
                        "styles": {"gap": 0}},
@@ -337,10 +349,10 @@ class TimeSeriesWidget(object):
         return data
 
 
-class BarWidget(object):
+class ChartWidget(object):
     @classmethod
     def create(cls, section, table, title, width=6, rows=10, height=300,
-               keycols=None, valuecols=None):
+               keycols=None, valuecols=None, chart_type='line'):
         w = Widget(section=section, title=title, rows=rows, width=width,
                    height=height, module=__name__, uiwidget=cls.__name__)
         w.compute_row_col()
@@ -356,7 +368,8 @@ class BarWidget(object):
                          if col.iskey is False]
         w.options = JsonDict(dict={'keycols': keycols,
                                    'columns': valuecols,
-                                   'axes': None})
+                                   'axes': None,
+                                   'chart_type': chart_type})
         w.save()
         w.tables.add(table)
 
@@ -368,26 +381,31 @@ class BarWidget(object):
                 self.dataindex = dataindex
                 self.axis = axis
 
-        all_cols = widget.table().get_columns()
+        all_cols = job.get_columns()
 
         # The category "key" column -- this is the column shown along the
         # bottom of the bar widget
         keycols = [c for c in all_cols if c.name in widget.options.keycols]
 
-        # The value columns - one set of bars for each
-        cols = [c for c in all_cols if c.name in widget.options.columns]
+        # columns of '*' is a special case, just use all
+        # defined columns other than time
+        if widget.options.columns == '*':
+            cols = [c for c in all_cols if not c.iskey]
+        else:
+            # The value columns - one set of bars for each
+            cols = [c for c in all_cols if c.name in widget.options.columns]
 
-        w_axes = Axes(widget.options.axes)
+        axes = Axes(widget.options.axes)
 
         # Array of data series definitions yui3 style
         series = []
 
         # Array of axis definitions yui3 style
         catname = '-'.join([k.name for k in keycols])
-        axes = {catname: {"keys": [catname],
-                          "position": "bottom",
-                          "styles": {"label": {"rotation": -60}}}}
-        
+        w_axes = {catname: {"keys": [catname],
+                            "position": "bottom",
+                            "styles": {"label": {"rotation": -60}}}}
+
         # Map of column info by column name
         colmap = {}
 
@@ -395,7 +413,7 @@ class BarWidget(object):
         for i, c in enumerate(all_cols):
             if c not in keycols:
                 continue
-            ci = ColInfo(c, i, w_axes.getaxis(c.name))
+            ci = ColInfo(c, i, axes.getaxis(c.name))
             colmap[c.name] = ci
 
         for i, c in enumerate(all_cols):
@@ -403,7 +421,7 @@ class BarWidget(object):
             if c not in cols:
                 continue
 
-            ci = ColInfo(c, i, w_axes.getaxis(c.name))
+            ci = ColInfo(c, i, axes.getaxis(c.name))
             colmap[c.name] = ci
 
             series.append({"xKey": '-'.join([k.name for k in keycols]),
@@ -420,13 +438,13 @@ class BarWidget(object):
                 continue
 
             axis_name = 'axis' + str(ci.axis)
-            if axis_name not in axes:
-                axes[axis_name] = {"type": "numeric",
-                                   "position": ("left" if (ci.axis == 0)
-                                                else "right"),
-                                   "keys": []}
+            if axis_name not in w_axes:
+                w_axes[axis_name] = {"type": "numeric",
+                                     "position": ("left" if (ci.axis == 0)
+                                                  else "right"),
+                                     "keys": []}
 
-            axes[axis_name]['keys'].append(c.name)
+            w_axes[axis_name]['keys'].append(c.name)
 
         # Array of actual data yui3 style.  Each row is a dict of key->value
         rows = []
@@ -436,7 +454,7 @@ class BarWidget(object):
         maxval = {}
 
         stacked = False  # XXXCJ
-        
+
         for rawrow in data:
             row = {}
             rowmin = {}
@@ -452,7 +470,7 @@ class BarWidget(object):
 
             # collect the data values
             for c in colmap.values():
-                # 
+                #
                 if c.col.iskey:
                     continue
 
@@ -461,7 +479,7 @@ class BarWidget(object):
                 row[c.col.name] = val
 
 
-                a = c.axis 
+                a = c.axis
                 if c.axis not in rowmin:
                     rowmin[a] = val
                     rowmax[a] = val
@@ -488,24 +506,39 @@ class BarWidget(object):
             if minval and maxval:
                 n = NiceScale(minval[c.axis], maxval[c.axis])
 
-                axes[axis_name]['minimum'] = "%.10f" % n.niceMin
-                axes[axis_name]['maximum'] = "%.10f" % n.niceMax
-                axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
-                axes[axis_name]['styles'] = {'majorUnit': {'count': n.numTicks}}
+                w_axes[axis_name]['minimum'] = "%.10f" % n.niceMin
+                w_axes[axis_name]['maximum'] = "%.10f" % n.niceMax
+                w_axes[axis_name]['tickExponent'] = math.log10(n.tickSpacing)
+                w_axes[axis_name]['styles'] = {'majorUnit': {'count': n.numTicks}}
             else:
                 # empty data which would result in keyError above
-                axes[axis_name]['minimum'] = "0"
-                axes[axis_name]['maximum'] = "1"
-                axes[axis_name]['tickExponent'] = 1
-                axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
+                w_axes[axis_name]['minimum'] = "0"
+                w_axes[axis_name]['maximum'] = "1"
+                w_axes[axis_name]['tickExponent'] = 1
+                w_axes[axis_name]['styles'] = {'majorUnit': {'count': 1}}
 
         data = {
             "chartTitle": widget.title.format(**job.actual_criteria),
-            "type": "column",
+            "type": widget.options.chart_type,
             "categoryKey": catname,
             "dataProvider": rows,
             "seriesCollection": series,
-            "axes": axes
+            "axes": w_axes,
+            "legend": {"position": "bottom",
+                       "fontSize": "8pt",
+                       "styles": {"gap": 0}}
         }
 
         return data
+
+class BarWidget(ChartWidget):
+    @classmethod
+    def create(cls, *args, **kwargs):
+        kwargs['rows'] = kwargs.get('rows', 10)
+        return ChartWidget.create(*args, chart_type='column', **kwargs)
+
+class LineWidget(ChartWidget):
+    @classmethod
+    def create(cls, *args, **kwargs):
+        kwargs['rows'] = kwargs.get('rows', 0)
+        return ChartWidget.create(*args, chart_type='line', **kwargs)

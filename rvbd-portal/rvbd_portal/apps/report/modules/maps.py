@@ -1,8 +1,8 @@
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 """
@@ -96,7 +96,7 @@ class MapWidget(object):
         maps_version = request.user.userprofile.maps_version
         post_process = POST_PROCESS_MAP[maps_version]
 
-        columns = widget.table().get_columns()
+        columns = job.get_columns()
 
         ColInfo = namedtuple('ColInfo', ['col', 'dataindex'])
 

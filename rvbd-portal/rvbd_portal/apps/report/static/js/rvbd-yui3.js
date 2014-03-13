@@ -25,7 +25,7 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
-    
+
     $('#' + contentid + '-title')
         .height(20)
         .css({"text-align" : "center"});
@@ -41,8 +41,8 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
                 return function (v,fmt,tooltip) { return formatter.call(undefined, v, tooltip ? 2 : 1); }
             })(Widget.prototype[axis.formatter]);
         } else if ("tickExponent" in axis && axis.tickExponent < 0) {
-            axis.labelFunction = (function (exp) { 
-                return function(v, fmt, tooltip) { 
+            axis.labelFunction = (function (exp) {
+                return function(v, fmt, tooltip) {
                     if (tooltip) {
                         return v.toFixed(3-exp);
                     } else {
@@ -57,15 +57,15 @@ rvbd_yui3.TimeSeriesWidget.prototype.render = function(data)
     data.tooltip.setTextFunction = function(textField, val) {
         textField.setHTML(val);
     };
-    
-    data.tooltip.markerLabelFunction = 
+
+    data.tooltip.markerLabelFunction =
         function(cat, val, idx, s, sidx) {
-            var msg = 
-                cat.displayName + ": " + 
+            var msg =
+                cat.displayName + ": " +
                 cat.axis.get("labelFunction").apply(this, [cat.value, cat.axis.get("labelFormat"), true]) + "<br>" +
-                val.displayName + ": " + 
+                val.displayName + ": " +
                 val.axis.get("labelFunction").apply(this, [val.value, val.axis.get("labelFormat"), true]);
-                
+
             return msg;
         };
 
@@ -90,7 +90,7 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
         append('<div class="yui3-skin-sam" id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
-    
+
     $('#' + contentid + '-title')
         .height(20)
         .css({"text-align" : "center"});
@@ -107,7 +107,7 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
 
     $.each(data.columns, function(i, c) {
         if (("formatter" in c) && (c.formatter in Widget.prototype)) {
-            c.formatter = (function(key,f) { 
+            c.formatter = (function(key,f) {
                 return function(v) {return f.call(undefined, v.data[key]); }
             })(c.key, Widget.prototype[c.formatter]);
         } else {
@@ -121,13 +121,13 @@ rvbd_yui3.TableWidget.prototype.render = function(data)
 }
 
 
-rvbd_yui3.BarWidget = function (dataurl, divid, options, criteria) {
+rvbd_yui3.ChartWidget = function (dataurl, divid, options, criteria) {
     Widget.apply(this, [dataurl, divid, options, criteria]);
 }
-rvbd_yui3.BarWidget.prototype = inherit(Widget.prototype)
-rvbd_yui3.BarWidget.prototype.constructor = rvbd_yui3.BarWidget;
+rvbd_yui3.ChartWidget.prototype = inherit(Widget.prototype)
+rvbd_yui3.ChartWidget.prototype.constructor = rvbd_yui3.ChartWidget;
 
-rvbd_yui3.BarWidget.prototype.render = function(data)
+rvbd_yui3.ChartWidget.prototype.render = function(data)
 {
     var contentid = this.divid + "_content";
     $('#' + this.divid).
@@ -136,7 +136,7 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
-    
+
     $('#' + contentid + '-title')
         .height(20)
         .css({"text-align" : "center"});
@@ -150,12 +150,12 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
         var n = 'axis'+v;
         if (n in data.axes && data.axes[n].tickExponent < 0) {
             var axis = data.axes[n];
-            axis.labelFunction = (function (exp) { 
-                return function(v, fmt, tooltip) { 
+            axis.labelFunction = (function (exp) {
+                return function(v, fmt, tooltip) {
                     if (tooltip) {
                         return v.toFixed(3-exp);
                     } else {
-                        return v.toFixed(1-exp); 
+                        return v.toFixed(1-exp);
                     }
                 }
             })(axis.tickExponent);
@@ -166,15 +166,15 @@ rvbd_yui3.BarWidget.prototype.render = function(data)
     data.tooltip.setTextFunction = function(textField, val) {
         textField.setHTML(val);
     };
-    
-    data.tooltip.markerLabelFunction = 
+
+    data.tooltip.markerLabelFunction =
         function(cat, val, idx, s, sidx) {
-            var msg = 
-                cat.displayName + ": " + 
+            var msg =
+                cat.displayName + ": " +
                 cat.axis.get("labelFunction").apply(this, [cat.value, cat.axis.get("labelFormat"), true]) + "<br>" +
-                val.displayName + ": " + 
+                val.displayName + ": " +
                 val.axis.get("labelFunction").apply(this, [val.value, val.axis.get("labelFormat"), true]);
-                
+
             return msg;
         };
 
@@ -199,7 +199,7 @@ rvbd_yui3.PieWidget.prototype.render = function(data)
         append('<div id="' + contentid + '"></div>')
 
     var div= $('#' + this.divid)
-    
+
     $('#' + contentid + '-title')
         .height(20)
         .css({"text-align" : "center"});
@@ -214,4 +214,3 @@ rvbd_yui3.PieWidget.prototype.render = function(data)
         var chart = new Y.Chart(data);
     });
 }
-
