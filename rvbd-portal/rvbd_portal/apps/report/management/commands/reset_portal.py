@@ -60,12 +60,14 @@ class Command(BaseCommand):
                                 clear_logs=True)
 
         management.call_command('clean_pyc', path=settings.PROJECT_ROOT)
+
         management.call_command('syncdb', interactive=False)
 
         self.stdout.write('Loading initial data ... ', ending='')
         initial_data = glob.glob(os.path.join(settings.PROJECT_ROOT,
                                               'initial_data',
                                               '*.json'))
+        initial_data.sort()
         management.call_command('loaddata', *initial_data)
 
         management.call_command('reload', report_id=None)
