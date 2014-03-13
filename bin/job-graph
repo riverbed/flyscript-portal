@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+
+import subprocess
+import re
+import optparse
+
+parser = optparse.OptionParser()
+
+parser.add_option("-i", dest="input_file",
+                  default='log.txt',
+                  help="input filename")
+parser.add_option("-o", dest="output_file",
+                  default='job.dot',
+                  help="input filename")
+
+(options, args) = parser.parse_args()
+
+batch_starting_re = re.compile("BatchJobRunner.*Job ([0-9]+).* - (t[0-9]+).*"
+                               "starting batch job.*Job ([0-9]+).* - (t[0-9]+)")
+
+newjob_re = re.compile("Job ([0-9]+).* - (t[0-9]+)>: New job for table ([a-z-A-Z0-9]+)")
+newjob_linked_re = re.compile("Job ([0-9]+).* - (t[0-9]+)>: New job for table ([a-z-A-Z0-9]+), linked to parent <Job ([0-9]+)")
+
+with open(options.input_file, "r") as infile:
+    with open(options.output_file, "w") as outfile:
+        outfile.write("digraph {\n\nrankdir=LR;\n")
+        for line in infile:
+            m = batch_starting_re.search(line)
+            if m:
+                parent_job = m.group(1)
+                child_job = m.group(3)
+                outfile.write("  Job%s -> Job%s;\n" % (parent_job, child_job))
+                continue
+
+            m = newjob_linked_re.search(line)
+            if m:
+                job = m.group(1)
+                table = m.group(2)
+                tablename = m.group(3)
+                parentjob = m.group(4)
+                outfile.write(("  Job%s [label=%s,color=green,style=filled,"
+                               "tooltip=\"Job %s - table %s:%s linked to %s\"];\n") %
+                              (job, job, job, table, tablename, parentjob))
+                continue
+
+            m = newjob_re.search(line)
+            if m:
+                job = m.group(1)
+                table = m.group(2)
+                tablename = m.group(3)
+                outfile.write(("  Job%s [label=%s,color=grey,style=filled,"
+                               "tooltip=\"Job %s - table %s:%s\"];\n") %
+                              (job, job, job, table, tablename))
+                continue
+
+
+        outfile.write("}\n")
+
+subprocess.call(['/opt/local/bin/dot', options.output_file, '-Tsvg', '-o%s.svg' % (options.output_file)])
+print "Wrote: %s.svg" % options.output_file
