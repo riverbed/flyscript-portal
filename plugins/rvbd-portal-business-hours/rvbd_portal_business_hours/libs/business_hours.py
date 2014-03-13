@@ -18,13 +18,13 @@ from rvbd_portal.apps.datasource.forms import fields_add_time_selection
 logger = logging.getLogger(__name__)
 
 
-def fields_add_business_hour_fields(report,
+def fields_add_business_hour_fields(obj,
                                     default_start='8:00am',
                                     default_end='5:00pm',
                                     default_timezone='US/Eastern',
                                     default_weekends=False):
 
-    fields_add_time_selection(report, initial_duration="1 week")
+    fields_add_time_selection(obj, initial_duration="1 week")
 
     TIMES = ['%d:00am' % h for h in range(1, 13)]
     TIMES.extend(['%d:00pm' % h for h in range(1, 13)])
@@ -35,7 +35,7 @@ def fields_add_business_hour_fields(report,
                                       field_kwargs={'choices': zip(TIMES, TIMES)},
                                       required=True)
     business_hours_start.save()
-    report.fields.add(business_hours_start)
+    obj.fields.add(business_hours_start)
 
     business_hours_end = TableField(keyword='business_hours_end',
                                     label='End Business', initial=default_end,
@@ -43,7 +43,7 @@ def fields_add_business_hour_fields(report,
                                     field_kwargs={'choices': zip(TIMES, TIMES)},
                                     required=True)
     business_hours_end.save()
-    report.fields.add(business_hours_end)
+    obj.fields.add(business_hours_end)
 
     business_hours_tzname = TableField(keyword='business_hours_tzname',
                                        label='Business Timezone', initial=default_timezone,
@@ -52,7 +52,7 @@ def fields_add_business_hour_fields(report,
                                                                     pytz.common_timezones)},
                                        required=True)
     business_hours_tzname.save()
-    report.fields.add(business_hours_tzname)
+    obj.fields.add(business_hours_tzname)
 
     business_hours_weekends = TableField(keyword='business_hours_weekends',
                                          field_cls=forms.BooleanField,
@@ -60,31 +60,28 @@ def fields_add_business_hour_fields(report,
                                          initial=default_weekends,
                                          required=False)
     business_hours_weekends.save()
-    report.fields.add(business_hours_weekends)
+    obj.fields.add(business_hours_weekends)
 
+def get_timestable(biztable):
+    return biztable.options['tables']['times']
 
-def timestable():
-    name = 'business_hours.timestable'
-    try:
-        table = Table.objects.get(name=name)
-    except ObjectDoesNotExist:
-        table = AnalysisTable.create(name, tables={}, func=compute_times)
-        Column.create(table, 'starttime', 'Start time', datatype='time', iskey=True, issortcol=True)
-        Column.create(table, 'endtime',   'End time', datatype='time', iskey=True)
-        Column.create(table, 'totalsecs', 'Total secs')
+def timestable(name):
+    table = AnalysisTable.create(name, tables={}, func=compute_times)
+    Column.create(table, 'starttime', 'Start time', datatype='time', iskey=True, issortcol=True)
+    Column.create(table, 'endtime',   'End time', datatype='time', iskey=True)
+    Column.create(table, 'totalsecs', 'Total secs')
+    fields_add_business_hour_fields(table)
     return table
 
-
-def create(name, basetable, aggregate, other_tables=None, **kwargs):
-    table = AnalysisTable.create(name, tables={'times': timestable().id},
+def create(name, basetable, aggregate, **kwargs):
+    table = AnalysisTable.create(name,
+                                 tables={'times': timestable(name + '-times').id},
+                                 related_tables={'basetable': basetable.id},
                                  func=report_business_hours,
-                                 params={'table': basetable.id,
-                                         'aggregate': aggregate},
+                                 params={'aggregate': aggregate},
                                  **kwargs)
 
     table.copy_columns(basetable)
-    [table.fields.add(f) for f in basetable.fields.all()]
-
     return table
 
 
@@ -108,7 +105,7 @@ def replace_time(dt, t):
                       microsecond=0)
 
 
-def compute_times(target, tables, criteria, params):
+def compute_times(query, tables, criteria, params):
     tzname = criteria.business_hours_tzname
     logger.debug("timezone: %s" % tzname)
     tz = pytz.timezone(tzname)
@@ -175,7 +172,7 @@ def report_business_hours(query, tables, criteria, params):
     if times is None or len(times) == 0:
         return None
 
-    deptable = Table.objects.get(id=params['table'])
+    basetable = Table.objects.get(id=query.table.options['related_tables']['basetable'])
 
     # Create all the jobs
     batch = BatchJobRunner(query)
@@ -186,7 +183,7 @@ def report_business_hours(query, tables, criteria, params):
         sub_criteria.starttime = datetime.datetime.utcfromtimestamp(t0).replace(tzinfo=pytz.utc)
         sub_criteria.endtime = datetime.datetime.utcfromtimestamp(t1).replace(tzinfo=pytz.utc)
 
-        job = Job.create(table=deptable, criteria=sub_criteria)
+        job = Job.create(table=basetable, criteria=sub_criteria)
         logger.debug("Created %s: %s - %s" % (job, t0, t1))
         batch.add_job(job)
 
@@ -226,10 +223,10 @@ def report_business_hours(query, tables, criteria, params):
     if df is None:
         return None
 
-    keynames = [key.name for key in deptable.get_columns(iskey=True)]
+    keynames = [key.name for key in basetable.get_columns(iskey=True)]
     if 'aggregate' in params:
         ops = params['aggregate']
-        for col in deptable.get_columns(iskey=False):
+        for col in basetable.get_columns(iskey=False):
             if col.name not in ops:
                 ops[col.name] = 'sum'
 
@@ -288,7 +285,7 @@ def avg_groupby_aggregate(df, keys, ops, t_col, total_t):
     >>> data.append(q2_data)
     >>> data.append(q3_data)
 
-    >>> df = pandas.DataFrame(data, 
+    >>> df = pandas.DataFrame(data,
            columns = ['proto', 'bytes', 'avg_bytes', 'interval'])
 
     >>> avg_groupby_aggregate(df, ['proto'],

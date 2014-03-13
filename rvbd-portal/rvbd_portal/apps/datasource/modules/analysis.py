@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 class TableOptions(JsonDict):
     _default = {'tables': None,
+                'related_tables': None,
                 'func': None,
                 'params': None}
 
-    _required = ['tables', 'func']
+    _required = ['func']
 
 
 class AnalysisException(Exception):
@@ -80,9 +81,11 @@ class AnalysisTable(object):
 
     @classmethod
     def create(cls, name, tables, func, columns=None, params=None,
-               copy_fields=True, **kwargs):
+               copy_fields=True, related_tables=None, **kwargs):
         """ Class method to create an AnalysisTable. """
-        options = TableOptions(tables=tables, func=func,
+        options = TableOptions(tables=tables,
+                               related_tables=related_tables,
+                               func=func,
                                params=params)
         table = Table(name=name, module=__name__,
                       options=options, **kwargs)
@@ -93,8 +96,12 @@ class AnalysisTable(object):
                 Column.create(table, c)
 
         keywords = []
-        if tables and copy_fields:
-            for table_id in tables.values():
+        if (tables or related_tables) and copy_fields:
+            table_ids = []
+            for t in [tables, related_tables]:
+                if t:
+                    table_ids.extend(t.values())
+            for table_id in table_ids:
                 for f in Table.objects.get(id=table_id).fields.all():
                     if f.keyword not in keywords:
                         table.fields.add(f)
@@ -125,7 +132,7 @@ class TableQuery(object):
         dfs = {}
 
         deptables = options.tables
-        if (len(deptables) > 0):
+        if deptables and (len(deptables) > 0):
             logger.debug("%s: dependent tables: %s" % (self, deptables))
             depjobids = {}
             batch = BatchJobRunner(self.job, max_progress=70)

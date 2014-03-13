@@ -26,8 +26,6 @@ report.save()
 
 section = Section.create(report)
 
-bizhours.fields_add_business_hour_fields(section)
-
 #
 # Define by-interface table from Profiler
 #
@@ -60,7 +58,7 @@ Column.create(basetable, 'out_avg_util', '% Utilization Out', datatype='pct', is
 #   min    - minimum of all values
 #   max    - maximum of all values
 #
-bustable_pre = bizhours.create('bh-bustable-pre', basetable,
+biztable = bizhours.create('bh-biztable', basetable,
                                aggregate={'avg_util': 'avg',
                                           'in_avg_util': 'avg',
                                           'out_avg_util': 'avg'})
@@ -73,14 +71,15 @@ Column.create(devtable, 'name', 'Device Name', isnumeric=False)
 Column.create(devtable, 'type', 'Flow Type', isnumeric=False)
 Column.create(devtable, 'version', 'Flow Version', isnumeric=False)
 
-bustable = AnalysisTable.create('bh-bustable', tables={'devices': devtable.id,
-                                                       'traffic': bustable_pre.id},
+interfaces = AnalysisTable.create('bh-interfaces', tables={'devices': devtable.id,
+                                                         'traffic': biztable.id},
                                 func=protools.process_join_ip_device)
 
-Column.create(bustable, 'interface_name', 'Interface', iskey=True, isnumeric=False)
-bustable.copy_columns(bustable_pre, except_columns=['interface_dns'])
+Column.create(interfaces, 'interface_name', 'Interface', iskey=True, isnumeric=False)
+interfaces.copy_columns(biztable, except_columns=['interface_dns'])
 
-yui3.TableWidget.create(section, bustable, "Interface", height=600)
-yui3.BarWidget.create(section, bustable, "Interface Utilization", height=600,
+yui3.TableWidget.create(section, interfaces, "Interface", height=600)
+yui3.BarWidget.create(section, interfaces, "Interface Utilization", height=600,
                       keycols=['interface_name'], valuecols=['avg_util'])
-yui3.TableWidget.create(section, bizhours.timestable(), "Covered times", width=12, height=200)
+
+yui3.TableWidget.create(section, bizhours.get_timestable(biztable), "Covered times", width=12, height=200)

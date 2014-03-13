@@ -100,6 +100,13 @@ class Command(BaseCommand):
             rid = options['report_id']
 
             def del_table(tbl):
+                if (  tbl.options and
+                      'related_tables' in tbl.options and
+                      tbl.options['related_tables'] is not None):
+                    #__import__('IPython').core.debugger.Pdb().set_trace()
+                    for related_id in tbl.options['related_tables'].values():
+                        del_table(Table.objects.get(id=related_id))
+
                 Column.objects.filter(table=tbl.id).delete()
                 Job.objects.filter(table=tbl.id).delete()
 
@@ -124,7 +131,7 @@ class Command(BaseCommand):
                        tables=Count('table'))
              .filter(sections=0, tables=0)
              .delete())
-            
+
             report = Report.objects.get(id=rid)
 
             report.delete()
