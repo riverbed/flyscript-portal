@@ -14,7 +14,7 @@ tests_require = []
 install_requires = [
     'Django>=1.5.1,<1.6',
     'sharepoint==0.3.2',
-    'lxml==3.3.1',
+    'lxml>=3.3.0,<3.4.0',
     # flyscript-portal should be here too
 ]
 
