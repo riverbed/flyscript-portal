@@ -40,9 +40,14 @@ class SharepointTable(object):
         return t
 
 
-def create_sharepoint_column(table, name, datatype='', issortcol=False):
-    c = Column.create(table, name, label=name, datatype=datatype,
-                      issortcol=issortcol)
+def create_sharepoint_column(table, name, datatype='', issortcol=False,
+                             **kwargs):
+    # convert to encoded values as stored in Sharepoint
+    label = name
+    name = name.replace(' ', '_x0020_')
+    name = name.replace('.', '_x002e_')
+    c = Column.create(table, name, label=label, datatype=datatype,
+                      issortcol=issortcol, **kwargs)
     c.save()
     return c
 
