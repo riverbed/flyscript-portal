@@ -76,7 +76,18 @@
     color: #b4b4b4;
 }
 
+/* MAPS */
+
 #map_canvas img { max-width: none; }
+
+div.circleMarker {
+    background-color: #ff0000;
+    border-color: #ff0000;
+    border-radius: 999px;
+    border-style: solid;
+    border-width: 1px;
+    opacity: 0.5;
+}
 
 .navbar .nav > li { z-index: 10000; }
 

@@ -17,7 +17,7 @@ def google_postprocess(data):
             'fillColor': '#FF0000',
             'fillOpacity': 0.35,
             'center': [c.lat, c.long],
-            'size': 15 * (c.value / c.value_max),
+            'size': c.size,
             'title': c.title,
             'value': c.value,
             'units': c.units,
@@ -43,7 +43,7 @@ def openstreetmaps_postprocess(data):
             'fillOpacity': 0.35,
             'clickable': False,
 
-            'radius': 15 * (c.value / c.value_max),
+            'radius': c.size,
             'title': c.title,
 
             'value': c.value,

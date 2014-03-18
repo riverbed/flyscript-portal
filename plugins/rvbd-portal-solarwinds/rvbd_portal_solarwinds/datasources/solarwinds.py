@@ -52,7 +52,7 @@ class TableQuery(object):
             self.job.mark_error("No Solarwinds Device Selected")
             return False
 
-        sw = DeviceManager.get_device(criteria.profiler_device)
+        sw = DeviceManager.get_device(criteria.solarwinds_device)
 
         # TODO add queries
         self.data = None

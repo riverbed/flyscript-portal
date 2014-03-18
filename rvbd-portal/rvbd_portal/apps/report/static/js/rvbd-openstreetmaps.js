@@ -61,14 +61,12 @@ rvbd_maps.MapWidget.prototype.render = function(data)
 
         var title = c.title + '\n' + valstr;
 
-        var marker = L.circleMarker(c.center, {
-                    radius: c.radius, 
-                    color: "red",
-                    weight: 0.5,
-                    opacity: 0.8,
-                    fill: true,
-                    fillColor: "red",
-                    fillOpacity: 0.35,
+        var marker = L.marker(c.center, {
+            title: title,
+            icon: L.divIcon({
+                className: 'circleMarker',
+                iconSize: [c.radius * 2, c.radius * 2]
+            })
         }).addTo(map);
     });
     bounds = bounds.pad(0.10);
