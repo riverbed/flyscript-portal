@@ -7,8 +7,9 @@
 # This software is distributed "AS IS" as set forth in the License.
 
 
-import optparse
 import os
+import logging
+import optparse
 
 from django.core.management.base import BaseCommand
 
@@ -21,6 +22,9 @@ from rvbd_portal.apps.datasource.models import Job
 # for this script, so ignore them all
 import warnings
 warnings.filterwarnings("ignore")
+
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -88,9 +92,11 @@ class Command(BaseCommand):
                 Formatter.print_table(job.values(), columns)
 
         elif options['job_age']:
+            logger.debug('Aging all jobs.')
             Job.age_jobs(force=True)
 
         elif options['job_flush']:
+            logger.debug('Flushing all jobs.')
             while Job.objects.count():
                 ids = Job.objects.values_list('pk', flat=True)[:100]
-                Job.objects.filter(pk__in = ids).delete()
+                Job.objects.filter(pk__in=ids).delete()

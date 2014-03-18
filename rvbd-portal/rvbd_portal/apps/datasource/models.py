@@ -866,7 +866,9 @@ class Job(models.Model):
                                  (str(self), self.datafile()))
                     df = None
             except Exception as e:
-                pass
+                logger.error("Error loading datafile %s for %s" %
+                             (self.datafile(), str(self)))
+                logger.error("Traceback:\n%s" % e)
             finally:
                 self.dereference("data()")
 
@@ -894,7 +896,8 @@ class Job(models.Model):
             for row in df.ix[:, all_col_names].itertuples():
                 vals_row = []
                 for v in row[1:]:
-                    if isinstance(v, numpy.number):
+                    if (isinstance(v, numpy.number) or
+                            isinstance(v, numpy.bool_)):
                         v = numpy.asscalar(v)
                     vals_row.append(v)
                 vals.append(vals_row)
@@ -928,13 +931,19 @@ class Job(models.Model):
         # Ancient jobs are deleted regardless of refcount
         now = datetime.datetime.now(tz=pytz.utc)
         try:
-            (Job.objects.filter(touched__lte=now - ancient)).delete()
+            qs = Job.objects.filter(touched__lte=now - ancient)
+            if len(qs) > 0:
+                logger.info('Deleting %d ancient jobs ...' % len(qs))
+                qs.delete()
         except:
             logger.exception("Failed to delete ancient jobs")
 
         # Old jobs are deleted only if they have a refcount of 0
         try:
-            (Job.objects.filter(touched__lte=now - old, refcount=0)).delete()
+            qs = Job.objects.filter(touched__lte=now - old, refcount=0)
+            if len(qs) > 0:
+                logger.info('Deleting %d old jobs ...' % len(qs))
+                qs.delete()
         except:
             logger.exception("Failed to delete old jobs")
 
