@@ -966,9 +966,12 @@ class Job(models.Model):
 
 @receiver(pre_delete, sender=Job)
 def _my_job_delete(sender, instance, **kwargs):
+    """ Clean up jobs when deleting. """
+    # if a job has a parent, just deref, don't delete the datafile since
+    # that will remove it from the parent as well
     if instance.parent is not None:
         instance.parent.dereference(str(instance))
-    if instance.datafile() and os.path.exists(instance.datafile()):
+    elif instance.datafile() and os.path.exists(instance.datafile()):
         try:
             os.unlink(instance.datafile())
         except OSError:

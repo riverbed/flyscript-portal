@@ -71,15 +71,17 @@ class Command(BaseCommand):
 
         if options['job_list']:
             # print out the id's instead of processing anything
-            columns = ['ID', 'Table', 'Created', 'Touched', 'Sts', 'Refs',
-                       'Progress', 'Data file']
+            columns = ['ID', 'PID', 'Table', 'Created', 'Touched', 'Sts',
+                       'Refs', 'Progress', 'Data file']
             data = []
             for j in Job.objects.all():
                 datafile = j.datafile()
                 if not os.path.exists(datafile):
                     datafile += " (missing)"
-                data.append([j.id, j.table.name, j.created, j.touched,
-                             j.status, j.refcount, j.progress, datafile])
+                parent_id = j.parent.id if j.parent else '--'
+                data.append([j.id, parent_id, j.table.name, j.created,
+                             j.touched, j.status, j.refcount, j.progress,
+                             datafile])
 
             Formatter.print_table(data, columns)
 
