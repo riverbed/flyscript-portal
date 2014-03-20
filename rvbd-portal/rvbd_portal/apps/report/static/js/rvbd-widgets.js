@@ -180,9 +180,10 @@ rvbd_raw.TableWidget.prototype.render = function(data)
         html('').
         append('<table id="' + contentid + '-table"></table>')
 
-    var div= $('#' + this.divid)
+    var div= $('#' + this.divid);
     
-    var table = $('#' + contentid + '-table')
+    var table = $('#' + contentid + '-table');
+    table.width('100%');
 
     $.each(data, function(i,row) {
         rowstr = '<tr>'

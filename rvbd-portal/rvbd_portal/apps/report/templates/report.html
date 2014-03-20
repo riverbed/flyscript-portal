@@ -328,6 +328,7 @@
             <a data-toggle="collapse" data-target="#report-container" href="#">
               {% if report.hide_criteria %}
                 {{ report.title }}
+                <small id="report_datetime" class="text-info pull-right">{% now "jS F Y H:i:s" %}</small><br>
               {% else %}
                 Report
               {% endif %}
