@@ -1114,19 +1114,17 @@ class Worker(base_worker_class):
                     # Already a datetime
                     pass
                 elif str(s.dtype).startswith('int'):
-                    # This is a numeric epoch, convert to datetime
-                    s = s.values.astype('datetime64[s]')
+                    # Assume this is a numeric epoch, convert to datetime
+                    df[col.name] = s.astype('datetime64[s]')
                 elif str(s.dtype).startswith('float'):
                     # This is a numeric epoch as a float, possibly
                     # has subsecond resolution, convert to
                     # datetime but preserve up to millisecond
-                    s = (1000 * s).values.astype('datetime64[ms]')
+                    df[col.name] = (1000 * s).astype('datetime64[ms]')
                 else:
                     # Possibly datetime object or a datetime string,
                     # hopefully astype() can figure it out
-                    s = s.values.astype('datetime64[ms]')
-
-                df[col.name] = pandas.Series(s)
+                    df[col.name] = s.astype('datetime64[ms]')
 
             elif (col.isnumeric and
                   s.dtype == pandas.np.dtype('object')):
