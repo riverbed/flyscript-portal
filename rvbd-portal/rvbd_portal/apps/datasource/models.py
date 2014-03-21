@@ -914,6 +914,8 @@ class Job(models.Model):
         if not force and time.time() - age_jobs_last_run < 60*15:
             return
 
+        age_jobs_last_run = time.time()
+
         if old is None:
             old = datetime.timedelta(
                 seconds=settings.APPS_DATASOURCE['job_age_old_seconds']
@@ -928,26 +930,27 @@ class Job(models.Model):
         elif type(ancient) in [int, float]:
             ancient = datetime.timedelta(seconds=ancient)
 
-        # Ancient jobs are deleted regardless of refcount
-        now = datetime.datetime.now(tz=pytz.utc)
-        try:
-            qs = Job.objects.filter(touched__lte=now - ancient)
-            if len(qs) > 0:
-                logger.info('Deleting %d ancient jobs ...' % len(qs))
-                qs.delete()
-        except:
-            logger.exception("Failed to delete ancient jobs")
+        with transaction.commit_on_success():
+            # Ancient jobs are deleted regardless of refcount
+            now = datetime.datetime.now(tz=pytz.utc)
+            try:
+                qs = (Job.objects.select_for_update().
+                      filter(touched__lte=now - ancient))
+                if len(qs) > 0:
+                    logger.info('Deleting %d ancient jobs ...' % len(qs))
+                    qs.delete()
+            except:
+                logger.exception("Failed to delete ancient jobs")
 
-        # Old jobs are deleted only if they have a refcount of 0
-        try:
-            qs = Job.objects.filter(touched__lte=now - old, refcount=0)
-            if len(qs) > 0:
-                logger.info('Deleting %d old jobs ...' % len(qs))
-                qs.delete()
-        except:
-            logger.exception("Failed to delete old jobs")
-
-        age_jobs_last_run = time.time()
+            # Old jobs are deleted only if they have a refcount of 0
+            try:
+                qs = (Job.objects.select_for_update().
+                      filter(touched__lte=now - old, refcount=0))
+                if len(qs) > 0:
+                    logger.info('Deleting %d old jobs ...' % len(qs))
+                    qs.delete()
+            except:
+                logger.exception("Failed to delete old jobs")
 
     @classmethod
     def flush_incomplete(cls):

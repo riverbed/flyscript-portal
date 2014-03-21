@@ -74,7 +74,7 @@ class Command(BaseCommand):
             columns = ['ID', 'PID', 'Table', 'Created', 'Touched', 'Sts',
                        'Refs', 'Progress', 'Data file']
             data = []
-            for j in Job.objects.all():
+            for j in Job.objects.all().order_by('id'):
                 datafile = j.datafile()
                 if not os.path.exists(datafile):
                     datafile += " (missing)"
