@@ -767,7 +767,6 @@ class Job(models.Model):
 
     def json(self, data=None):
         """ Return a JSON represention of this Job. """
-        self.refresh()
         return {'id': self.id,
                 'handle': self.handle,
                 'progress': self.progress,
