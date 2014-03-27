@@ -31,11 +31,8 @@
     <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-yui3.js"></script>
 
     {% if maps_version == 'OPEN_STREET_MAPS' %}
-        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.js"></script>
-        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.css" />
-         <!--[if lte IE 8]>
-             <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.6.4/leaflet.ie.css" />
-         <![endif]-->
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.js"></script>
+        <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.2/leaflet.css" />
         <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-openstreetmaps.js"></script>
     {% else %}
         <script type="text/javascript" src="{{ STATIC_URL }}js/rvbd-google-maps.js"></script>
