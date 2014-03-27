@@ -66,14 +66,16 @@ class MapWidgetOptions(JsonDict):
                 'latitude': None,
                 'longitude': None,
                 'label': None,
-                'value': None}
+                'value': None,
+                'min_bounds': None}
     _required = ['value']
 
 
 class MapWidget(object):
     @classmethod
     def create(cls, section, table, title, width=6, height=300,
-               lat_col=None, long_col=None, val_col=None, label_col=None):
+               lat_col=None, long_col=None, val_col=None, label_col=None,
+               min_bounds=None):
         """Class method to create a MapWidget.
 
         `lat_col` and `long_col` are optional pairs of columns indicating
@@ -86,6 +88,14 @@ class MapWidget(object):
 
         `name_column` is an optional column to use for marker labels when
                 when defining lat/long columns.
+
+        `min_bounds` is an optional tuple of (lat, lng) points representing
+                the minimum extents that the map should include.  Useful to
+                avoid the close zoomed-in effect when two close-in points
+                would be plotted.  For example, to have continental US always
+                shown, the argument could be:
+                    ((33.184833, -116.999540),
+                     (45.561302, -67.956573))
 
         Each column argument may be a Column object or the string name.
 
@@ -121,7 +131,7 @@ class MapWidget(object):
 
         w.options = MapWidgetOptions(key=keycol, latitude=lat_col,
                                      longitude=long_col, value=val_col,
-                                     label=label_col)
+                                     label=label_col, min_bounds=min_bounds)
         w.save()
         w.tables.add(table)
 
@@ -193,7 +203,7 @@ class MapWidget(object):
                 if valmax:
                     marker_size = 15 * (val / valmax)
                 else:
-                    marker_size = 10
+                    marker_size = 5
 
                 if keycol:
                     key = rawrow[keycol.dataindex]
@@ -243,7 +253,8 @@ class MapWidget(object):
 
         data = {
             "chartTitle": widget.title.format(**job.actual_criteria),
-            "circles": circles
+            "circles": circles,
+            "minbounds": widget.options.min_bounds
         }
 
         return post_process(data)

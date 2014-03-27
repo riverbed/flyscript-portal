@@ -42,7 +42,6 @@ rvbd_maps.MapWidget.prototype.render = function(data)
  //       center: [42.3583, -71.063],
  //       zoom: 3,
     };
-    bounds = new L.LatLngBounds();
     map = new L.map(document.getElementById(contentid),
                     mapOptions);
 
@@ -50,6 +49,15 @@ rvbd_maps.MapWidget.prototype.render = function(data)
         subdomains: ['otile1', 'otile2', 'otile3', 'otile4'],
         attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Tiles Courtesy of <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png">',        
     }).addTo(map);
+
+    if (data.minbounds) {
+        bounds = new L.LatLngBounds(
+            data.minbounds[0],
+            data.minbounds[1]
+        );
+    } else {
+        bounds = new L.LatLngBounds();
+    }
 
     $.each(data.circles, function(i,c) {
         c.center = [c.center[0], c.center[1]];

@@ -45,6 +45,15 @@ rvbd_maps.MapWidget.prototype.render = function(data)
     map = new google.maps.Map(document.getElementById(contentid),
                               mapOptions);
 
+    if (data.minbounds) {
+        bounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(data.minbounds[0][0], data.minbounds[0][1]),
+            new google.maps.LatLng(data.minbounds[1][0], data.minbounds[1][1])
+        );
+    } else {
+        bounds = new google.maps.LatLngBounds();
+    }
+
     $.each(data.circles, function(i,c) {
         c.map = map;
         c.center = new google.maps.LatLng(c.center[0], c.center[1]);
