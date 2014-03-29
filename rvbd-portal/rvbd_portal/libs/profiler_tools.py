@@ -33,8 +33,8 @@ def process_join_ip_device(target, tables, criteria, params):
     dev = tables['devices']
     traffic = tables['traffic']
 
-    dev.save("/tmp/devices.pd")
-    traffic.save("/tmp/traffic.pd")
+    #dev.save("/tmp/devices.pd")
+    #traffic.save("/tmp/traffic.pd")
 
     if traffic is None or len(traffic) == 0:
         return None

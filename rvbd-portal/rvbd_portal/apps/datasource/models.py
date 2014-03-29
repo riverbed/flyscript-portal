@@ -389,8 +389,8 @@ class Table(models.Model):
 class Column(models.Model):
 
     table = models.ForeignKey(Table)
-    name = models.CharField(max_length=30)
-    label = models.CharField(max_length=30, null=True)
+    name = models.CharField(max_length=300)
+    label = models.CharField(max_length=300, null=True)
     position = models.IntegerField()
     options = PickledObjectField()
 
