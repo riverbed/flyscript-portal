@@ -350,8 +350,13 @@ class ReportWidgets(views.APIView):
 
         # pin the endtime to a round interval if we are set to
         # reload periodically
-        if report.reload_minutes:
-            now = round_time(dt=now, round_to=60*report.reload_minutes)
+        minutes = report.reload_minutes
+        if minutes:
+            trimmed = round_time(dt=now, round_to=60*minutes, trim=True)
+            if now - trimmed > datetime.timedelta(minutes=15):
+                now = trimmed
+            else:
+                now = round_time(dt=now, round_to=60*report.reload_minutes)
 
         widget_defs = []
 
