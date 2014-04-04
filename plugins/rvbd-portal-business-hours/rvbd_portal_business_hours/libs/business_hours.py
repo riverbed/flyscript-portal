@@ -19,18 +19,20 @@ logger = logging.getLogger(__name__)
 
 
 def fields_add_business_hour_fields(obj,
-                                    default_start='8:00am',
-                                    default_end='5:00pm',
-                                    default_timezone='US/Eastern',
-                                    default_weekends=False):
+                                    initial_business_hours_start='8:00am',
+                                    initial_business_hours_end='5:00pm',
+                                    initial_business_hours_tzname='US/Eastern',
+                                    initial_business_hours_weekends=False,
+                                    **kwargs):
 
-    fields_add_time_selection(obj, initial_duration="1 week")
+    kwargs['initial_duration'] = kwargs.get('initial_duration', '1w')
+    fields_add_time_selection(obj, **kwargs)
 
     TIMES = ['%d:00am' % h for h in range(1, 13)]
     TIMES.extend(['%d:00pm' % h for h in range(1, 13)])
 
     business_hours_start = TableField(keyword='business_hours_start',
-                                      label='Start Business', initial=default_start,
+                                      label='Start Business', initial=initial_business_hours_start,
                                       field_cls=forms.ChoiceField,
                                       field_kwargs={'choices': zip(TIMES, TIMES)},
                                       required=True)
@@ -38,7 +40,7 @@ def fields_add_business_hour_fields(obj,
     obj.fields.add(business_hours_start)
 
     business_hours_end = TableField(keyword='business_hours_end',
-                                    label='End Business', initial=default_end,
+                                    label='End Business', initial=initial_business_hours_end,
                                     field_cls=forms.ChoiceField,
                                     field_kwargs={'choices': zip(TIMES, TIMES)},
                                     required=True)
@@ -46,7 +48,7 @@ def fields_add_business_hour_fields(obj,
     obj.fields.add(business_hours_end)
 
     business_hours_tzname = TableField(keyword='business_hours_tzname',
-                                       label='Business Timezone', initial=default_timezone,
+                                       label='Business Timezone', initial=initial_business_hours_tzname,
                                        field_cls=forms.ChoiceField,
                                        field_kwargs={'choices': zip(pytz.common_timezones,
                                                                     pytz.common_timezones)},
@@ -57,7 +59,7 @@ def fields_add_business_hour_fields(obj,
     business_hours_weekends = TableField(keyword='business_hours_weekends',
                                          field_cls=forms.BooleanField,
                                          label='Business includes weekends',
-                                         initial=default_weekends,
+                                         initial=initial_business_hours_weekends,
                                          required=False)
     business_hours_weekends.save()
     obj.fields.add(business_hours_weekends)

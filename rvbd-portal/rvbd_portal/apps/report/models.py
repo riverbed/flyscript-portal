@@ -89,7 +89,10 @@ class Report(models.Model):
         super(Report, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.title
+        return "<Report %s (%s)>" % (self.title, self.id)
+
+    def __repr__(self):
+        return unicode(self)
 
     def collect_fields_by_section(self):
         """ Return a dict of all fields related to this report by section id.
@@ -114,7 +117,8 @@ class Report(models.Model):
                 if section_id not in fields_by_section:
                     fields_by_section[section_id] = fields
                 else:
-                    fields_by_section[section_id].update(fields)
+                    fields.update(fields_by_section[section_id])
+                    fields_by_section[section_id] = fields
 
         # Reorder fields in each section according to the field_order list
         new_fields_by_section = {}

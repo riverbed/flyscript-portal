@@ -67,22 +67,35 @@ class DateWidget(forms.DateInput):
             final_attrs.update(attrs)
         super(DateWidget, self).__init__(attrs=final_attrs, format=format)
 
-    def render(self, name, value, *args, **kwargs):
+    def render(self, name, value, attrs):
+        initial_date = attrs.get('initial_date', None)
+        if initial_date:
+            m = re.match("now *- *(.+)", initial_date)
+            if m:
+                secs = timedelta_total_seconds(parse_timedelta(m.group(1)))
+                initial_date = (
+                    "d = new Date(); d.setSeconds(d.getSeconds()-%d);" \
+                    % secs)
+            else:
+                initial_date = "d = '%s';" % initial_date
+        else:
+            initial_date = "d = new Date();"
         msg = '''
-        {0} <span id="datenow" class="icon-calendar" title="Set date to today"> </span>
+        {0} <span id="datenow_{name}" class="icon-calendar" title="Set date to today"> </span>
         <script type="text/javascript">
               $("#id_{name}").datepicker({{
                  format: "mm/dd/YY",
                  defaultDate: +2,
                  autoclose: true
               }});
-              $("#id_{name}").datepicker("setDate", new Date());
-              $("#datenow").click(function() {{ $("#id_{name}").datepicker("setDate", new Date()); }});
+              {initial_date}
+              $("#id_{name}").datepicker("setDate", d);
+              $("#datenow_{name}").click(function() {{ $("#id_{name}").datepicker("setDate", new Date()); }});
           </script>
           '''
         return msg.format(
-            super(DateWidget, self).render(name, value, *args, **kwargs),
-            name=name
+            super(DateWidget, self).render(name, value, attrs),
+            name=name, initial_date=initial_date
         )
 
 
@@ -94,26 +107,41 @@ class TimeWidget(forms.TimeInput):
         final_attrs = {'class': 'time'}
         if attrs is not None:
             final_attrs.update(attrs)
+
         super(TimeWidget, self).__init__(attrs=final_attrs, format=format)
 
-    def render(self, name, value, *args, **kwargs):
+    def render(self, name, value, attrs):
+        initial_time = attrs.get('initial_time', None)
+        if initial_time:
+            m = re.match("now *- *(.+)", initial_time)
+            if m:
+                secs = timedelta_total_seconds(parse_timedelta(m.group(1)))
+                initial_time = (
+                    "d = new Date(); d.setSeconds(d.getSeconds()-%d);" \
+                    % secs)
+            else:
+                initial_time = "d = '%s';" % initial_time
+        else:
+            initial_time = "d = new Date();"
         msg = '''
-        {0} <span id="timenow" class="icon-time" title="Set time/date to now"> </span>
+        {0} <span id="timenow_{name}" class="icon-time" title="Set time/date to now"> </span>
         <script type="text/javascript">
               $("#id_{name}").timepicker({{
                  step: 15,
                  scrollDefaultNow:true,
                  timeFormat:"g:i:s a"
               }});
-              $("#timenow").click(function() {{
+              $("#timenow_{name}").click(function() {{
                  $("#id_{name}").timepicker("setTime", new Date());
               }});
-              $("#id_{name}").timepicker("setTime", new Date());
+              {initial_time}
+              $("#id_{name}").timepicker("setTime", d);
         </script>
         '''
+        #'$("#id_{name}").timepicker("setTime", new Date());'
         return msg.format(
-            super(TimeWidget, self).render(name, value, *args, **kwargs),
-            name=name
+            super(TimeWidget, self).render(name, value, attrs),
+            name=name, initial_time=initial_time
         )
 
 
@@ -225,9 +253,9 @@ class DurationField(forms.ChoiceField):
     def __init__(self, **kwargs):
         self._special_values = kwargs.pop('special_values', None)
         initial = kwargs.pop('initial', None)
-        if (initial is not None and
-                self._special_values is None or
-                initial not in self._special_values):
+        if ((initial is not None) and
+              (self._special_values is None or
+               initial not in self._special_values)):
             initial_td = parse_timedelta(initial)
             initial_valid = False
         else:
@@ -265,7 +293,6 @@ class DurationField(forms.ChoiceField):
                 initial_valid = True
 
         kwargs['choices'] = choices
-        logger.debug("Choices: %s" % choices)
         if not initial_valid:
             raise KeyError('Initial duration is invalid: %s' % initial)
 
@@ -282,35 +309,50 @@ class DurationField(forms.ChoiceField):
             except:
                 raise ValidationError('Invalid duration string: %s' % value)
 
-        logger.debug("DurationField.to_python: %s" % v)
         return v
 
     def validate(self, value):
-        logger.debug("DurationField.validate: %s" % value)
         pass
 
 
-def fields_add_time_selection(obj, initial_duration=None, durations=None):
+def fields_add_time_selection(obj, show_duration=True, initial_duration=None, durations=None,
+                              show_start=False, initial_start_time='now-1h', initial_start_date='now-1h',
+                              show_end=True, initial_end_time='now-0', initial_end_date='now-0',):
 
-    if durations is None:
-        durations = DURATIONS
+    if show_start:
+        field = TableField(keyword='starttime',
+                           label='Start Time',
+                           field_cls=DateTimeField,
+                           field_kwargs={'widget': ReportSplitDateTimeWidget,
+                                         'widget_attrs': {'initial_time': initial_start_time,
+                                                          'initial_date': initial_start_date}},
+                           required=False)
+        field.save()
+        obj.fields.add(field)
 
-    endtime = TableField(keyword='endtime',
-                         label='End Time',
-                         field_cls=DateTimeField,
-                         field_kwargs={'widget': ReportSplitDateTimeWidget},
-                         required=False)
-    endtime.save()
-    obj.fields.add(endtime)
+    if show_end:
+        field = TableField(keyword='endtime',
+                           label='End Time',
+                           field_cls=DateTimeField,
+                           field_kwargs={'widget': ReportSplitDateTimeWidget,
+                                         'widget_attrs': {'initial_time': initial_end_time,
+                                                          'initial_date': initial_end_date}},
+                           required=False)
+        field.save()
+        obj.fields.add(field)
 
-    duration = TableField(keyword='duration',
-                          label='Duration',
-                          initial=initial_duration,
-                          field_cls=DurationField,
-                          field_kwargs={'choices': durations},
-                          required=False)
-    duration.save()
-    obj.fields.add(duration)
+    if show_duration:
+        if durations is None:
+            durations = DURATIONS
+
+        field = TableField(keyword='duration',
+                           label='Duration',
+                           initial=initial_duration,
+                           field_cls=DurationField,
+                           field_kwargs={'choices': durations},
+                           required=False)
+        field.save()
+        obj.fields.add(field)
 
 
 def fields_add_resolution(obj, initial=None,
@@ -388,6 +430,12 @@ class TableFieldForm(forms.Form):
         if not self._use_widgets:
             fkwargs['widget'] = TextInput
 
+        if 'widget_attrs' in fkwargs:
+            widget_attrs = fkwargs.get('widget_attrs')
+            del fkwargs['widget_attrs']
+        else:
+            widget_attrs = None
+
         for k in ['label', 'required', 'help_text', 'initial']:
             fkwargs[k] = getattr(tablefield, k)
 
@@ -413,6 +461,8 @@ class TableFieldForm(forms.Form):
         f = field_cls(**fkwargs)
         self.fields[field_id] = f
         f.widget.attrs.update({'onchange': 'criteria_changed()'})
+        if widget_attrs:
+            f.widget.attrs.update(widget_attrs)
 
     def compute_field_precedence(self):
         ids = self._tablefields.keys()
