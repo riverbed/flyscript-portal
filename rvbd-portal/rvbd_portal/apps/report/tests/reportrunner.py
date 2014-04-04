@@ -17,16 +17,26 @@ logger = logging.getLogger(__name__)
 class ReportRunnerTestCase(TestCase):
 
     report = None
-    
+
     @classmethod
     def setUpClass(cls):
         localdir = os.path.dirname(__file__)
         initial_data = glob.glob(os.path.join(localdir, '*.json'))
         management.call_command('loaddata', *initial_data)
 
-        path = 'rvbd_portal.apps.report.tests.reports.' + cls.report
-        logger.info("Loading report: %s" % path)
-        management.call_command('reload', report_name=path)
+        if not isinstance(cls.report, list):
+            reports = [cls.report]
+        else:
+            reports = cls.report
+
+        for report in reports:
+            cls.load_report(report)
+
+    @classmethod
+    def load_report(cls, report):
+            path = 'rvbd_portal.apps.report.tests.reports.' + report
+            logger.info("Loading report: %s" % path)
+            management.call_command('reload', report_name=path)
 
     def setUp(self):
         logger.info('Logging in as admin')
@@ -44,26 +54,29 @@ class ReportRunnerTestCase(TestCase):
 
         self.assertTrue(not expect_fail)
         self.assertEqual(response.status_code, 200)
-        
-    def run_report(self, criteria,
+
+    def run_report(self, criteria, report=None,
                    expect_fail_report=False, expect_fail_job=False):
+        if report is None:
+            report = self.report
+
         logger.info("Running report %s with criteria:\n%s" %
-                    (self.report, criteria))
+                    (report, criteria))
 
         try:
-            response = self.client.post('/report/rvbd_portal/%s/' % self.report,
+            response = self.client.post('/report/rvbd_portal/%s/' % report,
                                         data=criteria)
         except:
             self.assertTrue(expect_fail_report)
             return
-            
+
         self.check_status(response, expect_fail_report)
         if expect_fail_report:
             return
-        
+
         report_data = json.loads(response.content)
         logger.debug("Report data:\n%s" % json.dumps(report_data, indent=2))
-        
+
         widgets = SortedDict()
         for widget_data in report_data[1:]:
             wid = widget_data['widgetid']
@@ -80,14 +93,14 @@ class ReportRunnerTestCase(TestCase):
 
             if expect_fail_job:
                 return
-            
+
             widgetjob_data = json.loads(response.content)
             logger.debug("Widget response data:\n%s" % (json.dumps(widgetjob_data, indent=2)))
-            
+
             # Extract the job url and get the first response
             joburl = widgetjob_data['joburl']
             widgets[joburl] = None
-            
+
         for joburl in widgets:
             while True:
                 response = self.client.get(joburl)
@@ -100,4 +113,3 @@ class ReportRunnerTestCase(TestCase):
                     break
 
         return widgets
-

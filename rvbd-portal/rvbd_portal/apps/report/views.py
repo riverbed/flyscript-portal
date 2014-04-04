@@ -201,7 +201,6 @@ class ReportView(views.APIView):
                               data=request.POST, files=request.FILES)
 
         if form.is_valid():
-
             logger.debug('Form passed validation: %s' % form)
             formdata = form.cleaned_data
             logger.debug('Form cleaned data: %s' % formdata)

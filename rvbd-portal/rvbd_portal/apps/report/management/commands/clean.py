@@ -126,9 +126,10 @@ class Command(BaseCommand):
 
             # Delete TableFields no longer referenced by any Tables or Sections
             (TableField.objects
-             .annotate(sections=Count('section'),
+             .annotate(reports=Count('report'),
+                       sections=Count('section'),
                        tables=Count('table'))
-             .filter(sections=0, tables=0)
+             .filter(reports=0, sections=0, tables=0)
              .delete())
 
             report = Report.objects.get(id=rid)
