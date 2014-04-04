@@ -153,10 +153,10 @@ class TableField(models.Model):
             obj.fields.add(field)
         return field
 
-    def __repr__(self):
+    def __unicode__(self):
         return "<TableField %s (%s)>" % (self.keyword, self.id)
 
-    def __unicode__(self):
+    def __repr__(self):
         return unicode(self)
 
     def is_report_criteria(self, table):
