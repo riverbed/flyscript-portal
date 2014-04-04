@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2013 Riverbed Technology, Inc.
 #
-# This software is licensed under the terms and conditions of the 
+# This software is licensed under the terms and conditions of the
 # MIT License set forth at:
-#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").  
+#   https://github.com/riverbed/flyscript-portal/blob/master/LICENSE ("License").
 # This software is distributed "AS IS" as set forth in the License.
 
 from rvbd_portal.apps.datasource.models import Column
@@ -25,12 +25,12 @@ report.save()
 
 section = Section.create(report, title='Locations',
                          section_keywords=['resolution', 'duration'])
-                         
+
 # Define a map and table, group by location
 table = GroupByTable.create('maploc', 'host_group', duration=60, resolution='auto')
 
 Column.create(table, 'group_name',    label='Group Name', iskey=True)
-Column.create(table, 'response_time', label='Resp Time',  datatype='metric')
+Column.create(table, 'response_time', label='Resp Time',  datatype='metric', issortcol=True)
 Column.create(table, 'network_rtt',   label='Net RTT',    datatype='metric')
 Column.create(table, 'server_delay',  label='Srv Delay',  datatype='metric')
 
