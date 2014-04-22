@@ -31,20 +31,20 @@ After cloning this repository to a local directory, these dependencies can be
 installed/checked by using the included requirements.txt file.  For example:
 
     $ cd /tmp
-    $ git clone git@github.com:riverbed/flyscript-portal.git
+    $ git clone https://github.com/riverbed/flyscript-portal.git
     $ cd flyscript-portal
     $ cd rvbd-common
     $ python setup.py install
     $ cd ..
     $ pip install -r requirements.txt
-    
+
 After reading up on the [configuration](#configuration), see the sections below for
 [initializing the database](#initialize-the-database) and
 [starting up the development server](#starting-the-server).
 
 ### Windows Install
 
-The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming 
+The steps for Windows are a bit different due to the need for pre-compiled packages.  Assuming
 you have Python 2.7 installed successfully, follow the steps below:
 
 1. Install git if you haven't already
@@ -55,38 +55,38 @@ you have Python 2.7 installed successfully, follow the steps below:
         - Check "Windows Explorer integration" and "Simple context menu"
         - Check the two Git Here options
         - Leave other options as default and click through until Finish
-        
+
 2. Clone the flyscript-portal repository from github using "Git Bash" (Start --> All Programs --> Git --> Git Bash)
 
     1. Create a directory to store the project (you will start in "~" which
        is the same as C:\Users\your_username).  For example:
-       
+
             $ cd ~
             $ mkdir flyscript
             $ cd flyscript
-            
+
     2. Clone the project:
-    
+
             $ git clone https://github.com/riverbed/flyscript-portal.git
-            
+
     3. This will create a directory called `flyscript-portal`
 
     4. Go into this directory and check things out and install the core apps
-    
+
             $ cd flyscript-portal
             $ cd rvbd-common
             $ python setup.py install
             $ cd ..
             $ ls
     5. Leave this window open for the next step.
-    
+
 3. Get pre-compiled python packages
 
     1. In the Git Bash window from step 2, determine which python you have
         by running the "python" command.
-        
+
     2. Above the ">>>" you should see text including "[MSC v.1500 32 bit (Intel)]"
-    
+
     3. Download and install the correct numpy package from
        (http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy).  Pick the
         correct 32 or 64 bit version based on what you see from starting
@@ -111,7 +111,7 @@ Configuration
 All device and report configuration configuration is done by a set of configuration
 files in the config directory:
 
-- config/devices.py 
+- config/devices.py
     - the set of devices that will be queried for data
 - config/locations.py
     - location defintions by CIDR for custom geo-ip mapping
@@ -119,7 +119,7 @@ files in the config directory:
     - reports, data tables and widgets
 
 The config directory defines a set of 4 reports based on two devices
-named "profiler" and "shark1" defined in config/devices.py. 
+named "profiler" and "shark1" defined in config/devices.py.
 
 To get started, edit the file `config/devices.py` and fill appropriate
 values for the PROFILER device and the SHARK device.  At a minimum,
@@ -132,7 +132,7 @@ settings, it just means you won't be able to render any of the sample
 PROFILER widgets.  Similarly if you just have a PROFILER, ignore the SHARK
 settings.)
 
-Customize the `config/locations.py` file to setup the IP address for 
+Customize the `config/locations.py` file to setup the IP address for
 addresses spaces in your network (those addresses that are in the private
 non-routable IP space such as 10/8 or 192.168/16).  This should typically
 match your ByLocation host group configuration on Cascade Profiler.
@@ -172,9 +172,9 @@ The Django web server is started up using the manage.py script:
 
     $ python manage.py runserver
 
-This starts up a development server running on port 8000 by default.  
+This starts up a development server running on port 8000 by default.
 Now, navigate to [http://localhost:8000](http://localhost:8000) and you should
-see a page with a criteria box open.  Just click "Run" and you should see some 
+see a page with a criteria box open.  Just click "Run" and you should see some
 plots.
 
 *Note:*
@@ -194,7 +194,7 @@ Enabling Google Maps
 --------------------
 
 Google Maps/Google Earth API
- 
+
 Use of the Google Maps/Google Earth API may require login credentials from
 Google such as an API Key or Client ID.  Please see Google’s website at
 https://developers.google.com/maps/documentation/javascript/tutorial and
@@ -209,7 +209,7 @@ Enabling OpenStreetMap
 
 Please see the LICENSE file available at
 https://github.com/riverbed/flyscript-portal/blob/master/LICENSE for
-information regarding licensing of OpenStreetMap and MapQuest-OSM tiles.  
+information regarding licensing of OpenStreetMap and MapQuest-OSM tiles.
 
 
 
@@ -227,15 +227,15 @@ Running Reports
 
 Currently, each report has the same criteria:
 
-- End Time - the end time/date of the reporting interval that will be used 
+- End Time - the end time/date of the reporting interval that will be used
 
 - Duration - the duration the reporting interval.  If left at 'Default', each
   widget in the report will use the duration configured for that widget's associated
-  data table, which may be different for each table.  
+  data table, which may be different for each table.
 
 - Filter Expression - an arbitrary filter expression to be passed to the
   data source that will execute the query for a table.  The syntax of the
-  expression is dependent on the datasource. 
+  expression is dependent on the datasource.
 
 Note that since there may be a mix of different data sources in the
 same report, the filter expression generally will not work in such
@@ -247,10 +247,10 @@ Defining Tables
 
 A data table is the root of data for a widget.  It defines the data source (one
 of the modules in the apps/datasource/modules directory) and general table
-attributes such as the default duration.  
+attributes such as the default duration.
 
 Columns are associated with the table and define the keys and values of interest.
-Each data table may have any number of columns.  
+Each data table may have any number of columns.
 
 A column has the following common attributes:
 
@@ -269,17 +269,17 @@ configuration options relevant to the the data source that will be performing
 the query for this column.
 
 A new data source may be defined by adding a new module to the apps/datasource/modules
-directory.  See the existing modules as an example.  
+directory.  See the existing modules as an example.
 
 Defining Widgets
 ================
 
-Widgets are the UI representations of a data table.  Multiple widgets may be 
+Widgets are the UI representations of a data table.  Multiple widgets may be
 associated with the same table, for example to show both a bar chart and a
 pie chart of the same data.
 
 Each widget simply binds a table to a particular widget type.  The possible
-widget types are defined by the modules in apps/report/modules.  
+widget types are defined by the modules in apps/report/modules.
 
 Widgets have the following attributes:
 
@@ -294,7 +294,7 @@ Widget specific options are specified in the `options` attribute.
 
 A new widget may be defined by adding appropriate code to an existing
 module or create new module in the apps/datasource/modules
-directory.  See the existing modules and widgets as an example.  
+directory.  See the existing modules and widgets as an example.
 Note that each module and uiwidget has associated JavaScript code
 in the apps/report/static/js directory that handles turning the
 data and options into rendered widget.
@@ -320,4 +320,3 @@ flyscript-portal
 ================
 
 FlyScript Portal - building dashboards, reports from network device data
-
