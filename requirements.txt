@@ -4,7 +4,7 @@ Django>=1.5.1,<1.6
 django-model-utils==1.2.0
 djangorestframework==2.3.8
 django-extensions==1.1.1
--e git+https://github.com/riverbed/flyscript.git#egg=flyscript
+flyscript==0.6.1
 jsonfield==0.9.5
 numpy==1.8.0
 pandas==0.13.1
